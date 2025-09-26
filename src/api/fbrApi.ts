@@ -12,7 +12,10 @@ import {
   SaleTypeRateApiResponse
 } from '../types';
 
-// API Configuration
+// Backend API Configuration
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
+// FBR API Configuration
 const API_CONFIG = {
   PRODUCTION: {
     BASE_URL: 'https://gw.fbr.gov.pk/di_data/v1/di',
@@ -66,7 +69,7 @@ fbrApiClient.interceptors.request.use(
     if (companyId) {
       // Try to get token from database via API
       try {
-        const response = await fetch(`http://localhost:5001/api/companies/${companyId}/fbr-token`, {
+        const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}/fbr-token`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -114,7 +117,7 @@ fbrPdiApiClient.interceptors.request.use(
     if (companyId) {
       // Try to get token from database via API
       try {
-        const response = await fetch(`http://localhost:5001/api/companies/${companyId}/fbr-token`, {
+        const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}/fbr-token`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -323,7 +326,7 @@ export const fbrApiService = {
   setApiToken: async (token: string, companyId?: string): Promise<void> => {
     if (companyId) {
       try {
-        const response = await fetch(`http://localhost:5001/api/companies/${companyId}/fbr-token`, {
+        const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}/fbr-token`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -356,7 +359,7 @@ export const fbrApiService = {
   getApiToken: async (companyId?: string): Promise<string | null> => {
     if (companyId) {
       try {
-        const response = await fetch(`http://localhost:5001/api/companies/${companyId}/fbr-token`, {
+        const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}/fbr-token`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -385,7 +388,7 @@ export const fbrApiService = {
   clearApiToken: async (companyId?: string): Promise<void> => {
     if (companyId) {
       try {
-        const response = await fetch(`http://localhost:5001/api/companies/${companyId}/fbr-token`, {
+        const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}/fbr-token`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -413,7 +416,7 @@ export const fbrApiService = {
    */
   getAllCompanyTokens: async (): Promise<Record<string, { hasToken: boolean; tokenPreview?: string }>> => {
     try {
-      const response = await fetch('http://localhost:5001/api/companies/fbr-tokens', {
+      const response = await fetch(`${API_BASE_URL}/api/companies/fbr-tokens`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
