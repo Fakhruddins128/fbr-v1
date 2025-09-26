@@ -26,6 +26,9 @@ app.use(
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Database configuration
 const dbConfig = {
   user: process.env.DB_USER || "sa",
@@ -36,7 +39,7 @@ const dbConfig = {
   options: {
     encrypt: false, // for local SQL Server
     trustServerCertificate: true, // for local dev / self-signed certs
-    instanceName: process.env.DB_INSTANCE || undefined,
+    // instanceName: process.env.DB_INSTANCE || undefined,
   },
 };
 
