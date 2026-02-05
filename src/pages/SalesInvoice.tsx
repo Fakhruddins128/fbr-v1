@@ -77,6 +77,7 @@ interface InvoiceFormData {
   destinationOfSupply: string;
   saleType: string;
   items: InvoiceItem[];
+  transactionType: string;
 }
 
 // Dropdown options
@@ -1543,8 +1544,7 @@ const SalesInvoice: React.FC = () => {
     
  // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
     if (formData.saleType === 'Goods at standard rate (default)' &&
-         formData.transactionType === 'POS' &&
-        formData.items.some(item => item.rate === '18%')) {
+         formData.transactionType === 'POS') {
       return 'SN026';
     }
 
