@@ -1401,18 +1401,18 @@ const SalesInvoice: React.FC = () => {
     }
     
     // SN001: Sale of Standard Rate Goods to Registered Buyers
-    if (formData.buyerType === 'Registered' && 
-        formData.saleType === 'Goods at standard rate (default)' &&
-        formData.items.some(item => item.rate === '18%')) {
-      return 'SN001';
-    }
+    // if (formData.buyerType === 'Registered' && 
+    //     formData.saleType === 'Goods at standard rate (default)' &&
+    //     formData.items.some(item => item.rate === '18%')) {
+    //   return 'SN001';
+    // }
     
-    // SN002: Sale of Standard Rate Goods to Unregistered Buyers
-    if (formData.buyerType === 'Unregistered' && 
-        formData.saleType === 'Goods at standard rate (default)' &&
-        formData.items.some(item => item.rate === '18%')) {
-      return 'SN002';
-    }
+    // // SN002: Sale of Standard Rate Goods to Unregistered Buyers
+    // if (formData.buyerType === 'Unregistered' && 
+    //     formData.saleType === 'Goods at standard rate (default)' &&
+    //     formData.items.some(item => item.rate === '18%')) {
+    //   return 'SN002';
+    // }
     
     // SN005: Reduced rate sale (Eighth Schedule)
     if (formData.saleType === 'Goods at Reduced Rate' &&
