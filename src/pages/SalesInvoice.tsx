@@ -83,7 +83,8 @@ interface InvoiceFormData {
 const buyerTypes = [
   'Unregistered',
   'Registered',
-  'Foreign'
+  'Unregistered Distributor',
+  'Retail Consumer'
 ];
 
 const invoiceTypes = [
