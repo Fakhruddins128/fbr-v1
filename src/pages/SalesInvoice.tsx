@@ -1483,7 +1483,7 @@ const SalesInvoice: React.FC = () => {
     }
     
     // SN019: Sale of Services (as per ICT Ordinance)
-    if (formData.saleType === 'Services (ICT Ordinance)') {
+    if (formData.saleType === 'Services') {
       return 'SN019';
     }
     
