@@ -25,8 +25,7 @@ import {
   Select,
   MenuItem,
   Chip,
-  OutlinedInput,
-  Grid
+  OutlinedInput
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -39,9 +38,7 @@ import {
   BUSINESS_ACTIVITIES, 
   SECTORS, 
   getApplicableScenariosForMultiple,
-  validateBusinessActivitySectorCombination,
-  areValidBusinessActivities,
-  areValidSectors
+  validateBusinessActivitySectorCombination
 } from '../utils/scenarioValidation';
 
 const CompanyManagement: React.FC = () => {

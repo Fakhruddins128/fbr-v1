@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -35,7 +35,6 @@ import {
   Delete as DeleteIcon,
   Person as PersonIcon,
   Business as BusinessIcon,
-  TrendingUp as TrendingUpIcon,
   Group as GroupIcon,
   Upload as UploadIcon,
   Download as DownloadIcon,
@@ -45,10 +44,7 @@ import { customerApi, Customer, CreateCustomerRequest, UpdateCustomerRequest } f
 import { 
   BUSINESS_ACTIVITIES, 
   SECTORS, 
-  getApplicableScenariosForMultiple,
-  validateBusinessActivitySectorCombination,
-  areValidBusinessActivities,
-  areValidSectors
+  getApplicableScenariosForMultiple
 } from '../utils/scenarioValidation';
 
 interface CustomerFormData {
@@ -100,12 +96,11 @@ const Customers: React.FC = () => {
   // State for applicable scenarios
   const [applicableScenarios, setApplicableScenarios] = useState<string[]>([]);
 
-  // Fetch customers on component mount
-  useEffect(() => {
-    fetchCustomers();
+  const showSnackbar = useCallback((message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
   }, []);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
       const response = await customerApi.getAllCustomers();
@@ -119,11 +114,12 @@ const Customers: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showSnackbar]);
 
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
-    setSnackbar({ open: true, message, severity });
-  };
+  // Fetch customers on component mount
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
   
   const handleMultiSelectChange = (fieldName: 'businessActivity' | 'sector') => async (event: any) => {
     const value = event.target.value;
@@ -152,10 +148,6 @@ const Customers: React.FC = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
-  };
-
-  const getStatusColor = (isActive: boolean | undefined) => {
-    return isActive ? 'success' : 'default';
   };
 
   const handleAddCustomer = () => {

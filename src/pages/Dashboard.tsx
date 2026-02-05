@@ -27,7 +27,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
 import { fetchCompanies } from '../store/slices/companySlice';
 import { UserRole } from '../types';
-import dashboardApi, { DashboardData, DashboardStats, RecentActivity, InventoryStatus, SalesChartData } from '../services/dashboardApi';
+import dashboardApi, { DashboardData } from '../services/dashboardApi';
 
 // Import Chart.js
 import {
@@ -66,7 +66,6 @@ const Dashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(() => {
     // Initialize from localStorage if available
     return localStorage.getItem('selectedCompanyId') || '';
@@ -102,7 +101,6 @@ const Dashboard: React.FC = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch dashboard data';
       setError(errorMessage);
-      setSnackbarOpen(true);
       console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);

@@ -3,17 +3,11 @@ import {
   FBRApiResponse, 
   FBRInvoicePayload, 
   Province, 
-  ProvincesApiResponse,
   DocumentType,
-  DocumentTypesApiResponse,
   ItemDescriptionCode,
-  ItemDescriptionCodesApiResponse,
   SroItemCode,
-  SroItemCodesApiResponse,
   TransactionType,
-  TransactionTypesApiResponse,
-  UnitOfMeasurement,
-  UomApiResponse
+  UnitOfMeasurement
 } from '../../types';
 import fbrApiService from '../../api/fbrApi';
 import { validateFBRInvoice } from '../../utils/fbrUtils';

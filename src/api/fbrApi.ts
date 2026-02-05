@@ -165,7 +165,7 @@ fbrApiClient.interceptors.response.use(
     
     // Handle specific error codes
     if (error.response) {
-      const { status, data, headers, statusText } = error.response;
+      const { status, data, statusText } = error.response;
       
       errorDetails.status = status;
       errorDetails.statusText = statusText;

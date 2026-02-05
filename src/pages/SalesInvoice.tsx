@@ -200,7 +200,6 @@ const SalesInvoice: React.FC = () => {
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [selectedTab, setSelectedTab] = useState('Sales');
   const [items, setItems] = useState<Item[]>([]);
-  const [loadingItems, setLoadingItems] = useState(false);
   const [saving, setSaving] = useState(false);
   const [invoiceSaved, setInvoiceSaved] = useState(false);
   const [sendingToFBR, setSendingToFBR] = useState(false);
@@ -230,7 +229,6 @@ const SalesInvoice: React.FC = () => {
   // Fetch items from API
   useEffect(() => {
     const fetchItems = async () => {
-      setLoadingItems(true);
       try {
         const response = await itemsApi.getAllItems();
         if (response.success && Array.isArray(response.data)) {
@@ -240,8 +238,6 @@ const SalesInvoice: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching items:', error);
-      } finally {
-        setLoadingItems(false);
       }
     };
 

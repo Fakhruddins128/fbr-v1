@@ -10,8 +10,7 @@ import {
   TableRow,
   Paper,
   Divider,
-  Grid,
-  Chip
+  Grid
 } from '@mui/material';
 import { format } from 'date-fns';
 

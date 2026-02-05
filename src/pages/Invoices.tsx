@@ -28,11 +28,7 @@ import {
   Select,
   FormControl,
   InputLabel,
-  TablePagination,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Divider
+  TablePagination
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -42,8 +38,7 @@ import {
   Receipt as ReceiptIcon,
   TrendingUp as TrendingUpIcon,
   AttachMoney as MoneyIcon,
-  Assessment as AssessmentIcon,
-  ExpandMore as ExpandMoreIcon
+  Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { Invoice, InvoiceItem, Company } from '../types';
 import { invoiceAPI } from '../services/invoiceApi';

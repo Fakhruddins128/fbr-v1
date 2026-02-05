@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -83,18 +83,7 @@ const UserManagement: React.FC = () => {
     companyUsers: 0,
   });
 
-  useEffect(() => {
-    fetchUsers();
-    if (currentUser?.role === UserRole.SUPER_ADMIN) {
-      dispatch(fetchCompanies());
-    }
-  }, [dispatch, currentUser]);
-
-  useEffect(() => {
-    calculateUserStats();
-  }, [users]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const fetchedUsers = await userApi.getAllUsers();
@@ -105,9 +94,16 @@ const UserManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const calculateUserStats = () => {
+  useEffect(() => {
+    fetchUsers();
+    if (currentUser?.role === UserRole.SUPER_ADMIN) {
+      dispatch(fetchCompanies());
+    }
+  }, [dispatch, currentUser, fetchUsers]);
+
+  const calculateUserStats = useCallback(() => {
     const stats = {
       totalUsers: users.length,
       activeUsers: users.filter(user => user.isActive).length,
@@ -115,7 +111,11 @@ const UserManagement: React.FC = () => {
       companyUsers: users.filter(user => user.companyId).length,
     };
     setUserStats(stats);
-  };
+  }, [users]);
+
+  useEffect(() => {
+    calculateUserStats();
+  }, [calculateUserStats]);
 
   const handleOpenDialog = (user?: User) => {
     if (user) {

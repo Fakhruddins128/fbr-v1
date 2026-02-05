@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -27,7 +27,6 @@ import {
   MenuItem,
   CircularProgress,
   OutlinedInput,
-  Grid,
   Divider,
   Tabs,
   Tab,
@@ -53,7 +52,6 @@ import {
 import {
   BUSINESS_ACTIVITIES,
   SECTORS,
-  getApplicableScenariosForMultiple,
   validateBusinessActivitySectorCombination,
   type BusinessActivity,
   type Sector,
@@ -126,11 +124,11 @@ const ScenarioManagement: React.FC = () => {
     { code: '0024', message: 'Please provide ST withheld', description: 'Sales Tax withheld cannot be empty, Please provide valid Sales Tax withheld' }
   ];
 
-  useEffect(() => {
-    fetchScenarios();
+  const showSnackbar = useCallback((message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
   }, []);
 
-  const fetchScenarios = async () => {
+  const fetchScenarios = useCallback(async () => {
     setLoading(true);
     try {
       // Mock data based on official FBR documentation - in real app, this would be an API call
@@ -222,11 +220,11 @@ const ScenarioManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showSnackbar]);
 
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
-    setSnackbar({ open: true, message, severity });
-  };
+  useEffect(() => {
+    fetchScenarios();
+  }, [fetchScenarios]);
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
