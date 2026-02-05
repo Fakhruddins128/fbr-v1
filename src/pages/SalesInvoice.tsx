@@ -1197,8 +1197,8 @@ const SalesInvoice: React.FC = () => {
   // Helper function to check if SRO fields should be disabled
   const isSroFieldsDisabled = () => {
     return formData.saleType === 'Goods as per SRO.297(I)/2023' || 
-           formData.saleType === 'Goods as per SRO.297(|)/2023' ||
-           formData.saleType === 'Goods at Reduced Rate';
+           formData.saleType === 'Goods as per SRO.297(|)/2023';
+         //  formData.saleType === 'Goods at Reduced Rate';
   };
 
   // Helper function to check if Rate field should be disabled
