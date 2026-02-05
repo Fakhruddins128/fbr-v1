@@ -111,7 +111,8 @@ const transactionTypes = [
   'Domestic Supply',
   'Export',
   'Import',
-  'Zero Rated Supply'
+  'Zero Rated Supply',
+  'POS'
 ];
 
 // Mapping function to convert database invoice type to transaction type
@@ -120,7 +121,8 @@ const mapInvoiceTypeToTransactionType = (invoiceType: string): string => {
     'Sale Invoice': 'Domestic Supply',
     'Export Invoice': 'Export',
     'Import Invoice': 'Import',
-    'Zero Rated Invoice': 'Zero Rated Supply'
+    'Zero Rated Invoice': 'Zero Rated Supply',
+    'POS Invoice': 'POS'
   };
   return mapping[invoiceType] || 'Select';
 };
@@ -131,7 +133,8 @@ const mapTransactionTypeToInvoiceType = (transactionType: string): string => {
     'Domestic Supply': 'Sale Invoice',
     'Export': 'Export Invoice',
     'Import': 'Import Invoice',
-    'Zero Rated Supply': 'Zero Rated Invoice'
+    'Zero Rated Supply': 'Zero Rated Invoice',
+    'POS': 'POS Invoice'
   };
   return mapping[transactionType] || 'Sale Invoice';
 };
@@ -1434,11 +1437,10 @@ const SalesInvoice: React.FC = () => {
       return 'SN008';
     }
 
-    
+
  // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
-    if (formData.buyerType === 'Retail Consumer' && 
-        formData.saleType === 'Goods at standard rate (default)' &&
-        formData.items.some(item => item.rate === '18%')) {
+    if (formData.saleType === 'Goods at standard rate (default)' &&
+        formData.items.some(item => item.rate === '20%')) {
       return 'SN026';
     }
     
@@ -1540,7 +1542,7 @@ const SalesInvoice: React.FC = () => {
     // }
     
  // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
-    if (formData.buyerType === 'Retail Consumer' && 
+    if (formData.transactionType === 'POS' &&
         formData.saleType === 'Goods at standard rate (default)' &&
         formData.items.some(item => item.rate === '18%')) {
       return 'SN026';
