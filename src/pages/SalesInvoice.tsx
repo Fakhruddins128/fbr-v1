@@ -77,7 +77,7 @@ interface InvoiceFormData {
   destinationOfSupply: string;
   saleType: string;
   items: InvoiceItem[];
-  transactionType: string;
+ // transactionType: string;
 }
 
 // Dropdown options
