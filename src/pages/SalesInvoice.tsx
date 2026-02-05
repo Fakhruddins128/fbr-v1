@@ -1428,10 +1428,22 @@ const SalesInvoice: React.FC = () => {
     }
     
     // SN008: Sale of 3rd Schedule Goods
-    if (formData.saleType === '3rd Schedule Goods') {
+    
+    if (formData.saleType === '3rd Schedule Goods' && 
+        formData.buyerType === 'Unregistered') {
       return 'SN008';
     }
+
     
+ // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
+    if (formData.buyerType === 'Retail Consumer' && 
+        formData.saleType === 'Goods at standard rate (default)' &&
+        formData.items.some(item => item.rate === '18%')) {
+      return 'SN026';
+    }
+    
+
+
     // SN009: Purchase From Registered Cotton Ginners
     if (formData.saleType === 'Cotton ginners') {
       return 'SN009';
@@ -1522,11 +1534,20 @@ const SalesInvoice: React.FC = () => {
       return 'SN025';
     }
     
-    // SN026: Sale Of Goods at Standard Rate to End Consumers by Retailers
-    if (formData.saleType === 'Goods at standard rate to end consumers (retail)') {
+    // // SN026: Sale Of Goods at Standard Rate to End Consumers by Retailers
+    // if (formData.saleType === 'Goods at standard rate to end consumers (retail)') {
+    //   return 'SN026';
+    // }
+    
+ // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
+    if (formData.buyerType === 'Retail Consumer' && 
+        formData.saleType === 'Goods at standard rate (default)' &&
+        formData.items.some(item => item.rate === '18%')) {
       return 'SN026';
     }
-    
+
+
+
     // SN027: Sale Of 3rd Schedule Goods to End Consumers by Retailers
     if (formData.saleType === '3rd Schedule Goods') {
       return 'SN027';
