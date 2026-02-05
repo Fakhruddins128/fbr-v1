@@ -1164,16 +1164,17 @@ const SalesInvoice: React.FC = () => {
       }));
     }
 
-    // Auto-populate fields when Sale Type is set to "Goods at Reduced Rate"
-    if (field === 'saleType' && value === 'Goods at Reduced Rate') {
-      setCurrentItem(prev => ({
-        ...prev,
-        rate: '1%',
-        sroScheduleNo: 'EIGHTH SCHEDULE Table 1',
-        itemSrNo: '82'
-      }));
-    }
+    // // Auto-populate fields when Sale Type is set to "Goods at Reduced Rate"
+    // if (field === 'saleType' && value === 'Goods at Reduced Rate') {
+    //   setCurrentItem(prev => ({
+    //     ...prev,
+    //     rate: '1%',
+    //     sroScheduleNo: 'EIGHTH SCHEDULE Table 1',
+    //     itemSrNo: '82'
+    //   }));
+    // }
 
+    
     // Auto-populate fields when Sale Type is set to "SRO.297(I)/2023"
     if (field === 'saleType' && value === 'Goods as per SRO.297(I)/2023') {
       setCurrentItem(prev => ({
@@ -1559,7 +1560,12 @@ const SalesInvoice: React.FC = () => {
     if (formData.saleType === 'Goods at Reduced Rate') {
       return 'SN028';
     }
-    
+    // SN005: Reduced rate sale (Eighth Schedule)
+    // if (formData.saleType === 'Goods at Reduced Rate' &&
+    //     formData.items.some(item => ['12%', '5%', '1%'].includes(item.rate))) {
+    //   return 'SN005';
+    // }
+
     // Default to SN001 for standard rate goods to registered buyers
     return 'SN001';
   };
