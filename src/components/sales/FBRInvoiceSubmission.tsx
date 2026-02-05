@@ -88,7 +88,8 @@ const provinces = [
 const registrationTypes = [
   'Registered',
   'Unregistered',
-  'Foreign'
+  'Unregistered Distributor',
+  'Retail Consumer',
 ];
 
 const FBRInvoiceSubmission: React.FC = () => {
