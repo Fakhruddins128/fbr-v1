@@ -176,7 +176,8 @@ const sroScheduleOptions = [
   'EIGHTH SCHEDULE Table 1',
   '6th Schd Table I',
   '327(I)/2008',
-  '297(I)/2023-Table-I'
+  '297(I)/2023-Table-I',
+  'FIFTH SCHEDULE'
 ];
 
 const itemSrNoOptions = [
