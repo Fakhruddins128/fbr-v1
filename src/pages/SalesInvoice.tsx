@@ -113,7 +113,7 @@ const transactionTypes = [
   'Export',
   'Import',
   'Zero Rated Supply',
-  'POS'
+  
 ];
 
 // Mapping function to convert database invoice type to transaction type
@@ -123,7 +123,7 @@ const mapInvoiceTypeToTransactionType = (invoiceType: string): string => {
     'Export Invoice': 'Export',
     'Import Invoice': 'Import',
     'Zero Rated Invoice': 'Zero Rated Supply',
-    'POS Invoice': 'POS'
+    
   };
   return mapping[invoiceType] || 'Select';
 };
@@ -1544,7 +1544,7 @@ const SalesInvoice: React.FC = () => {
     
  // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
     if (formData.saleType === 'Goods at standard rate (default)' &&
-         formData.transactionType === 'POS') {
+         selectedTab === 'POS') {
       return 'SN026';
     }
 
@@ -1905,6 +1905,7 @@ const SalesInvoice: React.FC = () => {
           >
             <FormControlLabel value="Purchases" control={<Radio />} label="Purchases" />
             <FormControlLabel value="Sales" control={<Radio />} label="Sales" />
+            <FormControlLabel value="POS" control={<Radio />} label="POS" />
           </RadioGroup>
         </FormControl>
       </Paper>
