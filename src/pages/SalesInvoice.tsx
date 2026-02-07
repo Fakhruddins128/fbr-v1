@@ -1544,8 +1544,7 @@ const SalesInvoice: React.FC = () => {
     // }
     
  // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
-    if (formData.buyerType === 'Registered' &&
-      formData.saleType === 'Goods at standard rate (default)' &&
+    if (formData.saleType === 'Goods at standard rate (default)' &&
          selectedTab === 'POS') {
       return 'SN026';
     }
