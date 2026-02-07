@@ -121,6 +121,30 @@ export const updateCompany = createAsyncThunk(
   }
 );
 
+export const deleteCompany = createAsyncThunk(
+  'company/deleteCompany',
+  async (companyId: string, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return companyId;
+    } catch (error) {
+      return rejectWithValue((error as Error).message);
+    }
+  }
+);
+
 const companySlice = createSlice({
   name: 'company',
   initialState,
@@ -193,6 +217,22 @@ const companySlice = createSlice({
         }
       })
       .addCase(updateCompany.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Delete Company
+      .addCase(deleteCompany.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(deleteCompany.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.companies = state.companies.filter(c => c.id !== action.payload);
+        if (state.currentCompany?.id === action.payload) {
+          state.currentCompany = null;
+        }
+      })
+      .addCase(deleteCompany.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

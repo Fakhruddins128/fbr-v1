@@ -32,7 +32,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
-import { fetchCompanies, createCompany, updateCompany } from '../store/slices/companySlice';
+import { fetchCompanies, createCompany, updateCompany, deleteCompany } from '../store/slices/companySlice';
 import { Company } from '../types';
 import { 
   BUSINESS_ACTIVITIES, 
@@ -255,9 +255,15 @@ const CompanyManagement: React.FC = () => {
     }
   };
   
-  const handleDeleteCompany = (company: Company) => {
-    // In a real app, you would dispatch a delete action
-    setSnackbar({ open: true, message: 'Company deletion is not implemented in this demo', severity: 'error' });
+  const handleDeleteCompany = async (company: Company) => {
+    if (window.confirm(`Are you sure you want to delete company "${company.name}"?`)) {
+      try {
+        await dispatch(deleteCompany(company.id));
+        setSnackbar({ open: true, message: 'Company deleted successfully', severity: 'success' });
+      } catch (error) {
+        setSnackbar({ open: true, message: 'Failed to delete company', severity: 'error' });
+      }
+    }
   };
   
   const handleCloseSnackbar = () => {
