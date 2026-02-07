@@ -1399,6 +1399,12 @@ const SalesInvoice: React.FC = () => {
       return 'SN003';
     }
     
+    // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
+    if (formData.saleType === 'Goods at standard rate (default)' &&
+         selectedTab === 'POS') {
+      return 'SN026';
+    }
+
     // SN001: Sale of Standard Rate Goods to Registered Buyers
     if (formData.buyerType === 'Registered' && 
         formData.saleType === 'Goods at standard rate (default)' &&
@@ -1543,14 +1549,6 @@ const SalesInvoice: React.FC = () => {
     //   return 'SN026';
     // }
     
- // SN026: Sale of Standard Rate Goods to Retail Consumer Buyers
-    if (formData.saleType === 'Goods at standard rate (default)' &&
-         selectedTab === 'POS') {
-      return 'SN026';
-    }
-
-
-
     // SN027: Sale Of 3rd Schedule Goods to End Consumers by Retailers
     if (formData.saleType === '3rd Schedule Goods') {
       return 'SN027';
