@@ -123,7 +123,7 @@ const mapInvoiceTypeToTransactionType = (invoiceType: string): string => {
     'Export Invoice': 'Export',
     'Import Invoice': 'Import',
     'Zero Rated Invoice': 'Zero Rated Supply',
-    
+    'POS Invoice': 'POS'
   };
   return mapping[invoiceType] || 'Select';
 };
