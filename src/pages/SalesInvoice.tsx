@@ -135,7 +135,7 @@ const mapTransactionTypeToInvoiceType = (transactionType: string): string => {
     'Export': 'Export Invoice',
     'Import': 'Import Invoice',
     'Zero Rated Supply': 'Zero Rated Invoice',
-    'POS': 'POS Invoice'
+    
   };
   return mapping[transactionType] || 'Sale Invoice';
 };
@@ -1164,17 +1164,16 @@ const SalesInvoice: React.FC = () => {
       }));
     }
 
-    // // Auto-populate fields when Sale Type is set to "Goods at Reduced Rate"
-    // if (field === 'saleType' && value === 'Goods at Reduced Rate') {
-    //   setCurrentItem(prev => ({
-    //     ...prev,
-    //     rate: '1%',
-    //     sroScheduleNo: 'EIGHTH SCHEDULE Table 1',
-    //     itemSrNo: '82'
-    //   }));
-    // }
+    // Auto-populate fields when Sale Type is set to "Goods at Reduced Rate"
+    if (field === 'saleType' && value === 'Goods at Reduced Rate') {
+      setCurrentItem(prev => ({
+        ...prev,
+        rate: '1%',
+        sroScheduleNo: 'EIGHTH SCHEDULE Table 1',
+        itemSrNo: '82'
+      }));
+    }
 
-    
     // Auto-populate fields when Sale Type is set to "SRO.297(I)/2023"
     if (field === 'saleType' && value === 'Goods as per SRO.297(I)/2023') {
       setCurrentItem(prev => ({
@@ -1197,8 +1196,8 @@ const SalesInvoice: React.FC = () => {
   // Helper function to check if SRO fields should be disabled
   const isSroFieldsDisabled = () => {
     return formData.saleType === 'Goods as per SRO.297(I)/2023' || 
-           formData.saleType === 'Goods as per SRO.297(|)/2023';
-         //  formData.saleType === 'Goods at Reduced Rate';
+           formData.saleType === 'Goods as per SRO.297(|)/2023' ||
+           formData.saleType === 'Goods at Reduced Rate';
   };
 
   // Helper function to check if Rate field should be disabled
@@ -1401,18 +1400,18 @@ const SalesInvoice: React.FC = () => {
     }
     
     // SN001: Sale of Standard Rate Goods to Registered Buyers
-    // if (formData.buyerType === 'Registered' && 
-    //     formData.saleType === 'Goods at standard rate (default)' &&
-    //     formData.items.some(item => item.rate === '18%')) {
-    //   return 'SN001';
-    // }
+    if (formData.buyerType === 'Registered' && 
+        formData.saleType === 'Goods at standard rate (default)' &&
+        formData.items.some(item => item.rate === '18%')) {
+      return 'SN001';
+    }
     
-    // // SN002: Sale of Standard Rate Goods to Unregistered Buyers
-    // if (formData.buyerType === 'Unregistered' && 
-    //     formData.saleType === 'Goods at standard rate (default)' &&
-    //     formData.items.some(item => item.rate === '18%')) {
-    //   return 'SN002';
-    // }
+    // SN002: Sale of Standard Rate Goods to Unregistered Buyers
+    if (formData.buyerType === 'Unregistered' && 
+        formData.saleType === 'Goods at standard rate (default)' &&
+        formData.items.some(item => item.rate === '18%')) {
+      return 'SN002';
+    }
     
     // SN005: Reduced rate sale (Eighth Schedule)
     if (formData.saleType === 'Goods at Reduced Rate' &&
@@ -1560,12 +1559,7 @@ const SalesInvoice: React.FC = () => {
     if (formData.saleType === 'Goods at Reduced Rate') {
       return 'SN028';
     }
-    // SN005: Reduced rate sale (Eighth Schedule)
-    // if (formData.saleType === 'Goods at Reduced Rate' &&
-    //     formData.items.some(item => ['12%', '5%', '1%'].includes(item.rate))) {
-    //   return 'SN005';
-    // }
-
+    
     // Default to SN001 for standard rate goods to registered buyers
     return 'SN001';
   };
@@ -2410,8 +2404,8 @@ const SalesInvoice: React.FC = () => {
           <strong>Applicable Scenario:</strong> {determineFbrScenario()}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-           {/* {determineFbrScenario() === 'SN001' && 'Sale of Standard Rate Goods to Registered Buyers - This applies to the sale of goods subject to the standard sales tax rate made to sales tax registered buyers.'} */}
-           {/* b{determineFbrScenario() === 'SN002' && 'Sale of Standard Rate Goods to Unregistered Buyers - When goods subject to the standard sales tax rate are sold to buyers who are not registered for sales tax (usually individual consumers or small businesses not registered for tax), the seller charges the full sales tax. This is often a business-to-consumer (B2C) sale.'} */}
+           {determineFbrScenario() === 'SN001' && 'Sale of Standard Rate Goods to Registered Buyers - This applies to the sale of goods subject to the standard sales tax rate made to sales tax registered buyers.'}
+           {determineFbrScenario() === 'SN002' && 'Sale of Standard Rate Goods to Unregistered Buyers - When goods subject to the standard sales tax rate are sold to buyers who are not registered for sales tax (usually individual consumers or small businesses not registered for tax), the seller charges the full sales tax. This is often a business-to-consumer (B2C) sale.'}
            {determineFbrScenario() === 'SN003' && 'Sale of Steel (Melted and Re-Rolled) - This applies to steel products including billets, ingots, and long bars. The steel sector requires strict traceability and compliance with sector-specific regulations. These goods are commonly traded by re-rollers and manufacturers with distinct tax treatment and may require additional notifications or SRO compliance.'}
            {determineFbrScenario() === 'SN004' && 'Sale of Steel Scrap by Ship Breakers - This applies to steel scrap recovered from dismantled ships by ship breakers. The ship-breaking industry has specialized tax treatment recognizing the unique industry context. Special rates or exemptions may apply, and tax compliance is tailored to the ship-breaking sector with specific regulatory requirements.'}
            {determineFbrScenario() === 'SN005' && 'Sales of Reduced Rate Goods (Eighth Schedule) - This applies to certain goods taxed at reduced sales tax rates (lower than the standard rate) to encourage affordability or protect consumers. The Eighth Schedule lists these goods, commonly including basic food items, medicines, or essential commodities. These goods typically have rates of 12%, 5%, or 1% instead of the standard 18% rate.'}
