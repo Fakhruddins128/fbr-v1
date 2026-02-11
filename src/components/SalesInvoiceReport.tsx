@@ -13,6 +13,7 @@ import {
   Grid
 } from '@mui/material';
 import { format } from 'date-fns';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface InvoiceItem {
   hsCode: string;
@@ -108,19 +109,26 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
         </Typography>
       </Box>
 
-      {/* FBR Invoice Info - Only Invoice Number and Date */}
+      {/* FBR Invoice Info - Invoice Number, Date and QR Code */}
       {fbrResponse && (
         <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 6 }}>
-              <Typography variant="body2">
-                <strong>Invoice Number:</strong> {fbrResponse.invoiceNumber}
+          <Grid container spacing={2} alignItems="center">
+            <Grid size={{ xs: 9 }}>
+              <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 'bold', mb: 1 }}>
+                FBR Invoice Number: {fbrResponse.invoiceNumber}
               </Typography>
-            </Grid>
-            <Grid size={{ xs: 6 }}>
               <Typography variant="body2">
                 <strong>Date:</strong> {format(new Date(fbrResponse.dated), 'dd/MM/yyyy HH:mm:ss')}
               </Typography>
+            </Grid>
+            <Grid size={{ xs: 3 }} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Box sx={{ p: 1, bgcolor: 'white', border: '1px solid #ddd', borderRadius: 1 }}>
+                <QRCodeCanvas 
+                  value={fbrResponse.invoiceNumber} 
+                  size={100}
+                  level={"H"}
+                />
+              </Box>
             </Grid>
           </Grid>
         </Box>

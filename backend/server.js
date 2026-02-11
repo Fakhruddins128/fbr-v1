@@ -17,7 +17,8 @@ const PORT = process.env.PORT || 5001; // Changed to port 5001 to avoid conflict
 app.use(
   cors({
     origin: [
-      "https://fbr-v1.vercel.app", // your frontend domain
+      "https://fbr-v1-testing.vercel.app", // your frontend domain
+      "http://localhost:3000", // local frontend
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, // if using cookies or auth headers
@@ -1042,12 +1043,59 @@ app.get("/api/health", (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
 
-  console.log("Login attempt:", { username, passwordLength: password?.length });
+  console.log("Login attempt:", { username, passwordLength: password?.length, isDbConnected });
 
   if (!username || !password) {
     return res
       .status(400)
       .json({ message: "Username and password are required" });
+  }
+
+  // Mock login if database is not connected
+  if (!isDbConnected) {
+    console.log("Database not connected. Attempting mock login.");
+    if (username === "admin" && password === "admin123") {
+       const mockUser = {
+         UserID: "mock-admin-id",
+         Username: "admin",
+         Email: "admin@example.com",
+         Role: "SUPER_ADMIN",
+         FirstName: "Mock",
+         LastName: "Admin",
+         CompanyID: "mock-company-id",
+         IsActive: true
+       };
+       
+       const token = jwt.sign(
+        {
+          id: mockUser.UserID,
+          userId: mockUser.UserID,
+          username: mockUser.Username,
+          role: mockUser.Role,
+          companyId: mockUser.CompanyID,
+        },
+        process.env.JWT_SECRET || "your_jwt_secret",
+        { expiresIn: "24h" }
+      );
+
+      return res.status(200).json({
+        user: {
+          id: mockUser.UserID,
+          username: mockUser.Username,
+          email: mockUser.Email,
+          role: mockUser.Role,
+          firstName: mockUser.FirstName,
+          lastName: mockUser.LastName,
+          companyId: mockUser.CompanyID,
+          isActive: mockUser.IsActive,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        token,
+      });
+    } else {
+       return res.status(401).json({ message: "Invalid username or password (mock mode: use admin/admin123)" });
+    }
   }
 
   try {
@@ -1679,7 +1727,7 @@ app.get("/api/companies", authenticateToken, async (req, res) => {
     const request = new sql.Request();
 
     const result = await request.query(`
-      SELECT CompanyID, Name, NTNNumber, CNIC, Address, City, Province, 
+      SELECT CompanyID, Name, NTNNumber, CNIC, BusinessNameForSalesInvoice, Address, City, Province, 
              ContactPerson, ContactEmail, ContactPhone, BusinessActivity, Sector, IsActive, CreatedAt, UpdatedAt
       FROM Companies 
       WHERE IsActive = 1
@@ -1692,6 +1740,7 @@ app.get("/api/companies", authenticateToken, async (req, res) => {
       name: company.Name,
       ntnNumber: company.NTNNumber,
       cnic: company.CNIC,
+      businessNameForSalesInvoice: company.BusinessNameForSalesInvoice,
       address: company.Address,
       city: company.City,
       province: company.Province,
@@ -1778,7 +1827,7 @@ app.get("/api/companies/:id", authenticateToken, async (req, res) => {
     const request = new sql.Request();
 
     const result = await request.input("id", sql.UniqueIdentifier, id).query(`
-        SELECT CompanyID, Name, NTNNumber, Address, City, Province, 
+        SELECT CompanyID, Name, NTNNumber, CNIC, BusinessNameForSalesInvoice, Address, City, Province, 
                ContactPerson, ContactEmail, ContactPhone, BusinessActivity, Sector, IsActive, CreatedAt, UpdatedAt
         FROM Companies 
         WHERE CompanyID = @id AND IsActive = 1
@@ -1793,6 +1842,8 @@ app.get("/api/companies/:id", authenticateToken, async (req, res) => {
       id: company.CompanyID.toString(),
       name: company.Name,
       ntnNumber: company.NTNNumber,
+      cnic: company.CNIC,
+      businessNameForSalesInvoice: company.BusinessNameForSalesInvoice,
       address: company.Address,
       city: company.City,
       province: company.Province,
@@ -1828,6 +1879,7 @@ app.post("/api/companies", authenticateToken, async (req, res) => {
     name,
     ntnNumber,
     cnic,
+    businessNameForSalesInvoice,
     address,
     city,
     province,
@@ -1860,6 +1912,7 @@ app.post("/api/companies", authenticateToken, async (req, res) => {
       .input("name", sql.NVarChar(255), name)
       .input("ntnNumber", sql.NVarChar(50), ntnNumber)
       .input("cnic", sql.NVarChar(20), cnic)
+      .input("businessNameForSalesInvoice", sql.NVarChar(255), businessNameForSalesInvoice)
       .input("address", sql.NVarChar(500), address)
       .input("city", sql.NVarChar(100), city)
       .input("province", sql.NVarChar(100), province)
@@ -1876,10 +1929,10 @@ app.post("/api/companies", authenticateToken, async (req, res) => {
         sql.NVarChar(sql.MAX),
         sector ? JSON.stringify(sector) : null
       ).query(`
-        INSERT INTO Companies (Name, NTNNumber, CNIC, Address, City, Province, ContactPerson, ContactEmail, ContactPhone, BusinessActivity, Sector, IsActive, CreatedAt, UpdatedAt)
-        OUTPUT INSERTED.CompanyID, INSERTED.Name, INSERTED.NTNNumber, INSERTED.CNIC, INSERTED.Address, INSERTED.City, INSERTED.Province, 
+        INSERT INTO Companies (Name, NTNNumber, CNIC, BusinessNameForSalesInvoice, Address, City, Province, ContactPerson, ContactEmail, ContactPhone, BusinessActivity, Sector, IsActive, CreatedAt, UpdatedAt)
+        OUTPUT INSERTED.CompanyID, INSERTED.Name, INSERTED.NTNNumber, INSERTED.CNIC, INSERTED.BusinessNameForSalesInvoice, INSERTED.Address, INSERTED.City, INSERTED.Province, 
                INSERTED.ContactPerson, INSERTED.ContactEmail, INSERTED.ContactPhone, INSERTED.BusinessActivity, INSERTED.Sector, INSERTED.IsActive, INSERTED.CreatedAt, INSERTED.UpdatedAt
-        VALUES (@name, @ntnNumber, @cnic, @address, @city, @province, @contactPerson, @contactEmail, @contactPhone, @businessActivity, @sector, 1, GETDATE(), GETDATE())
+        VALUES (@name, @ntnNumber, @cnic, @businessNameForSalesInvoice, @address, @city, @province, @contactPerson, @contactEmail, @contactPhone, @businessActivity, @sector, 1, GETDATE(), GETDATE())
       `);
 
     const newCompany = result.recordset[0];
@@ -1888,6 +1941,7 @@ app.post("/api/companies", authenticateToken, async (req, res) => {
       name: newCompany.Name,
       ntnNumber: newCompany.NTNNumber,
       cnic: newCompany.CNIC,
+      businessNameForSalesInvoice: newCompany.BusinessNameForSalesInvoice,
       address: newCompany.Address,
       city: newCompany.City,
       province: newCompany.Province,
@@ -1924,6 +1978,7 @@ app.put("/api/companies/:id", authenticateToken, async (req, res) => {
     name,
     ntnNumber,
     cnic,
+    businessNameForSalesInvoice,
     address,
     city,
     province,
@@ -1958,6 +2013,7 @@ app.put("/api/companies/:id", authenticateToken, async (req, res) => {
       .input("name", sql.NVarChar(255), name)
       .input("ntnNumber", sql.NVarChar(50), ntnNumber)
       .input("cnic", sql.NVarChar(20), cnic)
+      .input("businessNameForSalesInvoice", sql.NVarChar(255), businessNameForSalesInvoice)
       .input("address", sql.NVarChar(500), address)
       .input("city", sql.NVarChar(100), city)
       .input("province", sql.NVarChar(100), province)
@@ -1976,10 +2032,10 @@ app.put("/api/companies/:id", authenticateToken, async (req, res) => {
       )
       .input("isActive", sql.Bit, isActive).query(`
         UPDATE Companies 
-        SET Name = @name, NTNNumber = @ntnNumber, CNIC = @cnic, Address = @address, City = @city, Province = @province,
+        SET Name = @name, NTNNumber = @ntnNumber, CNIC = @cnic, BusinessNameForSalesInvoice = @businessNameForSalesInvoice, Address = @address, City = @city, Province = @province,
             ContactPerson = @contactPerson, ContactEmail = @contactEmail, ContactPhone = @contactPhone,
             BusinessActivity = @businessActivity, Sector = @sector, IsActive = @isActive, UpdatedAt = GETDATE()
-        OUTPUT INSERTED.CompanyID, INSERTED.Name, INSERTED.NTNNumber, INSERTED.CNIC, INSERTED.Address, INSERTED.City, INSERTED.Province,
+        OUTPUT INSERTED.CompanyID, INSERTED.Name, INSERTED.NTNNumber, INSERTED.CNIC, INSERTED.BusinessNameForSalesInvoice, INSERTED.Address, INSERTED.City, INSERTED.Province,
                INSERTED.ContactPerson, INSERTED.ContactEmail, INSERTED.ContactPhone, INSERTED.BusinessActivity, INSERTED.Sector, INSERTED.IsActive, INSERTED.CreatedAt, INSERTED.UpdatedAt
         WHERE CompanyID = @id
       `);
@@ -1994,6 +2050,7 @@ app.put("/api/companies/:id", authenticateToken, async (req, res) => {
       name: updatedCompany.Name,
       ntnNumber: updatedCompany.NTNNumber,
       cnic: updatedCompany.CNIC,
+      businessNameForSalesInvoice: updatedCompany.BusinessNameForSalesInvoice,
       address: updatedCompany.Address,
       city: updatedCompany.City,
       province: updatedCompany.Province,
@@ -2013,6 +2070,45 @@ app.put("/api/companies/:id", authenticateToken, async (req, res) => {
   } catch (error) {
     console.error("Error updating company:", error);
     res.status(500).json({ message: "Server error while updating company" });
+  }
+});
+
+// Delete company (Soft delete)
+app.delete("/api/companies/:id", authenticateToken, async (req, res) => {
+  // Check if user is super admin
+  if (req.user.role !== "SUPER_ADMIN") {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Super Admin role required." });
+  }
+
+  const { id } = req.params;
+
+  try {
+    if (isDbConnected) {
+      const request = new sql.Request();
+      // Soft delete: set IsActive to 0
+      const result = await request
+        .input("id", sql.UniqueIdentifier, id)
+        .input("updatedAt", sql.DateTime, new Date())
+        .query(`
+          UPDATE Companies 
+          SET IsActive = 0, UpdatedAt = @updatedAt
+          WHERE CompanyID = @id
+        `);
+
+      if (result.rowsAffected[0] === 0) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+
+      res.status(200).json({ message: "Company deleted successfully", id });
+    } else {
+       // Mock mode
+       res.status(200).json({ message: "Company deleted successfully (mock)", id });
+    }
+  } catch (error) {
+    console.error("Error deleting company:", error);
+    res.status(500).json({ message: "Server error while deleting company" });
   }
 });
 

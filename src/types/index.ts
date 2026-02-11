@@ -25,6 +25,7 @@ export interface Company {
   name: string;
   ntnNumber: string;
   cnic: string;
+  businessNameForSalesInvoice?: string;
   address: string;
   city: string;
   province: string;
@@ -112,6 +113,7 @@ export interface Invoice {
   buyerAddress: string;
   buyerRegistrationType: string;
   invoiceRefNo: string;
+  fbrInvoiceNumber?: string;
   items: InvoiceItem[];
   totalAmount: number;
   totalSalesTax: number;

@@ -38,8 +38,11 @@ import {
   Receipt as ReceiptIcon,
   TrendingUp as TrendingUpIcon,
   AttachMoney as MoneyIcon,
-  Assessment as AssessmentIcon
+  Assessment as AssessmentIcon,
+  Print as PrintIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
+import SalesInvoiceReport from '../components/SalesInvoiceReport';
 import { Invoice, InvoiceItem, Company } from '../types';
 import { invoiceAPI } from '../services/invoiceApi';
 import { customerApi, Customer } from '../api/customerApi';
@@ -65,6 +68,15 @@ const Invoices: React.FC = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Print state
+  const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+
+  const handlePrint = (invoice: Invoice) => {
+    setPrintInvoice(invoice);
+    setShowPrintDialog(true);
+  };
 
   // Form state
   const [formData, setFormData] = useState<Omit<Invoice, 'invoiceID' | 'companyID' | 'createdAt' | 'updatedAt' | 'createdBy' | 'scenarioID' | 'totalAmount' | 'totalSalesTax' | 'totalFurtherTax' | 'totalDiscount'>>({
@@ -687,6 +699,7 @@ const Invoices: React.FC = () => {
               <TableRow>
                 <TableCell>Invoice Date</TableCell>
                 <TableCell>Invoice Type</TableCell>
+                <TableCell>FBR Invoice No</TableCell>
                 <TableCell>Seller Business</TableCell>
                 <TableCell>Buyer Business</TableCell>
                 <TableCell>Total Amount</TableCell>
@@ -708,6 +721,16 @@ const Invoices: React.FC = () => {
                       size="small" 
                     />
                   </TableCell>
+                  <TableCell>
+                    {invoice.fbrInvoiceNumber ? (
+                      <Chip 
+                        label={invoice.fbrInvoiceNumber} 
+                        color="success" 
+                        size="small" 
+                        variant="outlined"
+                      />
+                    ) : '-'}
+                  </TableCell>
                   <TableCell>{invoice.sellerBusinessName}</TableCell>
                   <TableCell>{invoice.buyerBusinessName}</TableCell>
                   <TableCell>{formatCurrency(invoice.totalAmount || 0)}</TableCell>
@@ -720,14 +743,26 @@ const Invoices: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <Tooltip title="Edit">
+                    <Tooltip title="Print">
                       <IconButton 
                         size="small" 
-                        onClick={() => handleEditInvoice(invoice)}
-                        color="primary"
+                        onClick={() => handlePrint(invoice)}
+                        color="secondary"
                       >
-                        <EditIcon />
+                        <PrintIcon />
                       </IconButton>
+                    </Tooltip>
+                    <Tooltip title={invoice.fbrInvoiceNumber ? "Cannot edit FBR submitted invoice" : "Edit"}>
+                      <span>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleEditInvoice(invoice)}
+                          color="primary"
+                          disabled={!!invoice.fbrInvoiceNumber}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Delete">
                       <IconButton 
@@ -1189,6 +1224,105 @@ const Invoices: React.FC = () => {
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button onClick={handleSubmit} variant="contained">
             {editingInvoice ? 'Update' : 'Create'} Invoice
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Print Preview Dialog */}
+      <Dialog 
+        open={showPrintDialog} 
+        onClose={() => setShowPrintDialog(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            '@media print': {
+              boxShadow: 'none',
+              margin: 0,
+              maxWidth: 'none',
+              maxHeight: 'none',
+              width: '100%',
+              height: '100%'
+            }
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          '@media print': {
+            display: 'none'
+          }
+        }}>
+          <Typography variant="h6">Invoice Preview</Typography>
+          <IconButton 
+            onClick={() => setShowPrintDialog(false)}
+            sx={{
+              '@media print': {
+                display: 'none'
+              }
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 0,
+          '@media print': {
+            padding: 0
+          }
+        }}>
+          {printInvoice && (
+            <SalesInvoiceReport 
+              invoiceData={{
+                invoiceType: printInvoice.invoiceType,
+                invoiceDate: printInvoice.invoiceDate,
+                sellerNTNCNIC: printInvoice.sellerNTNCNIC,
+                sellerBusinessName: printInvoice.sellerBusinessName,
+                sellerProvince: printInvoice.sellerProvince,
+                sellerAddress: printInvoice.sellerAddress,
+                buyerNTNCNIC: printInvoice.buyerNTNCNIC,
+                buyerBusinessName: printInvoice.buyerBusinessName,
+                buyerProvince: printInvoice.buyerProvince,
+                buyerAddress: printInvoice.buyerAddress,
+                invoiceRefNo: printInvoice.invoiceRefNo,
+                buyerRegistrationType: printInvoice.buyerRegistrationType,
+                scenarioId: printInvoice.scenarioID,
+                items: printInvoice.items
+              }}
+              fbrResponse={printInvoice.fbrInvoiceNumber ? {
+                invoiceNumber: printInvoice.fbrInvoiceNumber,
+                dated: printInvoice.invoiceDate,
+                validationResponse: {
+                  statusCode: '100',
+                  status: 'COMPLIANT',
+                  error: '',
+                  invoiceStatuses: []
+                }
+              } : undefined}
+            />
+          )}
+        </DialogContent>
+        <DialogActions sx={{
+          '@media print': {
+            display: 'none'
+          }
+        }}>
+          <Button 
+            onClick={() => setShowPrintDialog(false)} 
+            color="secondary"
+            variant="outlined"
+          >
+            Close
+          </Button>
+          <Button 
+            onClick={() => window.print()} 
+            color="primary"
+            variant="contained"
+            startIcon={<PrintIcon />}
+          >
+            Print
           </Button>
         </DialogActions>
       </Dialog>

@@ -1714,7 +1714,7 @@ const SalesInvoice: React.FC = () => {
       invoiceType: mapTransactionTypeToInvoiceType(formData.transactionType),
       invoiceDate: formData.invoiceDate,
       sellerNTNCNIC: currentCompany?.ntnNumber || '1234567890123',
-      sellerBusinessName: currentCompany?.name || 'Your Company Name',
+      sellerBusinessName: currentCompany?.businessNameForSalesInvoice || currentCompany?.name || 'Your Company Name',
       sellerProvince: formData.saleOriginationProvince,
       sellerAddress: currentCompany?.address || 'Your Company Address',
       buyerNTNCNIC: formData.buyerRegistrationNo,

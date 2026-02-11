@@ -25,6 +25,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import PeopleIcon from '@mui/icons-material/People';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
+import { RootState } from '../store';
 import { fetchCompanies } from '../store/slices/companySlice';
 import { UserRole } from '../types';
 import dashboardApi, { DashboardData } from '../services/dashboardApi';
@@ -59,8 +60,8 @@ ChartJS.register(
 
 const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector(state => state.auth);
-  const { companies, isLoading } = useAppSelector(state => state.company);
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { companies, isLoading } = useAppSelector((state: RootState) => state.company);
   
   // Dashboard state
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
