@@ -14,17 +14,11 @@ const app = express();
 const PORT = process.env.PORT || 5001; // Changed to port 5001 to avoid conflict
 
 // Middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
-
 app.use(
   cors({
     origin: [
       "https://fbr-v1-testing.vercel.app", // your frontend domain
       "http://localhost:3000", // local frontend
-      "http://127.0.0.1:3000", // local frontend IP
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, // if using cookies or auth headers
