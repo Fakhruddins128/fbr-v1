@@ -37,7 +37,7 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { formatCurrency } from '../utils/formatUtils';
+import { formatCurrency, formatDate } from '../utils/formatUtils';
 import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
 
 interface ItemFormData {
@@ -296,11 +296,6 @@ const Items: React.FC = () => {
     link.click();
     document.body.removeChild(link);
   };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
 
   // Calculate summary statistics
   const totalItems = items.length;
