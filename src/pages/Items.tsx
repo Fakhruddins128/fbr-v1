@@ -37,6 +37,7 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
+import { formatCurrency } from '../utils/formatUtils';
 import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
 
 interface ItemFormData {
@@ -300,6 +301,7 @@ const Items: React.FC = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+
   // Calculate summary statistics
   const totalItems = items.length;
   const activeItems = items.filter(item => item.isActive).length;
@@ -374,7 +376,7 @@ const Items: React.FC = () => {
                 <MoneyIcon sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
                 <Box>
                   <Typography variant="h4" component="div">
-                    ${totalValue.toFixed(2)}
+                    {formatCurrency(totalValue)}
                   </Typography>
                   <Typography color="text.secondary">
                     Total Value
@@ -474,7 +476,7 @@ const Items: React.FC = () => {
                       </Box>
                     </Tooltip>
                   </TableCell>
-                  <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
+                  <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
                   <TableCell>{item.purchaseTaxValue.toFixed(2)}%</TableCell>
                   <TableCell>{item.salesTaxValue.toFixed(2)}%</TableCell>
                   <TableCell>{item.uom || 'N/A'}</TableCell>

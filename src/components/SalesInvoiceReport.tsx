@@ -66,6 +66,7 @@ interface SalesInvoiceReportProps {
     buyerProvince: string;
     buyerAddress: string;
     invoiceRefNo: string;
+    poNumber?: string;
     buyerRegistrationType: string;
     scenarioId: string;
     items: InvoiceItem[];
@@ -163,14 +164,12 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
 
       {/* Invoice Meta Information */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 4 }}>
+        <Grid size={{ xs: 6 }}>
           <Typography variant="body2"><strong>Invoice Date:</strong> {format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy')}</Typography>
         </Grid>
-        <Grid size={{ xs: 4 }}>
+        <Grid size={{ xs: 6 }}>
           <Typography variant="body2"><strong>Reference No:</strong> {invoiceData.invoiceRefNo || 'N/A'}</Typography>
-        </Grid>
-        <Grid size={{ xs: 4 }}>
-          <Typography variant="body2"><strong>Scenario ID:</strong> {invoiceData.scenarioId}</Typography>
+          <Typography variant="body2"><strong>PO No.:</strong> {invoiceData.poNumber || 'N/A'}</Typography>
         </Grid>
       </Grid>
 

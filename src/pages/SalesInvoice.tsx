@@ -72,6 +72,7 @@ interface InvoiceFormData {
   invoiceType: string;
   transactionType: string;
   invoiceNo: string;
+  poNumber: string;
   invoiceDate: string;
   saleOriginationProvince: string;
   destinationOfSupply: string;
@@ -1016,7 +1017,7 @@ const SalesInvoice: React.FC = () => {
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
-    severity: 'success' | 'error' | 'info';
+    severity: 'success' | 'error' | 'info' | 'warning';
   }>({ open: false, message: '', severity: 'success' });
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [formData, setFormData] = useState<InvoiceFormData>({
@@ -1026,6 +1027,7 @@ const SalesInvoice: React.FC = () => {
     invoiceType: 'Select',
     transactionType: 'Select',
     invoiceNo: '',
+    poNumber: '',
     invoiceDate: new Date().toISOString().split('T')[0],
     saleOriginationProvince: 'Select',
     destinationOfSupply: 'Select',
@@ -1062,18 +1064,18 @@ const SalesInvoice: React.FC = () => {
              const invoice = Array.isArray(response.data) ? response.data[0] : response.data;
              setEditingInvoice(invoice);
             
-            // Map invoice data to form data
             setFormData({
               buyerRegistrationNo: invoice.buyerNTNCNIC || '',
               buyerName: invoice.buyerBusinessName || '',
               buyerType: invoice.buyerRegistrationType || 'Unregistered',
               invoiceType: invoice.invoiceType || 'Select',
-              transactionType: mapInvoiceTypeToTransactionType(invoice.invoiceType || ''), // Map from invoiceType field
+              transactionType: mapInvoiceTypeToTransactionType(invoice.invoiceType || ''),
               invoiceNo: invoice.invoiceRefNo || '',
+              poNumber: invoice.poNumber || '',
               invoiceDate: invoice.invoiceDate ? invoice.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0],
               saleOriginationProvince: invoice.sellerProvince || 'Select',
               destinationOfSupply: invoice.buyerProvince || 'Select',
-              saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select', // Map from first item's saleType
+              saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select',
 
               items: invoice.items.map((item: any) => {
                 // Find matching item from items list to get full description
@@ -1339,6 +1341,7 @@ const SalesInvoice: React.FC = () => {
       invoiceType: 'Select',
       transactionType: 'Select',
       invoiceNo: '',
+      poNumber: '',
       invoiceDate: new Date().toISOString().split('T')[0],
       saleOriginationProvince: 'Select',
       destinationOfSupply: 'Select',
@@ -1623,8 +1626,12 @@ const SalesInvoice: React.FC = () => {
       // Note: FBR token is now stored in database and retrieved automatically
       
       // Get current company ID and verify token exists
-      // First try to get from super admin selection, then fall back to current user's company
-      const selectedCompanyId = localStorage.getItem('selectedCompanyId') || user?.companyId || currentCompany?.id;
+      // Prioritize the company ID from the invoice itself if we are editing/have saved
+      const invoiceCompanyId = editingInvoice?.companyID || editingInvoice?.CompanyID;
+      const selectedCompanyId = invoiceCompanyId || localStorage.getItem('selectedCompanyId') || user?.companyId || currentCompany?.id;
+      
+      console.log('[confirmSendToFBR] Using CompanyID:', selectedCompanyId);
+
       let storedToken;
       if (selectedCompanyId) {
         storedToken = await fbrApiService.getApiToken(selectedCompanyId);
@@ -1638,17 +1645,79 @@ const SalesInvoice: React.FC = () => {
       
       // Log company information being submitted
       const response = await fbrApiService.submitInvoice(fbrPayloadPreview);
+      console.log('[confirmSendToFBR] Raw FBR Response:', response);
       setFbrResponse(response);
       
       // Check if the validation response indicates success
       const isValid = response.validationResponse && response.validationResponse.status === 'Valid';
       
       if (isValid) {
-        setNotification({
-          open: true,
-          message: 'Invoice successfully submitted to FBR!',
-          severity: 'success'
+        // Update FBR status in database
+        // Handle both camelCase (frontend type) and PascalCase (DB response) ID properties
+        const targetInvoiceId = invoiceId || editingInvoice?.invoiceID || editingInvoice?.InvoiceID;
+        
+        const fbrInvNo = response.invoiceNumber || response.InvoiceNumber || '';
+
+        console.log('[confirmSendToFBR] Target Invoice ID:', targetInvoiceId);
+        console.log('[confirmSendToFBR] FBR Data:', {
+            fbrInvoiceNumber: fbrInvNo,
+            fbrResponseStatus: 'Valid',
+            fbrResponseMessage: response.validationResponse?.invoiceStatuses?.[0]?.invoiceNo || ''
         });
+
+        let dbUpdateSuccess = false;
+        if (targetInvoiceId) {
+            try {
+              const internalInvoiceNo = response.validationResponse?.invoiceStatuses?.[0]?.invoiceNo || '';
+              const updateResult = await invoiceAPI.updateFbrStatus(
+                targetInvoiceId, 
+                {
+                  fbrInvoiceNumber: fbrInvNo,
+                  fbrResponseStatus: 'Valid',
+                  fbrResponseMessage: internalInvoiceNo
+                },
+                selectedCompanyId
+              );
+              
+              console.log('[confirmSendToFBR] Update Result:', updateResult);
+              
+              if (updateResult.success) {
+                dbUpdateSuccess = true;
+                if (editingInvoice) {
+                  setEditingInvoice({
+                    ...editingInvoice,
+                    fbrInvoiceNumber: fbrInvNo,
+                    fbrResponseStatus: 'Valid',
+                    fbrResponseMessage: internalInvoiceNo
+                  });
+                }
+              } else {
+                 console.error('Database update failed:', updateResult.error);
+                 alert(`CRITICAL WARNING: FBR submission was successful, but the local database could not be updated.\n\nReason: ${updateResult.error || 'Unknown error'}\n\nPlease contact support with this message.`);
+              }
+            } catch (err) {
+            console.error('Failed to update FBR status in database:', err);
+            alert(`CRITICAL WARNING: FBR submission was successful, but the local database update crashed.\n\nError: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        } else {
+            console.error('Target Invoice ID not found. invoiceId:', invoiceId, 'editingInvoice:', editingInvoice);
+            alert('CRITICAL WARNING: FBR submitted, but Invoice ID is missing. Cannot update database.');
+        }
+
+        if (dbUpdateSuccess) {
+            setNotification({
+              open: true,
+              message: 'Invoice successfully submitted to FBR!',
+              severity: 'success'
+            });
+        } else {
+             // Notification already handled by alert, but keep a persistent warning
+             setNotification({
+              open: true,
+              message: 'FBR submitted successfully, but failed to update local database. See alert.',
+              severity: 'warning'
+            });
+        }
       } else {
         const errorMessage = response.validationResponse?.error || response.message || 'Unknown error';
         setNotification({
@@ -1722,6 +1791,7 @@ const SalesInvoice: React.FC = () => {
       buyerProvince: formData.destinationOfSupply,
       buyerAddress: 'Buyer Address',
       invoiceRefNo: formData.invoiceNo,
+      poNumber: formData.poNumber,
       buyerRegistrationType: formData.buyerType,
       scenarioId: determineFbrScenario(),
       items: formData.items.map(item => ({
@@ -1791,6 +1861,7 @@ const SalesInvoice: React.FC = () => {
         buyerAddress: 'Buyer Address', // You may want to add this field to the form
         buyerRegistrationType: formData.buyerType,
         invoiceRefNo: formData.invoiceNo,
+        poNumber: formData.poNumber,
         totalAmount,
         totalSalesTax,
         totalFurtherTax,
@@ -1820,12 +1891,25 @@ const SalesInvoice: React.FC = () => {
         }))
       };
 
+      const selectedCompanyId = localStorage.getItem('selectedCompanyId') || user?.companyId || currentCompany?.id;
+
       const response = isEditMode && editingInvoice 
-        ? await invoiceAPI.updateInvoice({ ...invoiceData, invoiceID: editingInvoice.invoiceID })
-        : await invoiceAPI.createInvoice(invoiceData);
+        ? await invoiceAPI.updateInvoice({ ...invoiceData, invoiceID: editingInvoice.invoiceID }, selectedCompanyId)
+        : await invoiceAPI.createInvoice(invoiceData, selectedCompanyId);
       
       if (response.success) {
         setInvoiceSaved(true);
+        // Update editingInvoice with the saved invoice data to ensure we have the ID for FBR submission
+        if (response.data) {
+          const savedInvoice = Array.isArray(response.data) ? response.data[0] : response.data;
+          setEditingInvoice(savedInvoice);
+          // If it was a new invoice, we might want to update the URL or set isEditMode
+          // but for now, setting editingInvoice is enough for FBR submission to work
+          if (!isEditMode) {
+             setIsEditMode(true);
+          }
+        }
+        
         setNotification({
           open: true,
           message: isEditMode ? 'Invoice updated successfully!' : 'Invoice saved successfully!',
@@ -1954,7 +2038,7 @@ const SalesInvoice: React.FC = () => {
           </Grid>
 
           {/* Second Row */}
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
               select
@@ -1972,7 +2056,7 @@ const SalesInvoice: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
               select
@@ -1990,12 +2074,22 @@ const SalesInvoice: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
               label="Invoice No."
               value={formData.invoiceNo}
               onChange={(e) => handleInputChange('invoiceNo', e.target.value)}
+              size="small"
+              disabled={isInvoiceSentToFBR()}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <TextField
+              fullWidth
+              label="PO No."
+              value={formData.poNumber}
+              onChange={(e) => handleInputChange('poNumber', e.target.value)}
               size="small"
               disabled={isInvoiceSentToFBR()}
             />
@@ -2585,8 +2679,8 @@ const SalesInvoice: React.FC = () => {
 
       {/* FBR Response Display */}
       {fbrResponse && (
-        <Paper sx={{ mt: 3, p: 3, bgcolor: fbrResponse.status === 'success' ? '#e8f5e8' : '#ffebee' }}>
-          <Typography variant="h6" gutterBottom color={fbrResponse.status === 'success' ? 'success.main' : 'error.main'}>
+        <Paper sx={{ mt: 3, p: 3, bgcolor: (fbrResponse.status === 'success' || fbrResponse.validationResponse?.status === 'Valid') ? '#e8f5e8' : '#ffebee' }}>
+          <Typography variant="h6" gutterBottom color={(fbrResponse.status === 'success' || fbrResponse.validationResponse?.status === 'Valid') ? 'success.main' : 'error.main'}>
             FBR Response
           </Typography>
           <Box component="pre" sx={{ 

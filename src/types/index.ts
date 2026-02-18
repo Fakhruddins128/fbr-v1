@@ -81,6 +81,7 @@ export interface FBRApiResponse {
   status: string;
   message: string;
   invoiceNumber?: string;
+  InvoiceNumber?: string; // Add PascalCase fallback
   errors?: string[];
   validationResponse?: {
     statusCode: string;
@@ -113,6 +114,7 @@ export interface Invoice {
   buyerAddress: string;
   buyerRegistrationType: string;
   invoiceRefNo: string;
+  poNumber?: string;
   fbrInvoiceNumber?: string;
   items: InvoiceItem[];
   totalAmount: number;

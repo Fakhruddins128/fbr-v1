@@ -166,7 +166,7 @@ const Login: React.FC = () => {
             
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Version : 1.0.0
+                Demo: User ID: fakhruddin, Password: abcd1234
               </Typography>
             </Box>
           </Box>

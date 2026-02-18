@@ -29,6 +29,7 @@ import { RootState } from '../store';
 import { fetchCompanies } from '../store/slices/companySlice';
 import { UserRole } from '../types';
 import dashboardApi, { DashboardData } from '../services/dashboardApi';
+import { formatCurrency } from '../utils/formatUtils';
 
 // Import Chart.js
 import {
@@ -228,7 +229,7 @@ const Dashboard: React.FC = () => {
             <Paper elevation={2} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <AttachMoneyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" gutterBottom>Total Sales</Typography>
-              <Typography variant="h4">Rs. {stats.totalAmount.toLocaleString()}</Typography>
+              <Typography variant="h4">{formatCurrency(stats.totalAmount)}</Typography>
             </Paper>
           </Box>
           <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(20% - 12px)' } }}>
@@ -256,7 +257,7 @@ const Dashboard: React.FC = () => {
             <Paper elevation={2} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <AttachMoneyIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" gutterBottom>Sale Excl. Tax</Typography>
-              <Typography variant="h4">Rs. {stats.profit.toLocaleString()}</Typography>
+              <Typography variant="h4">{formatCurrency(stats.profit)}</Typography>
             </Paper>
           </Box>
         </Box>
@@ -333,7 +334,7 @@ const Dashboard: React.FC = () => {
                       />
                       {activity.amount > 0 && (
                         <Typography variant="body2" color="text.secondary">
-                          Rs. {activity.amount.toLocaleString()}
+                          {formatCurrency(activity.amount)}
                         </Typography>
                       )}
                     </ListItem>

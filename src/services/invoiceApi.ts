@@ -96,11 +96,11 @@ class InvoiceApi {
     }
   }
 
-  async updateInvoice(invoiceData: Invoice): Promise<InvoiceResponse> {
+  async updateInvoice(invoiceData: Invoice, companyId?: string): Promise<InvoiceResponse> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/invoices/${invoiceData.invoiceID}`, {
         method: 'PUT',
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders(companyId),
         body: JSON.stringify(invoiceData),
       });
 
@@ -112,6 +112,37 @@ class InvoiceApi {
       return result;
     } catch (error) {
       console.error('Error updating invoice:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+
+  async updateFbrStatus(
+    invoiceId: string,
+    fbrData: {
+      fbrInvoiceNumber: string;
+      fbrResponseStatus: string;
+      fbrResponseMessage: string;
+    },
+    companyId?: string
+  ): Promise<InvoiceResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/invoices/${invoiceId}/fbr-status`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(companyId),
+        body: JSON.stringify(fbrData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error updating FBR status:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',

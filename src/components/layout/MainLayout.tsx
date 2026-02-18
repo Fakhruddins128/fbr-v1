@@ -179,7 +179,7 @@ const MainLayout: React.FC = () => {
         </Typography>
         {currentCompany && (
           <Typography variant="caption" color="text.secondary">
-            {currentCompany.name}
+            {currentCompany.businessNameForSalesInvoice || currentCompany.name}
           </Typography>
         )}
       </Toolbar>

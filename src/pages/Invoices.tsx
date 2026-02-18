@@ -37,11 +37,12 @@ import {
   Delete as DeleteIcon,
   Receipt as ReceiptIcon,
   TrendingUp as TrendingUpIcon,
-  AttachMoney as MoneyIcon,
+  CurrencyExchange as CurrencyIcon,
   Assessment as AssessmentIcon,
   Print as PrintIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
+import { formatCurrency, formatDate } from '../utils/formatUtils';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
 import { Invoice, InvoiceItem, Company } from '../types';
 import { invoiceAPI } from '../services/invoiceApi';
@@ -78,8 +79,16 @@ const Invoices: React.FC = () => {
     setShowPrintDialog(true);
   };
 
+  const printInvoiceCompany = React.useMemo(() => {
+    if (!printInvoice) return currentCompany;
+    if (currentUser?.role === 'SUPER_ADMIN') {
+      return companies.find(c => c.id === printInvoice.companyID) || currentCompany;
+    }
+    return currentCompany;
+  }, [printInvoice, companies, currentUser, currentCompany]);
+
   // Form state
-  const [formData, setFormData] = useState<Omit<Invoice, 'invoiceID' | 'companyID' | 'createdAt' | 'updatedAt' | 'createdBy' | 'scenarioID' | 'totalAmount' | 'totalSalesTax' | 'totalFurtherTax' | 'totalDiscount'>>({
+  const [invoiceForm, setInvoiceForm] = useState<Omit<Invoice, 'invoiceID' | 'companyID' | 'createdAt' | 'updatedAt' | 'createdBy' | 'scenarioID' | 'totalAmount' | 'totalSalesTax' | 'totalFurtherTax' | 'totalDiscount'>>({
     invoiceType: 'Sale Invoice',
     invoiceDate: new Date().toISOString().split('T')[0],
     sellerNTNCNIC: '',
@@ -132,7 +141,7 @@ const Invoices: React.FC = () => {
   // Set seller information when currentCompany changes (for all non-super admin users)
   useEffect(() => {
     if (currentCompany && currentUser?.role !== 'SUPER_ADMIN') {
-      setFormData(prev => ({
+      setInvoiceForm(prev => ({
         ...prev,
         sellerNTNCNIC: currentCompany.ntnNumber || '',
         sellerBusinessName: currentCompany.name || '',
@@ -241,13 +250,17 @@ const Invoices: React.FC = () => {
   };
 
   const handleEditInvoice = (invoice: Invoice) => {
+    if (invoice.fbrInvoiceNumber) {
+      setSnackbar({ open: true, message: 'Cannot edit FBR submitted invoice', severity: 'error' });
+      return;
+    }
     navigate(`/sales-invoice/edit/${invoice.invoiceID}`);
   };
 
   const handleOpenDialog = (invoice?: Invoice) => {
     if (invoice) {
       setEditingInvoice(invoice);
-      setFormData({
+      setInvoiceForm({
         invoiceType: invoice.invoiceType,
         invoiceDate: invoice.invoiceDate ? invoice.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0],
         sellerNTNCNIC: invoice.sellerNTNCNIC,
@@ -278,7 +291,7 @@ const Invoices: React.FC = () => {
         sellerAddress: ''
       };
       
-      setFormData({
+      setInvoiceForm({
         invoiceType: 'Sale Invoice',
         invoiceDate: new Date().toISOString().split('T')[0],
         ...defaultSellerInfo,
@@ -337,7 +350,7 @@ const Invoices: React.FC = () => {
       setSelectedCustomer(null);
       // Remove from localStorage when no company is selected
       localStorage.removeItem('selectedCompanyId');
-      setFormData(prev => ({
+      setInvoiceForm(prev => ({
         ...prev,
         sellerNTNCNIC: '',
         sellerBusinessName: '',
@@ -358,7 +371,7 @@ const Invoices: React.FC = () => {
       setSelectedCompany(company);
       // Save to localStorage for API calls
       localStorage.setItem('selectedCompanyId', companyId);
-      setFormData(prev => ({
+      setInvoiceForm(prev => ({
         ...prev,
         sellerNTNCNIC: company.ntnNumber || '',
         sellerBusinessName: company.name || '',
@@ -381,7 +394,7 @@ const Invoices: React.FC = () => {
       if (editingInvoice) {
         // Update existing invoice
         const invoiceData: Invoice = {
-          ...formData,
+          ...invoiceForm,
           invoiceID: editingInvoice.invoiceID,
           companyID: editingInvoice.companyID,
           totalAmount: editingInvoice.totalAmount,
@@ -409,7 +422,7 @@ const Invoices: React.FC = () => {
         const companyID = user?.companyId || user?.id || '1';
         
         const invoiceData: Invoice = {
-          ...formData,
+          ...invoiceForm,
           invoiceID: '',
           companyID: companyID,
           totalAmount: 0,
@@ -476,15 +489,15 @@ const Invoices: React.FC = () => {
     }
   };
 
-  const handleInputChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof typeof invoiceForm, value: any) => {
+    setInvoiceForm(prev => ({ ...prev, [field]: value }));
   };
 
   const handleCustomerSelect = (customerId: string) => {
     const customer = customers.find(c => c.id === customerId);
     if (customer) {
       setSelectedCustomer(customer);
-      setFormData(prev => ({
+      setInvoiceForm(prev => ({
         ...prev,
         buyerNTNCNIC: customer.buyerNTNCNIC,
         buyerBusinessName: customer.buyerBusinessName,
@@ -494,7 +507,7 @@ const Invoices: React.FC = () => {
       }));
     } else {
       setSelectedCustomer(null);
-      setFormData(prev => ({
+      setInvoiceForm(prev => ({
         ...prev,
         buyerNTNCNIC: '',
         buyerBusinessName: '',
@@ -506,7 +519,7 @@ const Invoices: React.FC = () => {
   };
 
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
-    const updatedItems = [...formData.items];
+    const updatedItems = [...invoiceForm.items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
     // Auto-fill unit price when product is selected
@@ -533,11 +546,11 @@ const Invoices: React.FC = () => {
       item.salesTaxApplicable = item.valueSalesExcludingST * taxRate;
     }
     
-    setFormData(prev => ({ ...prev, items: updatedItems }));
+    setInvoiceForm(prev => ({ ...prev, items: updatedItems }));
   };
 
   const addItem = () => {
-    setFormData(prev => ({
+    setInvoiceForm(prev => ({
       ...prev,
       items: [...prev.items, {
         hsCode: '',
@@ -562,8 +575,8 @@ const Invoices: React.FC = () => {
   };
 
   const removeItem = (index: number) => {
-    if (formData.items.length > 1) {
-      setFormData(prev => ({
+    if (invoiceForm.items.length > 1) {
+      setInvoiceForm(prev => ({
         ...prev,
         items: prev.items.filter((_: InvoiceItem, i: number) => i !== index)
       }));
@@ -571,22 +584,37 @@ const Invoices: React.FC = () => {
   };
 
   // Statistics calculations
+  const calculateInvoiceTotal = (invoice: Invoice) => {
+    const totalAmount = Number(invoice.totalAmount);
+    if (!isNaN(totalAmount) && totalAmount > 0) return totalAmount;
+    
+    return invoice.items.reduce((sum, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const rate = Number(item.rate) || 0;
+      const totalValues = Number(item.totalValues) || 0;
+      const valueSalesExcludingST = Number(item.valueSalesExcludingST) || 0;
+      const fixedValue = Number(item.fixedNotifiedValueOrRetailPrice) || 0;
+      
+      const salesTax = Number(item.salesTaxApplicable) || 0;
+      const furtherTax = Number(item.furtherTax) || 0;
+      const extraTax = Number(item.extraTax) || 0;
+      const discount = Number(item.discount) || 0;
+
+      let itemValue = totalValues;
+      if (itemValue <= 0) itemValue = valueSalesExcludingST;
+      if (itemValue <= 0) itemValue = fixedValue;
+      if (itemValue <= 0) itemValue = quantity * rate;
+
+      const itemTotal = itemValue + salesTax + furtherTax + extraTax;
+      return sum + itemTotal - discount;
+    }, 0);
+  };
+
   const totalInvoices = invoices.length;
-  const totalAmount = invoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-  const totalSalesTax = invoices.reduce((sum, invoice) => sum + (invoice.totalSalesTax || 0), 0);
-  const avgInvoiceValue = totalInvoices > 0 ? totalAmount / totalInvoices : 0;
+  const totalAmount = invoices.reduce((sum, invoice) => sum + (calculateInvoiceTotal(invoice) || 0), 0);
+  const totalSalesTax = invoices.reduce((sum, invoice) => sum + (Number(invoice.totalSalesTax) || 0), 0);
+  const fbrSubmittedInvoices = invoices.filter(invoice => !!invoice.fbrInvoiceNumber).length;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PK', {
-      style: 'currency',
-      currency: 'PKR',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-PK');
-  };
 
   if (loading) {
     return (
@@ -628,7 +656,7 @@ const Invoices: React.FC = () => {
                 <ReceiptIcon color="primary" sx={{ mr: 2 }} />
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
-                    Total Invoices
+                    Total Generated Invoices No.
                   </Typography>
                   <Typography variant="h5">
                     {totalInvoices}
@@ -642,7 +670,7 @@ const Invoices: React.FC = () => {
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <MoneyIcon color="success" sx={{ mr: 2 }} />
+                <CurrencyIcon color="success" sx={{ mr: 2 }} />
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
                     Total Amount
@@ -679,10 +707,10 @@ const Invoices: React.FC = () => {
                 <AssessmentIcon color="info" sx={{ mr: 2 }} />
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
-                    Avg Invoice Value
+                    Total FBR Generated Invoices No.
                   </Typography>
                   <Typography variant="h5">
-                    {formatCurrency(avgInvoiceValue)}
+                    {fbrSubmittedInvoices}
                   </Typography>
                 </Box>
               </Box>
@@ -697,10 +725,12 @@ const Invoices: React.FC = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
+                <TableCell>Actions</TableCell>
+                <TableCell>SNo.</TableCell>
                 <TableCell>Invoice Date</TableCell>
                 <TableCell>Invoice Type</TableCell>
                 <TableCell>FBR Invoice No</TableCell>
-                <TableCell>Seller Business</TableCell>
+                <TableCell>Invoice No</TableCell>
                 <TableCell>Buyer Business</TableCell>
                 <TableCell>Total Amount</TableCell>
                 <TableCell>Sales Tax</TableCell>
@@ -711,37 +741,8 @@ const Invoices: React.FC = () => {
             <TableBody>
               {invoices
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((invoice) => (
+                .map((invoice, index) => (
                 <TableRow key={invoice.invoiceID} hover>
-                  <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={invoice.invoiceType} 
-                      color="primary" 
-                      size="small" 
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {invoice.fbrInvoiceNumber ? (
-                      <Chip 
-                        label={invoice.fbrInvoiceNumber} 
-                        color="success" 
-                        size="small" 
-                        variant="outlined"
-                      />
-                    ) : '-'}
-                  </TableCell>
-                  <TableCell>{invoice.sellerBusinessName}</TableCell>
-                  <TableCell>{invoice.buyerBusinessName}</TableCell>
-                  <TableCell>{formatCurrency(invoice.totalAmount || 0)}</TableCell>
-                  <TableCell>{formatCurrency(invoice.totalSalesTax || 0)}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={`${invoice.items.length} items`} 
-                      size="small" 
-                      variant="outlined"
-                    />
-                  </TableCell>
                   <TableCell>
                     <Tooltip title="Print">
                       <IconButton 
@@ -764,15 +765,48 @@ const Invoices: React.FC = () => {
                         </IconButton>
                       </span>
                     </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(invoice.invoiceID!)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                    <Tooltip title={invoice.fbrInvoiceNumber ? "Cannot delete FBR submitted invoice" : "Delete"}>
+                      <span>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDelete(invoice.invoiceID!)}
+                          color="error"
+                          disabled={!!invoice.fbrInvoiceNumber}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </span>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                  <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={invoice.invoiceType} 
+                      color="primary" 
+                      size="small" 
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {invoice.fbrInvoiceNumber ? (
+                      <Chip 
+                        label={invoice.fbrInvoiceNumber} 
+                        color="success" 
+                        size="small" 
+                        variant="outlined"
+                      />
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>{invoice.invoiceRefNo || invoice.invoiceID.substring(0, 8)}</TableCell>
+                  <TableCell>{invoice.buyerBusinessName}</TableCell>
+                  <TableCell>{formatCurrency(calculateInvoiceTotal(invoice))}</TableCell>
+                  <TableCell>{formatCurrency(invoice.totalSalesTax || 0)}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={`${invoice.items.length} items`} 
+                      size="small" 
+                      variant="outlined"
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -827,37 +861,37 @@ const Invoices: React.FC = () => {
               <FormControl fullWidth size="small">
                 <InputLabel>Invoice Type</InputLabel>
                 <Select
-                  value={formData.invoiceType}
-                  label="Invoice Type"
-                  onChange={(e) => handleInputChange('invoiceType', e.target.value)}
-                >
-                  <MenuItem value="Sale Invoice">Sale Invoice</MenuItem>
-                  <MenuItem value="Purchase Invoice">Purchase Invoice</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Invoice Date"
-                type="date"
-                value={formData.invoiceDate}
-                onChange={(e) => handleInputChange('invoiceDate', e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Invoice Reference No"
-                value={formData.invoiceRefNo}
-                onChange={(e) => handleInputChange('invoiceRefNo', e.target.value)}
-              />
-            </Grid>
+                  value={invoiceForm.invoiceType}
+                label="Invoice Type"
+                onChange={(e) => handleInputChange('invoiceType', e.target.value)}
+              >
+                <MenuItem value="Sale Invoice">Sale Invoice</MenuItem>
+                <MenuItem value="Purchase Invoice">Purchase Invoice</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Invoice Date"
+              type="date"
+              value={invoiceForm.invoiceDate}
+              onChange={(e) => handleInputChange('invoiceDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Invoice Reference No"
+              value={invoiceForm.invoiceRefNo}
+              onChange={(e) => handleInputChange('invoiceRefNo', e.target.value)}
+            />
+          </Grid>
 
             {/* Seller Information */}
             <Grid size={{ xs: 12 }}>
@@ -895,7 +929,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Seller NTN/CNIC"
-                value={formData.sellerNTNCNIC}
+                value={invoiceForm.sellerNTNCNIC}
                 onChange={(e) => handleInputChange('sellerNTNCNIC', e.target.value)}
                 disabled={currentUser?.role !== 'SUPER_ADMIN'}
                 required
@@ -907,7 +941,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Seller Business Name"
-                value={formData.sellerBusinessName}
+                value={invoiceForm.sellerBusinessName}
                 onChange={(e) => handleInputChange('sellerBusinessName', e.target.value)}
                 disabled={currentUser?.role !== 'SUPER_ADMIN'}
                 required
@@ -919,7 +953,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Seller Province"
-                value={formData.sellerProvince}
+                value={invoiceForm.sellerProvince}
                 onChange={(e) => handleInputChange('sellerProvince', e.target.value)}
                 disabled={currentUser?.role !== 'SUPER_ADMIN'}
                 required
@@ -931,7 +965,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Seller Address"
-                value={formData.sellerAddress}
+                value={invoiceForm.sellerAddress}
                 onChange={(e) => handleInputChange('sellerAddress', e.target.value)}
                 disabled={currentUser?.role !== 'SUPER_ADMIN'}
                 required
@@ -970,7 +1004,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Buyer NTN/CNIC"
-                value={formData.buyerNTNCNIC}
+                value={invoiceForm.buyerNTNCNIC}
                 onChange={(e) => handleInputChange('buyerNTNCNIC', e.target.value)}
                 required
               />
@@ -981,7 +1015,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Buyer Business Name"
-                value={formData.buyerBusinessName}
+                value={invoiceForm.buyerBusinessName}
                 onChange={(e) => handleInputChange('buyerBusinessName', e.target.value)}
                 required
               />
@@ -992,7 +1026,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Buyer Province"
-                value={formData.buyerProvince}
+                value={invoiceForm.buyerProvince}
                 onChange={(e) => handleInputChange('buyerProvince', e.target.value)}
                 required
               />
@@ -1003,7 +1037,7 @@ const Invoices: React.FC = () => {
                 fullWidth
                 size="small"
                 label="Buyer Address"
-                value={formData.buyerAddress}
+                value={invoiceForm.buyerAddress}
                 onChange={(e) => handleInputChange('buyerAddress', e.target.value)}
                 required
               />
@@ -1013,7 +1047,7 @@ const Invoices: React.FC = () => {
               <FormControl fullWidth size="small">
                 <InputLabel>Buyer Registration Type</InputLabel>
                 <Select
-                  value={formData.buyerRegistrationType}
+                  value={invoiceForm.buyerRegistrationType}
                   label="Buyer Registration Type"
                   onChange={(e) => handleInputChange('buyerRegistrationType', e.target.value)}
                 >
@@ -1059,7 +1093,7 @@ const Invoices: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {formData.items.map((item: InvoiceItem, index: number) => (
+                    {invoiceForm.items.map((item: InvoiceItem, index: number) => (
                       <TableRow key={index}>
                         <TableCell>
                           <TextField
@@ -1202,7 +1236,7 @@ const Invoices: React.FC = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          {formData.items.length > 1 && (
+                          {invoiceForm.items.length > 1 && (
                             <IconButton
                               size="small"
                               color="error"
@@ -1278,15 +1312,16 @@ const Invoices: React.FC = () => {
               invoiceData={{
                 invoiceType: printInvoice.invoiceType,
                 invoiceDate: printInvoice.invoiceDate,
-                sellerNTNCNIC: printInvoice.sellerNTNCNIC,
-                sellerBusinessName: printInvoice.sellerBusinessName,
-                sellerProvince: printInvoice.sellerProvince,
-                sellerAddress: printInvoice.sellerAddress,
+                sellerNTNCNIC: printInvoice.sellerNTNCNIC || printInvoiceCompany?.ntnNumber || '',
+                sellerBusinessName: printInvoiceCompany?.businessNameForSalesInvoice || printInvoice.sellerBusinessName || printInvoiceCompany?.name || '',
+                sellerProvince: printInvoice.sellerProvince || printInvoiceCompany?.province || '',
+                sellerAddress: printInvoice.sellerAddress || printInvoiceCompany?.address || '',
                 buyerNTNCNIC: printInvoice.buyerNTNCNIC,
                 buyerBusinessName: printInvoice.buyerBusinessName,
                 buyerProvince: printInvoice.buyerProvince,
                 buyerAddress: printInvoice.buyerAddress,
                 invoiceRefNo: printInvoice.invoiceRefNo,
+                poNumber: printInvoice.poNumber,
                 buyerRegistrationType: printInvoice.buyerRegistrationType,
                 scenarioId: printInvoice.scenarioID,
                 items: printInvoice.items

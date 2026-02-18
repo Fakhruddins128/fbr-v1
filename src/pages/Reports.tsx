@@ -37,6 +37,7 @@ import { CircularProgress } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import reportsApi, { ReportsData } from '../services/reportsApi';
+import { formatCurrency } from '../utils/formatUtils';
 
 interface SnackbarState {
   open: boolean;
@@ -318,7 +319,7 @@ const Reports: React.FC = () => {
                    FBR Submitted: {scenarioUsage?.summary?.fbrSubmitted || 0}
                  </Typography>
                  <Typography variant="body2">
-                   Total Amount: Rs. {scenarioUsage?.summary?.totalAmount?.toLocaleString() || 0}
+                   Total Amount: {formatCurrency(scenarioUsage?.summary?.totalAmount || 0)}
                  </Typography>
                </CardContent>
              </Card>
@@ -485,7 +486,7 @@ const Reports: React.FC = () => {
                     Total Sales
                   </Typography>
                   <Typography variant="h5">
-                    Rs. {totalSales.toLocaleString()}
+                    {formatCurrency(totalSales)}
                   </Typography>
                 </Box>
                 <TrendingUpIcon color="primary" sx={{ fontSize: 40 }} />
@@ -502,7 +503,7 @@ const Reports: React.FC = () => {
                     Total Purchases
                   </Typography>
                   <Typography variant="h5">
-                    Rs. {totalPurchases.toLocaleString()}
+                    {formatCurrency(totalPurchases)}
                   </Typography>
                 </Box>
                 <BarChartIcon color="secondary" sx={{ fontSize: 40 }} />
@@ -519,7 +520,7 @@ const Reports: React.FC = () => {
                     Total Profit
                   </Typography>
                   <Typography variant="h5">
-                    Rs. {totalProfit.toLocaleString()}
+                    {formatCurrency(totalProfit)}
                   </Typography>
                 </Box>
                 <PieChartIcon color="success" sx={{ fontSize: 40 }} />
@@ -585,9 +586,9 @@ const Reports: React.FC = () => {
                   {salesData.map((row) => (
                     <TableRow key={row.period}>
                       <TableCell>{row.period}</TableCell>
-                      <TableCell align="right">Rs. {row.sales.toLocaleString()}</TableCell>
-                      <TableCell align="right">Rs. {row.purchases.toLocaleString()}</TableCell>
-                      <TableCell align="right">Rs. {row.profit.toLocaleString()}</TableCell>
+                      <TableCell align="right">{formatCurrency(row.sales)}</TableCell>
+                      <TableCell align="right">{formatCurrency(row.purchases)}</TableCell>
+                      <TableCell align="right">{formatCurrency(row.profit)}</TableCell>
                       <TableCell align="right">{row.orders}</TableCell>
                     </TableRow>
                   ))}
@@ -612,7 +613,7 @@ const Reports: React.FC = () => {
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="textSecondary">
-                  Rs. {product.sales.toLocaleString()} • {product.quantity} units
+                  {formatCurrency(product.sales)} • {product.quantity} units
                 </Typography>
                 {index < topProducts.length - 1 && <Divider sx={{ mt: 1 }} />}
               </Box>
@@ -633,7 +634,7 @@ const Reports: React.FC = () => {
                   </Typography>
                 </Box>
                 <Typography variant="caption" color="textSecondary">
-                  Rs. {customer.amount.toLocaleString()} • {customer.orders} orders
+                  {formatCurrency(customer.amount)} • {customer.orders} orders
                 </Typography>
                 {index < topCustomers.length - 1 && <Divider sx={{ mt: 1 }} />}
               </Box>

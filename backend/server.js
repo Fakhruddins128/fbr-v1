@@ -14,17 +14,11 @@ const app = express();
 const PORT = process.env.PORT || 5001; // Changed to port 5001 to avoid conflict
 
 // Middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
-
 app.use(
   cors({
     origin: [
       "https://fbr-v1.vercel.app", // your frontend domain
       "http://localhost:3000", // local frontend
-      "http://127.0.0.1:3000", // local frontend IP
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, // if using cookies or auth headers
@@ -211,11 +205,15 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
         buyerAddress: invoice.BuyerAddress,
         buyerRegistrationType: invoice.BuyerRegistrationType,
         invoiceRefNo: invoice.InvoiceRefNo,
+        poNumber: invoice.PONumber,
         totalAmount: invoice.TotalAmount,
         totalSalesTax: invoice.TotalSalesTax,
         totalFurtherTax: invoice.TotalFurtherTax,
         totalDiscount: invoice.TotalDiscount,
         scenarioID: invoice.ScenarioID,
+        fbrInvoiceNumber: invoice.FBRInvoiceNumber,
+        fbrResponseStatus: invoice.FBRResponseStatus,
+        fbrResponseMessage: invoice.FBRResponseMessage,
         createdAt: invoice.CreatedAt,
         updatedAt: invoice.UpdatedAt,
         createdBy: invoice.CreatedBy,
@@ -331,11 +329,15 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       buyerAddress: invoice.BuyerAddress,
       buyerRegistrationType: invoice.BuyerRegistrationType,
       invoiceRefNo: invoice.InvoiceRefNo,
+      poNumber: invoice.PONumber,
       totalAmount: invoice.TotalAmount,
       totalSalesTax: invoice.TotalSalesTax,
       totalFurtherTax: invoice.TotalFurtherTax,
       totalDiscount: invoice.TotalDiscount,
       scenarioID: invoice.ScenarioID,
+      fbrInvoiceNumber: invoice.FBRInvoiceNumber,
+      fbrResponseStatus: invoice.FBRResponseStatus,
+      fbrResponseMessage: invoice.FBRResponseMessage,
       createdAt: invoice.CreatedAt,
       updatedAt: invoice.UpdatedAt,
       createdBy: invoice.CreatedBy,
@@ -374,6 +376,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
       buyerAddress,
       buyerRegistrationType,
       invoiceRefNo,
+      poNumber,
       items,
     } = req.body;
 
@@ -442,6 +445,8 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         .input("buyerAddress", sql.NVarChar, buyerAddress)
         .input("buyerRegistrationType", sql.NVarChar, buyerRegistrationType)
         .input("invoiceRefNo", sql.NVarChar, invoiceRefNo || "")
+        .input("poNumber", sql.NVarChar, poNumber || "")
+        .input("poNumber", sql.NVarChar, poNumber || "")
         .input("scenarioID", sql.NVarChar, "SCENARIO_001")
         .input("totalAmount", sql.Decimal(18, 2), totalAmount)
         .input("totalSalesTax", sql.Decimal(18, 2), totalSalesTax)
@@ -451,14 +456,14 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           INSERT INTO Invoices (
             CompanyID, InvoiceNumber, InvoiceType, InvoiceDate, SellerNTNCNIC, SellerBusinessName,
             SellerProvince, SellerAddress, BuyerNTNCNIC, BuyerBusinessName,
-            BuyerProvince, BuyerAddress, BuyerRegistrationType, InvoiceRefNo,
+            BuyerProvince, BuyerAddress, BuyerRegistrationType, InvoiceRefNo, PONumber,
             ScenarioID, TotalAmount, TotalSalesTax, TotalFurtherTax, TotalDiscount, CreatedBy
           )
           OUTPUT INSERTED.InvoiceID
           VALUES (
             @companyId, @invoiceNumber, @invoiceType, @invoiceDate, @sellerNTNCNIC, @sellerBusinessName,
             @sellerProvince, @sellerAddress, @buyerNTNCNIC, @buyerBusinessName,
-            @buyerProvince, @buyerAddress, @buyerRegistrationType, @invoiceRefNo,
+            @buyerProvince, @buyerAddress, @buyerRegistrationType, @invoiceRefNo, @poNumber,
             @scenarioID, @totalAmount, @totalSalesTax, @totalFurtherTax, @totalDiscount, @createdBy
           )
         `);
@@ -582,6 +587,84 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
   }
 });
 
+// Update FBR status for an invoice
+app.post("/api/invoices/:id/fbr-status", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fbrInvoiceNumber, fbrResponseStatus, fbrResponseMessage } = req.body;
+    
+    // Determine company ID - handle super admin override
+    let companyId = req.user.companyId;
+    if (req.user.role === "SUPER_ADMIN" && req.headers["x-company-id"]) {
+      companyId = req.headers["x-company-id"];
+      console.log(`[FBR Status Update] Super Admin using target CompanyID: ${companyId}`);
+    }
+
+    console.log(`[FBR Status Update] Request for InvoiceID: ${id}`);
+    console.log(`[FBR Status Update] Effective CompanyID: ${companyId}`);
+    console.log(`[FBR Status Update] Data:`, { fbrInvoiceNumber, fbrResponseStatus, fbrResponseMessage });
+
+    const pool = await sql.connect(dbConfig);
+    
+    // Check if invoice exists first to debug
+    const checkResult = await pool.request()
+        .input("invoiceId", sql.UniqueIdentifier, id)
+        .query("SELECT InvoiceID, CompanyID FROM Invoices WHERE InvoiceID = @invoiceId");
+        
+    if (checkResult.recordset.length > 0) {
+        console.log(`[FBR Status Update] Found invoice. Owner CompanyID: ${checkResult.recordset[0].CompanyID}`);
+    } else {
+        console.log(`[FBR Status Update] Invoice NOT found with ID: ${id}`);
+    }
+
+    // Update the invoice with FBR details
+    // For SUPER_ADMIN, we skip the CompanyID check to ensure they can update any invoice
+    // For regular users, we strictly enforce CompanyID ownership
+    let updateQuery = `
+      UPDATE Invoices SET
+        FBRInvoiceNumber = @fbrInvoiceNumber,
+        FBRResponseStatus = @fbrResponseStatus,
+        FBRResponseMessage = @fbrResponseMessage,
+        UpdatedAt = GETDATE()
+      WHERE InvoiceID = @invoiceId 
+    `;
+
+    if (req.user.role !== 'SUPER_ADMIN') {
+      updateQuery += ` AND CompanyID = @companyId`;
+    }
+
+    const result = await pool
+      .request()
+      .input("invoiceId", sql.UniqueIdentifier, id)
+      .input("companyId", sql.UniqueIdentifier, companyId)
+      .input("fbrInvoiceNumber", sql.NVarChar, fbrInvoiceNumber)
+      .input("fbrResponseStatus", sql.NVarChar, fbrResponseStatus)
+      .input("fbrResponseMessage", sql.NVarChar, fbrResponseMessage)
+      .query(updateQuery);
+
+    console.log(`[FBR Status Update] Rows affected: ${result.rowsAffected[0]}`);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Invoice not found or access denied",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "FBR status updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating FBR status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update FBR status",
+      error: error.message,
+    });
+  }
+});
+
 // Update invoice
 app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
   try {
@@ -599,8 +682,16 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       buyerAddress,
       buyerRegistrationType,
       invoiceRefNo,
+      poNumber,
       items,
     } = req.body;
+
+    // For super admin, use company ID from header if provided, otherwise use user's company
+    let companyId = req.user.companyId;
+    if (req.user.role === "SUPER_ADMIN" && req.headers["x-company-id"]) {
+      companyId = req.headers["x-company-id"];
+      console.log(`[Update Invoice] Super Admin using target CompanyID: ${companyId}`);
+    }
 
     const pool = await sql.connect(dbConfig);
     const transaction = new sql.Transaction(pool);
@@ -630,7 +721,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       const invoiceResult = await transaction
         .request()
         .input("invoiceId", sql.UniqueIdentifier, id)
-        .input("companyId", sql.UniqueIdentifier, req.user.companyId)
+        .input("companyId", sql.UniqueIdentifier, companyId)
         .input("invoiceType", sql.NVarChar, invoiceType)
         .input("invoiceDate", sql.DateTime, new Date(invoiceDate))
         .input("sellerNTNCNIC", sql.NVarChar, sellerNTNCNIC)
@@ -643,6 +734,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         .input("buyerAddress", sql.NVarChar, buyerAddress)
         .input("buyerRegistrationType", sql.NVarChar, buyerRegistrationType)
         .input("invoiceRefNo", sql.NVarChar, invoiceRefNo || "")
+        .input("poNumber", sql.NVarChar, poNumber || "")
         .input("totalAmount", sql.Decimal(18, 2), totalAmount)
         .input("totalSalesTax", sql.Decimal(18, 2), totalSalesTax)
         .input("totalFurtherTax", sql.Decimal(18, 2), totalFurtherTax)
@@ -660,6 +752,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
             BuyerAddress = @buyerAddress,
             BuyerRegistrationType = @buyerRegistrationType,
             InvoiceRefNo = @invoiceRefNo,
+            PONumber = @poNumber,
             TotalAmount = @totalAmount,
             TotalSalesTax = @totalSalesTax,
             TotalFurtherTax = @totalFurtherTax,

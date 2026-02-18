@@ -27,6 +27,7 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
+import { formatCurrency } from '../utils/formatUtils';
 
 interface Sale {
   id: string;
@@ -91,7 +92,7 @@ const Sales: React.FC = () => {
                 Total Sales
               </Typography>
               <Typography variant="h5">
-                Rs. {totalSales.toLocaleString()}
+                {formatCurrency(totalSales)}
               </Typography>
             </CardContent>
           </Card>
@@ -167,7 +168,7 @@ const Sales: React.FC = () => {
                   <TableCell>{sale.customerName}</TableCell>
                   <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
                   <TableCell>{sale.items}</TableCell>
-                  <TableCell>Rs. {sale.amount.toLocaleString()}</TableCell>
+                  <TableCell>{formatCurrency(sale.amount)}</TableCell>
                   <TableCell>
                     <Chip
                       label={sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}
