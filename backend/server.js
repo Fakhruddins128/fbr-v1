@@ -484,7 +484,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           .input(
             "valueSalesExcludingST",
             sql.Decimal(18, 2),
-            item.valueSalesExcludingST
+            item.valueSalesExcludingST || 0
           )
           .input(
             "fixedNotifiedValueOrRetailPrice",
