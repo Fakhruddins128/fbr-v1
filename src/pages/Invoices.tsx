@@ -392,7 +392,6 @@ const Invoices: React.FC = () => {
       setError(null);
       
       if (editingInvoice) {
-        // Update existing invoice
         const invoiceData: Invoice = {
           ...invoiceForm,
           invoiceID: editingInvoice.invoiceID,
@@ -406,8 +405,10 @@ const Invoices: React.FC = () => {
           updatedAt: new Date().toISOString(),
           createdBy: editingInvoice.createdBy
         };
-        const response = await invoiceAPI.updateInvoice(invoiceData);
-        
+        const companyIdForHeader =
+          currentUser?.role === 'SUPER_ADMIN' && selectedCompany ? selectedCompany.id : undefined;
+        const response = await invoiceAPI.updateInvoice(invoiceData, companyIdForHeader);
+
         if (response.success && response.data) {
           setSnackbar({ open: true, message: 'Invoice updated successfully', severity: 'success' });
         } else {
