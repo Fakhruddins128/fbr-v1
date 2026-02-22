@@ -446,7 +446,6 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         .input("buyerRegistrationType", sql.NVarChar, buyerRegistrationType)
         .input("invoiceRefNo", sql.NVarChar, invoiceRefNo || "")
         .input("poNumber", sql.NVarChar, poNumber || "")
-        .input("poNumber", sql.NVarChar, poNumber || "")
         .input("scenarioID", sql.NVarChar, "SCENARIO_001")
         .input("totalAmount", sql.Decimal(18, 2), totalAmount)
         .input("totalSalesTax", sql.Decimal(18, 2), totalSalesTax)
@@ -789,7 +788,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           .input(
             "valueSalesExcludingST",
             sql.Decimal(18, 2),
-            item.valueSalesExcludingST
+            item.valueSalesExcludingST || 0
           )
           .input(
             "fixedNotifiedValueOrRetailPrice",
