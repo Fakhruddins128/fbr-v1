@@ -1078,31 +1078,38 @@ const SalesInvoice: React.FC = () => {
               saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select',
 
               items: invoice.items.map((item: any) => {
-                // Find matching item from items list to get full description
-                const matchingApiItem = items.find(apiItem => apiItem.hsCode === item.hsCode);
-                const hsCodeDescription = matchingApiItem 
+                const normalizedProductDescription = (item.productDescription || '').toLowerCase();
+
+                const matchingApiItem = items.find(apiItem =>
+                  apiItem.hsCode === item.hsCode &&
+                  apiItem.description.toLowerCase() === normalizedProductDescription
+                );
+
+                const hsCodeDescription = matchingApiItem
                   ? `${matchingApiItem.hsCode} - ${matchingApiItem.description}`
-                  : item.hsCode || 'Select';
-                  
+                  : (item.hsCode && item.productDescription
+                      ? `${item.hsCode} - ${item.productDescription}`
+                      : item.hsCode || 'Select');
+
                 return {
                   id: item.itemID || Math.random().toString(36).substr(2, 9),
-                  hsCodeDescription: hsCodeDescription,
-                productDescription: item.productDescription || '',
-                rate: item.rate || 'Select',
-                uom: item.uoM || 'Select',
-                quantity: item.quantity || 0,
-                valueSalesExclST: item.valueSalesExcludingST || 0,
-                salesTax: item.salesTaxApplicable || 0,
-                stWithheldAtSource: item.salesTaxWithheldAtSource || 0,
-                totalValueSales: item.totalValues || 0,
-                extraTax: item.extraTax || 0,
-                fixedNotifiedValue: item.fixedNotifiedValueOrRetailPrice || 0,
-                furtherTax: item.furtherTax || 0,
-                sroScheduleNo: item.sroScheduleNo || 'Select',
-                itemSrNo: item.sroItemSerialNo || 'Select',
-                saleType: item.saleType || 'Select'
-              };
-            })
+                  hsCodeDescription,
+                  productDescription: item.productDescription || '',
+                  rate: item.rate || 'Select',
+                  uom: item.uoM || 'Select',
+                  quantity: item.quantity || 0,
+                  valueSalesExclST: item.valueSalesExcludingST || 0,
+                  salesTax: item.salesTaxApplicable || 0,
+                  stWithheldAtSource: item.salesTaxWithheldAtSource || 0,
+                  totalValueSales: item.totalValues || 0,
+                  extraTax: item.extraTax || 0,
+                  fixedNotifiedValue: item.fixedNotifiedValueOrRetailPrice || 0,
+                  furtherTax: item.furtherTax || 0,
+                  sroScheduleNo: item.sroScheduleNo || 'Select',
+                  itemSrNo: item.sroItemSerialNo || 'Select',
+                  saleType: item.saleType || 'Select'
+                };
+              })
             });
           }
         } catch (error) {
@@ -1296,27 +1303,14 @@ const SalesInvoice: React.FC = () => {
   };
 
   const editItem = (item: InvoiceItem) => {
-    // Remove the item from the list first
     setFormData(prev => ({
       ...prev,
       items: prev.items.filter(i => i.id !== item.id)
     }));
-    
-    // Find the matching item from the items list to get the full hsCode - description format
-    const matchingItem = items.find(apiItem => 
-      item.hsCodeDescription && 
-      (apiItem.hsCode === item.hsCodeDescription || 
-       apiItem.hsCode === item.hsCodeDescription.split(' - ')[0])
-    );
-    
-    const hsCodeDescriptionValue = matchingItem 
-      ? `${matchingItem.hsCode} - ${matchingItem.description}`
-      : item.hsCodeDescription || 'Select';
-    
-    // Populate the form with the item's data
+
     setCurrentItem({
       id: item.id,
-      hsCodeDescription: hsCodeDescriptionValue,
+      hsCodeDescription: item.hsCodeDescription,
       productDescription: item.productDescription,
       rate: item.rate,
       uom: item.uom,
