@@ -1078,18 +1078,10 @@ const SalesInvoice: React.FC = () => {
               saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select',
 
               items: invoice.items.map((item: any) => {
-                const normalizedProductDescription = (item.productDescription || '').toLowerCase();
-
-                const matchingApiItem = items.find(apiItem =>
-                  apiItem.hsCode === item.hsCode &&
-                  apiItem.description.toLowerCase() === normalizedProductDescription
-                );
-
-                const hsCodeDescription = matchingApiItem
-                  ? `${matchingApiItem.hsCode} - ${matchingApiItem.description}`
-                  : (item.hsCode && item.productDescription
-                      ? `${item.hsCode} - ${item.productDescription}`
-                      : item.hsCode || 'Select');
+                const hsCodeDescription =
+                  item.hsCode && item.productDescription
+                    ? `${item.hsCode} - ${item.productDescription}`
+                    : item.hsCode || 'Select';
 
                 return {
                   id: item.itemID || Math.random().toString(36).substr(2, 9),
