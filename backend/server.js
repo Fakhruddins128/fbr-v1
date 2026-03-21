@@ -138,6 +138,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
         OUTER APPLY (
           SELECT 
             ItemID,
+            MasterItemID,
             HSCode,
             ProductDescription,
             Rate,
@@ -168,6 +169,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
       const items = invoice.Items
         ? JSON.parse(invoice.Items).map((item) => ({
             itemID: item.ItemID,
+            masterItemID: item.MasterItemID,
             invoiceID: item.InvoiceID,
             hsCode: item.HSCode,
             productDescription: item.ProductDescription,
@@ -256,6 +258,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
         OUTER APPLY (
           SELECT 
             ItemID,
+            MasterItemID,
             HSCode,
             ProductDescription,
             Rate,
@@ -293,6 +296,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
     const items = invoice.Items
       ? JSON.parse(invoice.Items).map((item) => ({
           itemID: item.ItemID,
+          masterItemID: item.MasterItemID,
           invoiceID: item.InvoiceID,
           hsCode: item.HSCode,
           productDescription: item.ProductDescription,
@@ -474,6 +478,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         await transaction
           .request()
           .input("invoiceId", sql.UniqueIdentifier, invoiceId)
+          .input("masterItemId", sql.UniqueIdentifier, item.masterItemId || null)
           .input("hsCode", sql.NVarChar, item.hsCode)
           .input("productDescription", sql.NVarChar, item.productDescription)
           .input("rate", sql.NVarChar, item.rate)
@@ -509,13 +514,13 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           .input("sroItemSerialNo", sql.NVarChar, item.sroItemSerialNo || "")
           .query(`
             INSERT INTO InvoiceItems (
-              InvoiceID, HSCode, ProductDescription, Rate, UoM, Quantity,
+              InvoiceID, MasterItemID, HSCode, ProductDescription, Rate, UoM, Quantity,
               TotalValues, ValueSalesExcludingST, FixedNotifiedValueOrRetailPrice,
               SalesTaxApplicable, SalesTaxWithheldAtSource, ExtraTax, FurtherTax,
               SROScheduleNo, FEDPayable, Discount, SaleType, SROItemSerialNo
             )
             VALUES (
-              @invoiceId, @hsCode, @productDescription, @rate, @uoM, @quantity,
+              @invoiceId, @masterItemId, @hsCode, @productDescription, @rate, @uoM, @quantity,
               @totalValues, @valueSalesExcludingST, @fixedNotifiedValueOrRetailPrice,
               @salesTaxApplicable, @salesTaxWithheldAtSource, @extraTax, @furtherTax,
               @sroScheduleNo, @fedPayable, @discount, @saleType, @sroItemSerialNo
@@ -779,6 +784,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         await transaction
           .request()
           .input("invoiceId", sql.UniqueIdentifier, id)
+          .input("masterItemId", sql.UniqueIdentifier, item.masterItemId || null)
           .input("hsCode", sql.NVarChar, item.hsCode)
           .input("productDescription", sql.NVarChar, item.productDescription)
           .input("rate", sql.NVarChar, item.rate)
@@ -814,13 +820,13 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           .input("sroItemSerialNo", sql.NVarChar, item.sroItemSerialNo || "")
           .query(`
             INSERT INTO InvoiceItems (
-              InvoiceID, HSCode, ProductDescription, Rate, UoM, Quantity,
+              InvoiceID, MasterItemID, HSCode, ProductDescription, Rate, UoM, Quantity,
               TotalValues, ValueSalesExcludingST, FixedNotifiedValueOrRetailPrice,
               SalesTaxApplicable, SalesTaxWithheldAtSource, ExtraTax, FurtherTax,
               SROScheduleNo, FEDPayable, Discount, SaleType, SROItemSerialNo
             )
             VALUES (
-              @invoiceId, @hsCode, @productDescription, @rate, @uoM, @quantity,
+              @invoiceId, @masterItemId, @hsCode, @productDescription, @rate, @uoM, @quantity,
               @totalValues, @valueSalesExcludingST, @fixedNotifiedValueOrRetailPrice,
               @salesTaxApplicable, @salesTaxWithheldAtSource, @extraTax, @furtherTax,
               @sroScheduleNo, @fedPayable, @discount, @saleType, @sroItemSerialNo

@@ -50,6 +50,7 @@ import SalesInvoiceReport from '../components/SalesInvoiceReport';
 // Types for the invoice form
 interface InvoiceItem {
   id: string;
+  masterItemId?: string;
   hsCodeDescription: string;
   productDescription: string;
   rate: string;
@@ -1094,13 +1095,21 @@ const SalesInvoice: React.FC = () => {
               saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select',
 
               items: invoice.items.map((item: any) => {
-                const hsCodeDescription =
-                  item.hsCode && item.productDescription
+                // Try to find the matching master item by ID first, then by code/desc
+                const matchingMasterItem = items.find(mi => mi.itemId === item.masterItemID);
+                
+                let hsCodeDescription = '';
+                if (matchingMasterItem) {
+                  hsCodeDescription = `${matchingMasterItem.hsCode} - ${matchingMasterItem.description}`;
+                } else {
+                  hsCodeDescription = item.hsCode && item.productDescription
                     ? `${item.hsCode} - ${item.productDescription}`
                     : item.hsCode || 'Select';
+                }
 
                 return {
                   id: item.itemID || Math.random().toString(36).substr(2, 9),
+                  masterItemId: item.masterItemID,
                   hsCodeDescription,
                   productDescription: item.productDescription || '',
                   rate: item.rate || 'Select',
@@ -1260,6 +1269,7 @@ const SalesInvoice: React.FC = () => {
         );
         
         if (selectedItem) {
+          updatedItem.masterItemId = selectedItem.itemId;
           updatedItem.rate = selectedItem.salesTaxValue.toString() + '%';
           updatedItem.uom = selectedItem.uom;
           updatedItem.productDescription = selectedItem.description;
@@ -1336,6 +1346,7 @@ const SalesInvoice: React.FC = () => {
       // Reset current item with proper sales tax reset
       setCurrentItem({
         id: '',
+        masterItemId: undefined,
         hsCodeDescription: 'Select',
         productDescription: '',
         rate: 'Select',
@@ -1369,6 +1380,7 @@ const SalesInvoice: React.FC = () => {
 
     setCurrentItem({
       id: item.id,
+      masterItemId: item.masterItemId,
       hsCodeDescription: item.hsCodeDescription,
       productDescription: item.productDescription,
       rate: item.rate,
@@ -1403,6 +1415,7 @@ const SalesInvoice: React.FC = () => {
     });
     setCurrentItem({
       id: '',
+      masterItemId: undefined,
       hsCodeDescription: 'Select',
       productDescription: '',
       rate: 'Select',
@@ -1924,6 +1937,7 @@ const SalesInvoice: React.FC = () => {
         updatedAt: new Date().toISOString(),
         createdBy: user?.id || '',
         items: formData.items.map(item => ({
+          masterItemId: item.masterItemId,
           hsCode: item.hsCodeDescription.split(' - ')[0] || '',
           productDescription: item.productDescription,
           rate: item.rate,
