@@ -239,6 +239,7 @@ const Items: React.FC = () => {
           purchaseTaxValue: parseFloat(values[headers.indexOf('purchasetaxvalue')]) || 0,
           salesTaxValue: parseFloat(values[headers.indexOf('salestaxvalue')]) || 0,
           uom: values[headers.indexOf('uom')] || 'Numbers, pieces, units',
+          initialStock: headers.indexOf('initialstock') !== -1 ? parseFloat(values[headers.indexOf('initialstock')]) || 0 : 0,
         };
 
         if (item.hsCode && item.description && item.unitPrice > 0) {
