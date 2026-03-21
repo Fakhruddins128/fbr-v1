@@ -9,6 +9,8 @@ export interface Item {
   purchaseTaxValue: number;
   salesTaxValue: number;
   uom: string;
+  initialStock: number;
+  currentStock: number;
   itemCreateDate: string;
   isActive: boolean;
   createdBy: string;
@@ -23,6 +25,7 @@ export interface CreateItemRequest {
   purchaseTaxValue: number;
   salesTaxValue: number;
   uom: string;
+  initialStock: number;
 }
 
 export interface UpdateItemRequest extends CreateItemRequest {

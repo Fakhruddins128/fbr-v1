@@ -2700,17 +2700,35 @@ app.get("/api/items", authenticateToken, async (req, res) => {
             PurchaseTaxValue as purchaseTaxValue,
             SalesTaxValue as salesTaxValue,
             UoM as uom,
+            InitialStock as initialStock,
             IsActive as isActive,
             ItemCreateDate as itemCreateDate,
-            CompanyID as companyId
+            CompanyID as companyId,
+            (
+              SELECT ISNULL(SUM(pi.PurchaseQty), 0)
+              FROM PurchaseItems pi
+              JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+              WHERE pi.ItemID = CAST(Items.ItemID AS NVARCHAR(50)) AND p.CompanyID = @companyId AND p.Status = 'completed'
+            ) as totalPurchased,
+            (
+              SELECT ISNULL(SUM(ii.Quantity), 0)
+              FROM InvoiceItems ii
+              JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+              WHERE ii.HSCode = Items.HSCode AND ii.ProductDescription = CAST(Items.Description AS NVARCHAR(255)) AND i.CompanyID = @companyId
+            ) as totalSold
           FROM Items 
           WHERE CompanyID = @companyId
           ORDER BY ItemCreateDate DESC
         `);
 
+      const itemsWithCurrentStock = result.recordset.map(item => ({
+        ...item,
+        currentStock: (item.initialStock || 0) + (item.totalPurchased || 0) - (item.totalSold || 0)
+      }));
+
       res.json({
         success: true,
-        data: result.recordset,
+        data: itemsWithCurrentStock,
       });
     } else {
       // Mock data for demo
@@ -2759,13 +2777,14 @@ app.get("/api/items", authenticateToken, async (req, res) => {
 // Create new item
 app.post("/api/items", authenticateToken, async (req, res) => {
   try {
-    const {
+      const {
       hsCode,
       description,
       unitPrice,
       purchaseTaxValue,
       salesTaxValue,
       uom,
+      initialStock,
     } = req.body;
 
     // For super admin, use company ID from header if provided, otherwise use user's company
@@ -2791,12 +2810,13 @@ app.post("/api/items", authenticateToken, async (req, res) => {
         .input("purchaseTaxValue", sql.Decimal(5, 2), purchaseTaxValue || 0)
         .input("salesTaxValue", sql.Decimal(5, 2), salesTaxValue || 0)
         .input("uom", sql.VarChar(20), uom)
+        .input("initialStock", sql.Decimal(18, 2), initialStock || 0)
         .input("companyId", sql.UniqueIdentifier, companyId)
         .input("createdBy", sql.UniqueIdentifier, req.user.userId).query(`
-          INSERT INTO Items (HSCode, Description, UnitPrice, PurchaseTaxValue, SalesTaxValue, UoM, CompanyID, CreatedBy, ItemCreateDate, IsActive)
+          INSERT INTO Items (HSCode, Description, UnitPrice, PurchaseTaxValue, SalesTaxValue, UoM, InitialStock, CompanyID, CreatedBy, ItemCreateDate, IsActive)
           OUTPUT INSERTED.ItemID, INSERTED.HSCode, INSERTED.Description, INSERTED.UnitPrice, 
-                 INSERTED.PurchaseTaxValue, INSERTED.SalesTaxValue, INSERTED.UoM, INSERTED.IsActive, INSERTED.ItemCreateDate
-          VALUES (@hsCode, @description, @unitPrice, @purchaseTaxValue, @salesTaxValue, @uom, @companyId, @createdBy, GETDATE(), 1)
+                 INSERTED.PurchaseTaxValue, INSERTED.SalesTaxValue, INSERTED.UoM, INSERTED.InitialStock, INSERTED.IsActive, INSERTED.ItemCreateDate
+          VALUES (@hsCode, @description, @unitPrice, @purchaseTaxValue, @salesTaxValue, @uom, @initialStock, @companyId, @createdBy, GETDATE(), 1)
         `);
 
       res.status(201).json({
@@ -2846,6 +2866,7 @@ app.put("/api/items/:id", authenticateToken, async (req, res) => {
       purchaseTaxValue,
       salesTaxValue,
       uom,
+      initialStock,
     } = req.body;
 
     // For super admin, use company ID from header if provided, otherwise use user's company
@@ -2872,6 +2893,7 @@ app.put("/api/items/:id", authenticateToken, async (req, res) => {
         .input("purchaseTaxValue", sql.Decimal(5, 2), purchaseTaxValue || 0)
         .input("salesTaxValue", sql.Decimal(5, 2), salesTaxValue || 0)
         .input("uom", sql.VarChar(20), uom)
+        .input("initialStock", sql.Decimal(18, 2), initialStock || 0)
         .input("companyId", sql.UniqueIdentifier, companyId).query(`
           UPDATE Items 
           SET HSCode = @hsCode,
@@ -2879,9 +2901,10 @@ app.put("/api/items/:id", authenticateToken, async (req, res) => {
               UnitPrice = @unitPrice,
               PurchaseTaxValue = @purchaseTaxValue,
               SalesTaxValue = @salesTaxValue,
-              UoM = @uom
+              UoM = @uom,
+              InitialStock = @initialStock
           OUTPUT INSERTED.ItemID, INSERTED.HSCode, INSERTED.Description, INSERTED.UnitPrice,
-                 INSERTED.PurchaseTaxValue, INSERTED.SalesTaxValue, INSERTED.UoM, INSERTED.IsActive, INSERTED.ItemCreateDate
+                 INSERTED.PurchaseTaxValue, INSERTED.SalesTaxValue, INSERTED.UoM, INSERTED.InitialStock, INSERTED.IsActive, INSERTED.ItemCreateDate
           WHERE ItemID = @itemId AND CompanyID = @companyId
         `);
 

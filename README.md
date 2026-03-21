@@ -1,118 +1,48 @@
-# Multi-Tenant SaaS Application with FBR Integration
+# FBR Multi-Tenant SaaS Platform
 
-This project is a multi-tenant Software-as-a-Service (SaaS) platform that enables centralized management of multiple independent company accounts. It includes FBR (Federal Board of Revenue) integration for digital invoicing.
+A multi-tenant Software-as-a-Service (SaaS) application for centralized management of company accounts with integrated digital invoicing for Pakistan's Federal Board of Revenue (FBR).
 
-## Project Overview
+## 🚀 Key Features
 
-The application follows a Shared Database, Shared Schema architecture utilizing Row-Level Data Isolation. Each record in shared tables includes a CompanyID (Tenant ID) to logically separate and secure data per company.
+- **Multi-Tenant Architecture**: Shared database with row-level data isolation for multiple companies.
+- **FBR Digital Invoicing**: Real-time invoice submission and validation with FBR Pakistan.
+- **Sales & Purchases**: Complete management of sales invoices and purchase records.
+- **Inventory & Items**: Master list management for items, including HS Codes and UoM.
+- **Role-Based Access Control (RBAC)**: Secure access for Super Admins, Company Admins, and specialized roles.
+- **Reporting**: Comprehensive reports for business analytics.
 
-## Key Features
+## 🛠️ Tech Stack
 
-- **Multi-Tenant Architecture**: Secure data isolation between companies
-- **Role-Based Access Control (RBAC)**: Different permission levels for users
-- **Sales Module**: Invoice management with FBR integration
-- **Purchase Module**: Manage purchase records and supplier details
-- **Inventory Management**: Real-time stock tracking and alerts
-- **Customer Management**: Customer profiles and purchase history
-- **Reporting and Analytics**: Comprehensive reports with export options
-- **FBR API Integration**: Digital invoicing with Pakistan's tax authority
+- **Frontend**: React 18, TypeScript, Material UI v5, Redux Toolkit
+- **Backend**: Node.js, Express, MSSQL (SQL Server)
+- **Database**: Microsoft SQL Server
+- **Integration**: FBR API (Sandbox & Production)
 
-## User Roles
+## 📚 Detailed Documentation
 
-- **Super Admin**: Full system access, manage companies, switch dashboards
-- **Company Admin**: Manage their own company data
-- **Custom Roles**: Admin, Accountant, Sales Person with scoped access
+For in-depth information about the project, please refer to the following guides:
 
-## Tech Stack
+- **[System Architecture](./docs/ARCHITECTURE.md)**: High-level overview and multi-tenancy model.
+- **[Project Flow](./docs/PROJECT_FLOW.md)**: Detailed user and data workflows.
+- **[Setup Guide](./docs/SETUP_GUIDE.md)**: Step-by-step instructions to get the project running locally.
+- **[API Reference](./docs/API_REFERENCE.md)**: Documentation for backend RESTful endpoints.
+- **[Database Schema](./docs/DATABASE_SCHEMA.md)**: Detailed tables and relationship diagrams.
+- **[FBR Integration Guide](./docs/FBR_INTEGRATION.md)**: Specifics on the FBR invoicing workflow and validation logic.
+- **[Frontend Guide](./docs/FRONTEND_GUIDE.md)**: Overview of React components, state management, and key pages.
 
-- **Frontend**: React.js with TypeScript
-- **UI Framework**: Material-UI (MUI)
-- **State Management**: Redux with Redux Toolkit
-- **Routing**: React Router
-- **Charts**: Chart.js with react-chartjs-2
-- **API Communication**: Axios
-- **Export Functionality**: jspdf, xlsx
+## 🏁 Quick Start
 
-## Available Scripts
+### Backend
+1.  Navigate to `backend/`.
+2.  Run `npm install`.
+3.  Configure your `.env` file (see [Setup Guide](./docs/SETUP_GUIDE.md)).
+4.  Run `npm run dev`.
 
-In the project directory, you can run:
+### Frontend
+1.  Run `npm install` in the root directory.
+2.  Run `npm start`.
+3.  Open `http://localhost:3000` in your browser.
 
-### `npm start`
+## 📄 License
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## FBR API Integration
-
-The application includes integration with Pakistan's Federal Board of Revenue (FBR) for digital invoicing:
-
-- **Production API**: `https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata`
-- **Sandbox API**: `https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata_sb`
-
-The integration includes:
-- Invoice submission to FBR
-- Validation of invoice data
-- Response handling for success and error cases
-- Environment switching (sandbox/production)
-
-## Project Structure
-
-```
-src/
-├── api/            # API services and configurations
-├── assets/         # Static assets (images, styles)
-├── components/     # Reusable UI components
-│   ├── auth/       # Authentication components
-│   ├── common/     # Common UI elements
-│   ├── dashboard/  # Dashboard components
-│   ├── layout/     # Layout components
-│   ├── sales/      # Sales module components
-│   └── ...
-├── hooks/          # Custom React hooks
-├── pages/          # Page components
-├── store/          # Redux store and slices
-├── types/          # TypeScript type definitions
-└── utils/          # Utility functions
-```
-
-## Future Enhancements
-
-- RESTful API for 3rd party integrations
-- Payment gateway integration
-- Mobile application
-- Advanced reporting and analytics
-- Offline mode support
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+This project is proprietary and for internal use only.

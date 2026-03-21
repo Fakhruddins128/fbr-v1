@@ -1018,7 +1018,11 @@ const SalesInvoice: React.FC = () => {
     open: boolean;
     message: string;
     severity: 'success' | 'error' | 'info' | 'warning';
-  }>({ open: false, message: '', severity: 'success' });
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [formData, setFormData] = useState<InvoiceFormData>({
     buyerRegistrationNo: '',
@@ -1234,6 +1238,30 @@ const SalesInvoice: React.FC = () => {
           updatedItem.rate = selectedItem.salesTaxValue.toString() + '%';
           updatedItem.uom = selectedItem.uom;
           updatedItem.productDescription = selectedItem.description;
+          
+          // Check stock availability
+          if (selectedItem.currentStock !== undefined && selectedItem.currentStock <= 0) {
+            setNotification({
+              open: true,
+              message: `Warning: ${selectedItem.description} is out of stock (Current: ${selectedItem.currentStock})`,
+              severity: 'warning'
+            });
+          }
+        }
+      }
+
+      // Stock validation when quantity changes
+      if (field === 'quantity' && typeof value === 'number') {
+        const selectedItem = items.find(item => 
+          `${item.hsCode} - ${item.description}` === updatedItem.hsCodeDescription
+        );
+        
+        if (selectedItem && selectedItem.currentStock !== undefined && value > selectedItem.currentStock) {
+          setNotification({
+            open: true,
+            message: `Warning: Quantity (${value}) exceeds available stock (${selectedItem.currentStock}) for ${selectedItem.description}`,
+            severity: 'warning'
+          });
         }
       }
 
@@ -1258,6 +1286,20 @@ const SalesInvoice: React.FC = () => {
 
   const addItem = () => {
     if (currentItem.hsCodeDescription !== 'Select' && currentItem.productDescription) {
+      // Stock validation before adding item
+      const selectedItem = items.find(item => 
+        `${item.hsCode} - ${item.description}` === currentItem.hsCodeDescription
+      );
+      
+      if (selectedItem && selectedItem.currentStock !== undefined && currentItem.quantity > selectedItem.currentStock) {
+        setNotification({
+          open: true,
+          message: `Cannot add item: Quantity (${currentItem.quantity}) exceeds available stock (${selectedItem.currentStock})`,
+          severity: 'error'
+        });
+        return;
+      }
+
       const newItem = {
         ...currentItem,
         id: Date.now().toString()

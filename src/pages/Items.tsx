@@ -47,6 +47,7 @@ interface ItemFormData {
   purchaseTaxValue: number;
   salesTaxValue: number;
   uom: string;
+  initialStock: number;
 }
 
 const Items: React.FC = () => {
@@ -61,6 +62,7 @@ const Items: React.FC = () => {
     purchaseTaxValue: 0,
     salesTaxValue: 0,
     uom: 'Numbers, pieces, units',
+    initialStock: 0,
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -105,6 +107,7 @@ const Items: React.FC = () => {
         purchaseTaxValue: item.purchaseTaxValue,
         salesTaxValue: item.salesTaxValue,
         uom: item.uom || 'Numbers, pieces, units',
+        initialStock: item.initialStock || 0,
       });
     } else {
       setSelectedItem(null);
@@ -115,6 +118,7 @@ const Items: React.FC = () => {
         purchaseTaxValue: 0,
         salesTaxValue: 0,
         uom: 'Numbers, pieces, units',
+        initialStock: 0,
       });
     }
     setOpenDialog(true);
@@ -130,6 +134,7 @@ const Items: React.FC = () => {
       purchaseTaxValue: 0,
       salesTaxValue: 0,
       uom: 'Numbers, pieces, units',
+      initialStock: 0,
     });
   };
 
@@ -148,6 +153,7 @@ const Items: React.FC = () => {
         purchaseTaxValue: formData.purchaseTaxValue,
         salesTaxValue: formData.salesTaxValue,
         uom: formData.uom || 'Numbers, pieces, units',
+        initialStock: formData.initialStock,
       };
 
       let response;
@@ -452,6 +458,8 @@ const Items: React.FC = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>HS Code</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Unit Price</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Initial Stock</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Current Stock</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Purchase Tax</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Sales Tax</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>UoM</TableCell>
@@ -472,6 +480,15 @@ const Items: React.FC = () => {
                     </Tooltip>
                   </TableCell>
                   <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
+                  <TableCell align="center">{item.initialStock || 0}</TableCell>
+                  <TableCell align="center">
+                    <Chip 
+                      label={item.currentStock || 0} 
+                      color={(item.currentStock || 0) <= 0 ? "error" : "primary"}
+                      variant="outlined"
+                      size="small"
+                    />
+                  </TableCell>
                   <TableCell>{item.purchaseTaxValue.toFixed(2)}%</TableCell>
                   <TableCell>{item.salesTaxValue.toFixed(2)}%</TableCell>
                   <TableCell>{item.uom || 'N/A'}</TableCell>
@@ -546,6 +563,17 @@ const Items: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
                 required
                 inputProps={{ min: 0, step: 0.01 }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="Initial Stock"
+                type="number"
+                value={formData.initialStock}
+                onChange={(e) => setFormData({ ...formData, initialStock: parseFloat(e.target.value) || 0 })}
+                inputProps={{ min: 0 }}
+                helperText="Opening inventory balance"
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
