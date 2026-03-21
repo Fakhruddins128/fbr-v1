@@ -39,6 +39,7 @@ import {
   Lock as LockIcon
 } from '@mui/icons-material';
 import { itemsApi, Item } from '../api/itemsApi';
+import { customerApi, Customer } from '../api/customerApi';
 import { invoiceAPI } from '../services/invoiceApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -1008,6 +1009,7 @@ const SalesInvoice: React.FC = () => {
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [selectedTab, setSelectedTab] = useState('Sales');
   const [items, setItems] = useState<Item[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [saving, setSaving] = useState(false);
   const [invoiceSaved, setInvoiceSaved] = useState(false);
   const [sendingToFBR, setSendingToFBR] = useState(false);
@@ -1039,22 +1041,32 @@ const SalesInvoice: React.FC = () => {
     items: []
   });
 
-  // Fetch items from API
+  // Fetch items and customers from API
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchData = async () => {
       try {
-        const response = await itemsApi.getAllItems();
-        if (response.success && Array.isArray(response.data)) {
-          setItems(response.data);
+        const [itemsRes, customersRes] = await Promise.all([
+          itemsApi.getAllItems(),
+          customerApi.getAllCustomers()
+        ]);
+
+        if (itemsRes.success && Array.isArray(itemsRes.data)) {
+          setItems(itemsRes.data);
         } else {
-          console.error('Failed to fetch items:', response.message);
+          console.error('Failed to fetch items:', itemsRes.message);
+        }
+
+        if (customersRes.success && Array.isArray(customersRes.data)) {
+          setCustomers(customersRes.data);
+        } else {
+          console.error('Failed to fetch customers:', customersRes.message);
         }
       } catch (error) {
-        console.error('Error fetching items:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    fetchItems();
+    fetchData();
   }, []);
 
   // Load invoice data when in edit mode
@@ -1148,6 +1160,19 @@ const SalesInvoice: React.FC = () => {
       ...prev,
       [field]: value
     }));
+
+    // Auto-fill Buyer Name and details based on Registration No.
+    if (field === 'buyerRegistrationNo' && typeof value === 'string') {
+      const matchingCustomer = customers.find(c => c.buyerRegistrationNo === value || c.buyerNTNCNIC === value);
+      if (matchingCustomer) {
+        setFormData(prev => ({
+          ...prev,
+          buyerName: matchingCustomer.buyerBusinessName,
+          buyerType: matchingCustomer.buyerRegistrationType || prev.buyerType,
+          destinationOfSupply: matchingCustomer.buyerProvince || prev.destinationOfSupply
+        }));
+      }
+    }
 
     // Auto-populate fields when Sale Type is set to "Exempt goods"
     if (field === 'saleType' && value === 'Exempt goods') {
