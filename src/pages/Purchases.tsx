@@ -33,9 +33,10 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { itemsApi, Item } from '../api/itemsApi';
-import { formatCurrency } from '../utils/formatUtils';
+import { downloadCSVFile, formatCurrency } from '../utils/formatUtils';
 import { purchasesApi, Purchase, PurchaseItem } from '../services/purchasesApi';
 import { vendorApi, Vendor } from '../api/vendorApi';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
@@ -409,6 +410,30 @@ const Purchases: React.FC = () => {
   const receivedPurchases = purchases.filter(purchase => purchase.status === 'received').length;
   const pendingPurchases = purchases.filter(purchase => purchase.status === 'pending').length;
 
+  const handleTemplateDownload = () => {
+    downloadCSVFile(
+      'purchases_import_template.csv',
+      [
+        ['PONumber', 'PODate', 'CRNumber', 'Date', 'VendorId', 'VendorName', 'ItemId', 'ItemName', 'PurchasePrice', 'PurchaseQty', 'TotalAmount'],
+        [
+          'PO-001',
+          new Date().toISOString().split('T')[0],
+          'CR-001',
+          new Date().toISOString().split('T')[0],
+          'vendor-id-here',
+          'Sample Vendor',
+          'item-id-here',
+          'Sample Item',
+          1000,
+          2,
+          2000
+        ],
+      ]
+    );
+
+    showSnackbar('Purchase CSV template downloaded successfully', 'success');
+  };
+
   if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -503,13 +528,22 @@ const Purchases: React.FC = () => {
       <Paper sx={{ mb: 2 }}>
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Purchase Orders</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddPurchase}
-          >
-            Add Purchase
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleTemplateDownload}
+            >
+              Download Template (CSV)
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddPurchase}
+            >
+              Add Purchase
+            </Button>
+          </Box>
         </Box>
         
         <TableContainer>

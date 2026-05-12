@@ -37,7 +37,7 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { formatCurrency, formatDate } from '../utils/formatUtils';
+import { downloadCSVFile, formatCurrency, formatDate } from '../utils/formatUtils';
 import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
 
 interface ItemFormData {
@@ -280,28 +280,40 @@ const Items: React.FC = () => {
       return;
     }
 
-    const headers = ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'ItemCreateDate'];
-    const csvContent = [
-      headers.join(','),
-      ...items.map(item => [
-        item.hsCode,
-        `"${item.description}"`,
-        item.unitPrice,
-        item.purchaseTaxValue,
-        item.salesTaxValue,
-        item.itemCreateDate
-      ].join(','))
-    ].join('\n');
+    downloadCSVFile(
+      `items_${new Date().toISOString().split('T')[0]}.csv`,
+      [
+        ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'ItemCreateDate'],
+        ...items.map(item => [
+          item.hsCode,
+          item.description,
+          item.unitPrice,
+          item.purchaseTaxValue,
+          item.salesTaxValue,
+          item.itemCreateDate
+        ])
+      ]
+    );
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `items_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleTemplateDownload = () => {
+    downloadCSVFile(
+      'items_import_template.csv',
+      [
+        ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'UoM', 'InitialStock'],
+        [
+          '0101.2100',
+          'Sample Item',
+          1000,
+          0,
+          18,
+          'Numbers, pieces, units',
+          50,
+        ],
+      ]
+    );
+
+    showSnackbar('Item CSV template downloaded successfully', 'success');
   };
 
   // Calculate summary statistics
@@ -440,6 +452,14 @@ const Items: React.FC = () => {
                 {uploading ? 'Uploading...' : 'Import CSV'}
               </Button>
             </label>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleTemplateDownload}
+              sx={{ borderRadius: 2 }}
+            >
+              Download Template (CSV)
+            </Button>
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}

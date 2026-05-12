@@ -41,6 +41,7 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { customerApi, Customer, CreateCustomerRequest, UpdateCustomerRequest } from '../api/customerApi';
+import { downloadCSVFile } from '../utils/formatUtils';
 import { 
   BUSINESS_ACTIVITIES, 
   SECTORS, 
@@ -342,37 +343,51 @@ const Customers: React.FC = () => {
       return;
     }
 
-    const headers = ['BuyerNTNCNIC', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName', 'BusinessActivity', 'Sector', 'IsActive', 'CreatedAt'];
-    const csvContent = [
-      headers.join(','),
-      ...customers.map(customer => [
-        customer.buyerNTNCNIC,
-        customer.buyerBusinessName,
-        customer.buyerProvince,
-        customer.buyerAddress,
-        customer.buyerRegistrationType,
-        customer.buyerRegistrationNo || '',
-        customer.buyerEmail || '',
-        customer.buyerCellphone || '',
-        customer.contactPersonName || '',
-        customer.businessActivity?.join(';') || '',
-        customer.sector?.join(';') || '',
-        customer.isActive ? 'Active' : 'Inactive',
-        customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `customers_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCSVFile(
+      `customers_${new Date().toISOString().split('T')[0]}.csv`,
+      [
+        ['BuyerNTNCNIC', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName', 'BusinessActivity', 'Sector', 'IsActive', 'CreatedAt'],
+        ...customers.map(customer => [
+          customer.buyerNTNCNIC,
+          customer.buyerBusinessName,
+          customer.buyerProvince,
+          customer.buyerAddress,
+          customer.buyerRegistrationType,
+          customer.buyerRegistrationNo || '',
+          customer.buyerEmail || '',
+          customer.buyerCellphone || '',
+          customer.contactPersonName || '',
+          customer.businessActivity?.join(';') || '',
+          customer.sector?.join(';') || '',
+          customer.isActive ? 'Active' : 'Inactive',
+          customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'
+        ])
+      ]
+    );
     
     showSnackbar('Customer data exported successfully', 'success');
+  };
+
+  const handleTemplateDownload = () => {
+    downloadCSVFile(
+      'customers_import_template.csv',
+      [
+        ['BuyerNTNCNIC', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName'],
+        [
+          '1234567',
+          'Sample Customer',
+          'Sindh',
+          'Karachi',
+          'Registered',
+          'REG-001',
+          'customer@example.com',
+          '03001234567',
+          'Ali Khan'
+        ],
+      ]
+    );
+
+    showSnackbar('Customer CSV template downloaded successfully', 'success');
   };
 
   const totalCustomers = customers.length;
@@ -507,6 +522,14 @@ const Customers: React.FC = () => {
                 {uploading ? 'Uploading...' : 'Import CSV'}
               </Button>
             </label>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleTemplateDownload}
+              sx={{ borderRadius: 2 }}
+            >
+              Download Template (CSV)
+            </Button>
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}

@@ -49,6 +49,7 @@ import {
   getApplicableScenariosForMultiple,
   validateBusinessActivitySectorCombination 
 } from '../utils/scenarioValidation';
+import { downloadCSVFile } from '../utils/formatUtils';
 
 interface VendorFormData {
   vendorName: string;
@@ -395,35 +396,47 @@ const Vendors: React.FC = () => {
       return;
     }
 
-    const headers = ['VendorName', 'VendorNTN', 'VendorCNIC', 'ContactPersonName', 'VendorAddress', 'VendorPhone', 'VendorEmail', 'BusinessActivity', 'Sector', 'IsActive', 'CreatedAt'];
-    const csvContent = [
-      headers.join(','),
-      ...vendors.map(vendor => [
-        vendor.vendorName,
-        vendor.vendorNTN,
-        vendor.vendorCNIC || '',
-        vendor.contactPersonName || '',
-        vendor.vendorAddress,
-        vendor.vendorPhone,
-        vendor.vendorEmail || '',
-        vendor.businessActivity?.join(';') || '',
-        vendor.sector?.join(';') || '',
-        vendor.isActive ? 'Active' : 'Inactive',
-        vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString() : 'N/A'
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `vendors_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCSVFile(
+      `vendors_${new Date().toISOString().split('T')[0]}.csv`,
+      [
+        ['VendorName', 'VendorNTN', 'VendorCNIC', 'ContactPersonName', 'VendorAddress', 'VendorPhone', 'VendorEmail', 'BusinessActivity', 'Sector', 'IsActive', 'CreatedAt'],
+        ...vendors.map(vendor => [
+          vendor.vendorName,
+          vendor.vendorNTN,
+          vendor.vendorCNIC || '',
+          vendor.contactPersonName || '',
+          vendor.vendorAddress,
+          vendor.vendorPhone,
+          vendor.vendorEmail || '',
+          vendor.businessActivity?.join(';') || '',
+          vendor.sector?.join(';') || '',
+          vendor.isActive ? 'Active' : 'Inactive',
+          vendor.createdAt ? new Date(vendor.createdAt).toLocaleDateString() : 'N/A'
+        ])
+      ]
+    );
     
     showSnackbar('Vendor data exported successfully', 'success');
+  };
+
+  const handleTemplateDownload = () => {
+    downloadCSVFile(
+      'vendors_import_template.csv',
+      [
+        ['VendorName', 'VendorNTN', 'VendorCNIC', 'ContactPersonName', 'VendorAddress', 'VendorPhone', 'VendorEmail'],
+        [
+          'Sample Vendor',
+          '1234567',
+          '4210112345671',
+          'Ahmed Raza',
+          'Karachi',
+          '03001234567',
+          'vendor@example.com'
+        ],
+      ]
+    );
+
+    showSnackbar('Vendor CSV template downloaded successfully', 'success');
   };
 
   if (loading) {
@@ -522,6 +535,14 @@ const Vendors: React.FC = () => {
                 {uploading ? 'Uploading...' : 'Import CSV'}
               </Button>
             </label>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleTemplateDownload}
+              sx={{ borderRadius: 2 }}
+            >
+              Download Template (CSV)
+            </Button>
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}

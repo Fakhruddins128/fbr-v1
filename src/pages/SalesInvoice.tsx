@@ -31,6 +31,7 @@ import {
   Edit as EditIcon,
   Close as CloseIcon,
   Clear as ClearIcon,
+  Download as DownloadIcon,
   Save as SaveIcon,
   Send as SendIcon,
   Info as InfoIcon,
@@ -41,6 +42,7 @@ import {
 import { itemsApi, Item } from '../api/itemsApi';
 import { customerApi, Customer } from '../api/customerApi';
 import { invoiceAPI } from '../services/invoiceApi';
+import { downloadCSVFile } from '../utils/formatUtils';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import fbrApiService from '../api/fbrApi';
@@ -1808,6 +1810,74 @@ const SalesInvoice: React.FC = () => {
     setFbrPayloadPreview(null);
   };
 
+  const handleTemplateDownload = () => {
+    downloadCSVFile(
+      'sales_invoice_import_template.csv',
+      [
+        [
+          'BuyerRegistrationNo',
+          'BuyerName',
+          'BuyerType',
+          'InvoiceType',
+          'TransactionType',
+          'InvoiceNo',
+          'PONumber',
+          'InvoiceDate',
+          'SaleOriginationProvince',
+          'DestinationOfSupply',
+          'SaleType',
+          'HSCodeDescription',
+          'ProductDescription',
+          'Rate',
+          'UoM',
+          'Quantity',
+          'ValueSalesExclST',
+          'SalesTax',
+          'STWithheldAtSource',
+          'TotalValueSales',
+          'ExtraTax',
+          'FixedNotifiedValue',
+          'FurtherTax',
+          'SROScheduleNo',
+          'ItemSrNo'
+        ],
+        [
+          '1234567',
+          'Sample Customer',
+          'Registered',
+          'Sale Invoice',
+          'Domestic Supply',
+          'INV-001',
+          'PO-001',
+          new Date().toISOString().split('T')[0],
+          'Sindh',
+          'Sindh',
+          'Goods at standard rate (default)',
+          '0101.2100 - Sample HS Code',
+          'Sample Product',
+          '18%',
+          'Numbers, pieces, units',
+          1,
+          1000,
+          180,
+          0,
+          1180,
+          0,
+          0,
+          0,
+          '',
+          ''
+        ],
+      ]
+    );
+
+    setNotification({
+      open: true,
+      message: 'Sales invoice CSV template downloaded successfully',
+      severity: 'success'
+    });
+  };
+
   // Helper function to check if invoice has been successfully sent to FBR
   const isInvoiceSentToFBR = () => {
     return fbrResponse && fbrResponse.validationResponse && fbrResponse.validationResponse.status === 'Valid';
@@ -2601,6 +2671,25 @@ const SalesInvoice: React.FC = () => {
 
       {/* Save Invoice and Send to FBR Buttons */}
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          size="large"
+          startIcon={<DownloadIcon />}
+          onClick={handleTemplateDownload}
+          sx={{
+            px: 4,
+            py: 1.5,
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
+            borderWidth: 2,
+            '&:hover': {
+              borderWidth: 2
+            }
+          }}
+        >
+          Download Template (CSV)
+        </Button>
         <Button
           variant="contained"
           color="primary"
