@@ -2664,6 +2664,122 @@ app.delete("/api/inventory/:id", authenticateToken, async (req, res) => {
 
 // Items API Routes
 
+// // Get all items
+// app.get("/api/items", authenticateToken, async (req, res) => {
+//   try {
+//     console.log("=== ITEMS API DEBUG ===");
+//     console.log("All headers:", Object.keys(req.headers));
+//     console.log("X-Company-ID header:", req.headers["x-company-id"]);
+//     console.log("User info:", {
+//       role: req.user.role,
+//       companyId: req.user.companyId,
+//     });
+
+//     // For super admin, use company ID from header if provided, otherwise use user's company
+//     let companyId = req.user.companyId;
+//     if (req.user.role === "SUPER_ADMIN" && req.headers["x-company-id"]) {
+//       console.log(
+//         "Super admin requesting items for company ID:",
+//         req.headers["x-company-id"]
+//       );
+//       companyId = req.headers["x-company-id"];
+//     }
+
+//     console.log(
+//       "Final companyId to use:",
+//       companyId,
+//       "Type:",
+//       typeof companyId
+//     );
+//     console.log("=== END ITEMS DEBUG ===");
+
+//     if (isDbConnected) {
+//       const pool = await sql.connect(dbConfig);
+//       const result = await pool
+//         .request()
+//         .input("companyId", sql.UniqueIdentifier, companyId).query(`
+//           SELECT 
+//             ItemID as itemId,
+//             HSCode as hsCode,
+//             Description as description,
+//             UnitPrice as unitPrice,
+//             PurchaseTaxValue as purchaseTaxValue,
+//             SalesTaxValue as salesTaxValue,
+//             UoM as uom,
+//             InitialStock as initialStock,
+//             IsActive as isActive,
+//             ItemCreateDate as itemCreateDate,
+//             CompanyID as companyId,
+//             (
+//               SELECT ISNULL(SUM(pi.PurchaseQty), 0)
+//               FROM PurchaseItems pi
+//               JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+//               WHERE pi.ItemID = CAST(Items.ItemID AS NVARCHAR(50)) AND p.CompanyID = @companyId AND p.Status = 'completed'
+//             ) as totalPurchased,
+//             (
+//               SELECT ISNULL(SUM(ii.Quantity), 0)
+//               FROM InvoiceItems ii
+//               JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+//               WHERE ii.HSCode = Items.HSCode AND ii.ProductDescription = CAST(Items.Description AS NVARCHAR(255)) AND i.CompanyID = @companyId
+//             ) as totalSold
+//           FROM Items 
+//           WHERE CompanyID = @companyId
+//           ORDER BY ItemCreateDate DESC
+//         `);
+
+//       const itemsWithCurrentStock = result.recordset.map(item => ({
+//         ...item,
+//         currentStock: (item.initialStock || 0) + (item.totalPurchased || 0) - (item.totalSold || 0)
+//       }));
+
+//       res.json({
+//         success: true,
+//         data: itemsWithCurrentStock,
+//       });
+//     } else {
+//       // Mock data for demo
+//       const mockItems = [
+//         {
+//           itemId: "1",
+//           hsCode: "8471.30.00",
+//           description: "Portable digital automatic data processing machines",
+//           unitPrice: 1500.0,
+//           purchaseTaxValue: 17.0,
+//           salesTaxValue: 17.0,
+//           uom: "PCS",
+//           isActive: true,
+//           itemCreateDate: new Date().toISOString(),
+//           companyId: companyId,
+//         },
+//         {
+//           itemId: "2",
+//           hsCode: "8528.72.10",
+//           description: "LCD monitors and displays",
+//           unitPrice: 300.0,
+//           purchaseTaxValue: 17.0,
+//           salesTaxValue: 17.0,
+//           uom: "PCS",
+//           isActive: true,
+//           itemCreateDate: new Date().toISOString(),
+//           companyId: companyId,
+//         },
+//       ];
+
+//       res.json({
+//         success: true,
+//         data: mockItems,
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Error fetching items:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch items",
+//       error: error.message,
+//     });
+//   }
+// });
+
 // Get all items
 app.get("/api/items", authenticateToken, async (req, res) => {
   try {
@@ -2674,6 +2790,7 @@ app.get("/api/items", authenticateToken, async (req, res) => {
       role: req.user.role,
       companyId: req.user.companyId,
     });
+    // test remarks for github uploading
 
     // For super admin, use company ID from header if provided, otherwise use user's company
     let companyId = req.user.companyId;
@@ -2714,7 +2831,7 @@ app.get("/api/items", authenticateToken, async (req, res) => {
               SELECT ISNULL(SUM(pi.PurchaseQty), 0)
               FROM PurchaseItems pi
               JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
-              WHERE pi.ItemID = CAST(Items.ItemID AS NVARCHAR(50)) AND p.CompanyID = @companyId AND p.Status = 'completed'
+              WHERE pi.ItemID = CAST(Items.ItemID AS NVARCHAR(50)) AND p.CompanyID = @companyId AND p.IsActive = 1 AND p.Status IN ('received', 'completed')
             ) as totalPurchased,
             (
               SELECT ISNULL(SUM(ii.Quantity), 0)
