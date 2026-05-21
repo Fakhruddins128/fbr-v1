@@ -479,7 +479,7 @@ const Items: React.FC = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>HS Code</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Unit Price</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Initial Stock</TableCell>
+                {/* <TableCell sx={{ fontWeight: 'bold' }}>Initial Stock</TableCell> */}
                 <TableCell sx={{ fontWeight: 'bold' }}>Current Stock</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Purchase Tax</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Sales Tax</TableCell>
@@ -501,7 +501,7 @@ const Items: React.FC = () => {
                     </Tooltip>
                   </TableCell>
                   <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                  <TableCell align="center">{item.initialStock || 0}</TableCell>
+                  {/* <TableCell align="center">{item.initialStock || 0}</TableCell> */}
                   <TableCell align="center">
                     <Chip 
                       label={item.currentStock || 0} 
