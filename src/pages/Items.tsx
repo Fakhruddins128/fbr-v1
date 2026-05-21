@@ -23,6 +23,7 @@ import {
   Snackbar,
   CircularProgress,
   Tooltip,
+  MenuItem,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -37,8 +38,8 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { downloadCSVFile, formatCurrency, formatDate } from '../utils/formatUtils';
-import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
+import { formatCurrency, formatDate } from '../utils/formatUtils';
+import { itemsApi, Item, CreateItemRequest, UnitOfMeasurement } from '../api/itemsApi';
 
 interface ItemFormData {
   hsCode: string;
@@ -61,7 +62,7 @@ const Items: React.FC = () => {
     unitPrice: 0,
     purchaseTaxValue: 0,
     salesTaxValue: 0,
-    uom: 'Numbers, pieces, units',
+    uom: 'PCS',
     initialStock: 0,
   });
   const [snackbar, setSnackbar] = useState({
@@ -71,6 +72,9 @@ const Items: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [unitOfMeasurements, setUnitOfMeasurements] = useState<UnitOfMeasurement[]>([]);
+  const [isLoadingUnitOfMeasurements, setIsLoadingUnitOfMeasurements] = useState(false);
+  const [unitOfMeasurementsError, setUnitOfMeasurementsError] = useState<string | null>(null);
 
   const showSnackbar = useCallback((message: string, severity: 'success' | 'error') => {
     setSnackbar({ open: true, message, severity });
@@ -97,6 +101,27 @@ const Items: React.FC = () => {
     fetchItems();
   }, [fetchItems]);
 
+  const fetchUnitOfMeasurements = useCallback(async () => {
+    setIsLoadingUnitOfMeasurements(true);
+    setUnitOfMeasurementsError(null);
+    try {
+      const response = await itemsApi.getUnitOfMeasurements();
+      if (response.success) {
+        setUnitOfMeasurements(response.data || []);
+      } else {
+        setUnitOfMeasurementsError(response.message || 'Failed to fetch units of measurement');
+      }
+    } catch (error: any) {
+      setUnitOfMeasurementsError(error.message || 'Failed to fetch units of measurement');
+    } finally {
+      setIsLoadingUnitOfMeasurements(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnitOfMeasurements();
+  }, [fetchUnitOfMeasurements]);
+
   const handleOpenDialog = (item?: Item) => {
     if (item) {
       setSelectedItem(item);
@@ -106,7 +131,7 @@ const Items: React.FC = () => {
         unitPrice: item.unitPrice,
         purchaseTaxValue: item.purchaseTaxValue,
         salesTaxValue: item.salesTaxValue,
-        uom: item.uom || 'Numbers, pieces, units',
+        uom: item.uom || 'PCS',
         initialStock: item.initialStock || 0,
       });
     } else {
@@ -117,7 +142,7 @@ const Items: React.FC = () => {
         unitPrice: 0,
         purchaseTaxValue: 0,
         salesTaxValue: 0,
-        uom: 'Numbers, pieces, units',
+        uom: 'PCS',
         initialStock: 0,
       });
     }
@@ -133,13 +158,13 @@ const Items: React.FC = () => {
       unitPrice: 0,
       purchaseTaxValue: 0,
       salesTaxValue: 0,
-      uom: 'Numbers, pieces, units',
+      uom: 'PCS',
       initialStock: 0,
     });
   };
 
   const handleSubmit = async () => {
-    if (!formData.hsCode || !formData.description || formData.unitPrice <= 0) {
+    if (!formData.hsCode || !formData.description || formData.unitPrice <= 0 || !formData.uom) {
       showSnackbar('Please fill in all required fields', 'error');
       return;
     }
@@ -152,7 +177,7 @@ const Items: React.FC = () => {
         unitPrice: formData.unitPrice,
         purchaseTaxValue: formData.purchaseTaxValue,
         salesTaxValue: formData.salesTaxValue,
-        uom: formData.uom || 'Numbers, pieces, units',
+        uom: formData.uom || 'PCS',
         initialStock: formData.initialStock,
       };
 
@@ -238,7 +263,7 @@ const Items: React.FC = () => {
           unitPrice: parseFloat(values[headers.indexOf('unitprice')]) || 0,
           purchaseTaxValue: parseFloat(values[headers.indexOf('purchasetaxvalue')]) || 0,
           salesTaxValue: parseFloat(values[headers.indexOf('salestaxvalue')]) || 0,
-          uom: values[headers.indexOf('uom')] || 'Numbers, pieces, units',
+          uom: values[headers.indexOf('uom')] || 'PCS',
           initialStock: headers.indexOf('initialstock') !== -1 ? parseFloat(values[headers.indexOf('initialstock')]) || 0 : 0,
         };
 
@@ -280,40 +305,28 @@ const Items: React.FC = () => {
       return;
     }
 
-    downloadCSVFile(
-      `items_${new Date().toISOString().split('T')[0]}.csv`,
-      [
-        ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'ItemCreateDate'],
-        ...items.map(item => [
-          item.hsCode,
-          item.description,
-          item.unitPrice,
-          item.purchaseTaxValue,
-          item.salesTaxValue,
-          item.itemCreateDate
-        ])
-      ]
-    );
-  };
+    const headers = ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'ItemCreateDate'];
+    const csvContent = [
+      headers.join(','),
+      ...items.map(item => [
+        item.hsCode,
+        `"${item.description}"`,
+        item.unitPrice,
+        item.purchaseTaxValue,
+        item.salesTaxValue,
+        item.itemCreateDate
+      ].join(','))
+    ].join('\n');
 
-  const handleTemplateDownload = () => {
-    downloadCSVFile(
-      'items_import_template.csv',
-      [
-        ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'UoM', 'InitialStock'],
-        [
-          '0101.2100',
-          'Sample Item',
-          1000,
-          0,
-          18,
-          'Numbers, pieces, units',
-          50,
-        ],
-      ]
-    );
-
-    showSnackbar('Item CSV template downloaded successfully', 'success');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `items_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Calculate summary statistics
@@ -455,14 +468,6 @@ const Items: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
-              onClick={handleTemplateDownload}
-              sx={{ borderRadius: 2 }}
-            >
-              Download Template (CSV)
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
               onClick={handleCSVDownload}
               disabled={items.length === 0}
               sx={{ borderRadius: 2 }}
@@ -479,7 +484,7 @@ const Items: React.FC = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>HS Code</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Unit Price</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Initial Stock</TableCell>
+                {/* <TableCell sx={{ fontWeight: 'bold' }}>Initial Stock</TableCell> */}
                 <TableCell sx={{ fontWeight: 'bold' }}>Current Stock</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Purchase Tax</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Sales Tax</TableCell>
@@ -501,7 +506,7 @@ const Items: React.FC = () => {
                     </Tooltip>
                   </TableCell>
                   <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                  <TableCell align="center">{item.initialStock || 0}</TableCell>
+                  {/* <TableCell align="center">{item.initialStock || 0}</TableCell> */}
                   <TableCell align="center">
                     <Chip 
                       label={item.currentStock || 0} 
@@ -629,14 +634,29 @@ const Items: React.FC = () => {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
+              {unitOfMeasurementsError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  Error loading Unit of Measurement: {unitOfMeasurementsError}
+                </Alert>
+              )}
               <TextField
                 fullWidth
+                select
                 label="Unit of Measurement"
                 value={formData.uom}
                 onChange={(e) => setFormData({ ...formData, uom: e.target.value })}
                 required
-                placeholder="e.g., PCS, KG, LTR, MTR"
-              />
+                disabled={isLoadingUnitOfMeasurements}
+              >
+                <MenuItem value="">
+                  <em>Select Unit</em>
+                </MenuItem>
+                {unitOfMeasurements.map((uom) => (
+                  <MenuItem key={uom.description} value={uom.description}>
+                    {uom.description ? `${uom.description}` : uom.code}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
           </Grid>
         </DialogContent>
