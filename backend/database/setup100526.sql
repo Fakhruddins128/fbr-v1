@@ -22,6 +22,7 @@ BEGIN
         NTNNumber NVARCHAR(20) NOT NULL,
         CNIC NVARCHAR(20) NULL,
         BusinessNameForSalesInvoice NVARCHAR(255) NULL,
+        SalesInvoiceTemplate NVARCHAR(50) NOT NULL DEFAULT 'template1',
         Address NVARCHAR(255) NOT NULL,
         City NVARCHAR(50) NOT NULL,
         Province NVARCHAR(50) NOT NULL,
@@ -47,6 +48,8 @@ IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Companies'
     ALTER TABLE Companies ADD CNIC NVARCHAR(20) NULL;
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Companies') AND name = 'BusinessNameForSalesInvoice')
     ALTER TABLE Companies ADD BusinessNameForSalesInvoice NVARCHAR(255) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Companies') AND name = 'SalesInvoiceTemplate')
+    ALTER TABLE Companies ADD SalesInvoiceTemplate NVARCHAR(50) NOT NULL DEFAULT 'template1';
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Companies') AND name = 'BusinessActivity')
     ALTER TABLE Companies ADD BusinessActivity NVARCHAR(MAX) NULL;
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Companies') AND name = 'Sector')

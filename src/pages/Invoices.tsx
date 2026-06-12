@@ -1337,6 +1337,7 @@ const Invoices: React.FC = () => {
                   invoiceStatuses: []
                 }
               } : undefined}
+              template={printInvoiceCompany?.salesInvoiceTemplate || 'template1'}
             />
           )}
         </DialogContent>

@@ -62,6 +62,7 @@ const CompanyManagement: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     businessNameForSalesInvoice: '',
+    salesInvoiceTemplate: 'template1' as 'template1' | 'template2',
     ntnNumber: '',
     cnic: '',
     address: '',
@@ -89,6 +90,7 @@ const CompanyManagement: React.FC = () => {
       setFormData({
         name: company.name,
         businessNameForSalesInvoice: company.businessNameForSalesInvoice || '',
+        salesInvoiceTemplate: company.salesInvoiceTemplate || 'template1',
         ntnNumber: company.ntnNumber,
         cnic: company.cnic,
         address: company.address,
@@ -119,6 +121,7 @@ const CompanyManagement: React.FC = () => {
       setFormData({
         name: '',
         businessNameForSalesInvoice: '',
+        salesInvoiceTemplate: 'template1',
         ntnNumber: '',
         cnic: '',
         address: '',
@@ -400,6 +403,30 @@ const CompanyManagement: React.FC = () => {
                 onChange={handleInputChange}
                 placeholder="Name to appear on invoices"
               />
+            </Box>
+            <Box sx={{ width: '100%' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                Report Setup
+              </Typography>
+            </Box>
+            <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControl fullWidth>
+                <InputLabel>Sales Invoice Template</InputLabel>
+                <Select
+                  name="salesInvoiceTemplate"
+                  value={formData.salesInvoiceTemplate}
+                  label="Sales Invoice Template"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      salesInvoiceTemplate: e.target.value as 'template1' | 'template2'
+                    }))
+                  }
+                >
+                  <MenuItem value="template1">Template 1</MenuItem>
+                  <MenuItem value="template2">Template 2</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
               <TextField

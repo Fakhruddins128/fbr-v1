@@ -2903,6 +2903,7 @@ const SalesInvoice: React.FC = () => {
             <SalesInvoiceReport 
               invoiceData={prepareInvoiceData()}
               fbrResponse={fbrResponse}
+              template={currentCompany?.salesInvoiceTemplate || 'template1'}
             />
           )}
         </DialogContent>

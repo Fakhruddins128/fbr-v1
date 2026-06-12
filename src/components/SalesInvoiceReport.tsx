@@ -72,35 +72,38 @@ interface SalesInvoiceReportProps {
     items: InvoiceItem[];
   };
   fbrResponse?: FbrResponse;
+  template?: 'template1' | 'template2';
 }
 
-const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
-  const calculateTotals = () => {
-    const subtotal = invoiceData.items.reduce((sum, item) => sum + item.valueSalesExcludingST, 0);
-    const totalSalesTax = invoiceData.items.reduce((sum, item) => sum + item.salesTaxApplicable, 0);
-    const totalFED = invoiceData.items.reduce((sum, item) => sum + item.fedPayable, 0);
-    const totalDiscount = invoiceData.items.reduce((sum, item) => sum + item.discount, 0);
-    
-    // Calculate Grand Total properly: Subtotal + Sales Tax + FED - Discount
-    const grandTotal = subtotal + totalSalesTax + totalFED - totalDiscount;
-    
-    return { subtotal, totalSalesTax, totalFED, totalDiscount, grandTotal };
-  };
+const formatAmount = (value: number): string => value.toLocaleString(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
 
-  const totals = calculateTotals();
+const calculateTotals = (items: InvoiceItem[]) => {
+  const subtotal = items.reduce((sum, item) => sum + item.valueSalesExcludingST, 0);
+  const totalSalesTax = items.reduce((sum, item) => sum + item.salesTaxApplicable, 0);
+  const totalFED = items.reduce((sum, item) => sum + item.fedPayable, 0);
+  const totalDiscount = items.reduce((sum, item) => sum + item.discount, 0);
+  const grandTotal = subtotal + totalSalesTax + totalFED - totalDiscount;
+
+  return { subtotal, totalSalesTax, totalFED, totalDiscount, grandTotal };
+};
+
+const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
+  const totals = calculateTotals(invoiceData.items);
 
   return (
-    <Box sx={{ 
-      p: 3, 
-      maxWidth: '100%', 
+    <Box sx={{
+      p: 3,
+      maxWidth: '100%',
       width: '100%',
-      margin: '0 auto', 
+      margin: '0 auto',
       backgroundColor: 'white',
       '@media print': {
         maxWidth: '210mm'
       }
     }}>
-      {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
           {invoiceData.sellerBusinessName}
@@ -110,7 +113,6 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
         </Typography>
       </Box>
 
-      {/* FBR Invoice Info - Invoice Number, Date and QR Code */}
       {fbrResponse && (
         <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
           <Grid container spacing={2} alignItems="center">
@@ -124,10 +126,10 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
             </Grid>
             <Grid size={{ xs: 3 }} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Box sx={{ p: 1, bgcolor: 'white', border: '1px solid #ddd', borderRadius: 1 }}>
-                <QRCodeCanvas 
-                  value={fbrResponse.invoiceNumber} 
+                <QRCodeCanvas
+                  value={fbrResponse.invoiceNumber}
                   size={100}
-                  level={"H"}
+                  level="H"
                 />
               </Box>
             </Grid>
@@ -135,7 +137,6 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
         </Box>
       )}
 
-      {/* Invoice Details */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6 }}>
           <Box sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
@@ -162,7 +163,6 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
         </Grid>
       </Grid>
 
-      {/* Invoice Meta Information */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 6 }}>
           <Typography variant="body2"><strong>Invoice Date:</strong> {format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy')}</Typography>
@@ -175,10 +175,9 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
 
       <Divider sx={{ my: 2 }} />
 
-      {/* Items Table */}
-      <TableContainer 
-        component={Paper} 
-        sx={{ 
+      <TableContainer
+        component={Paper}
+        sx={{
           mb: 3,
           width: '100%',
           overflow: 'visible',
@@ -196,10 +195,10 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
           }
         }}
       >
-        <Table 
-          size="small" 
-          sx={{ 
-            width: '100%', 
+        <Table
+          size="small"
+          sx={{
+            width: '100%',
             tableLayout: 'fixed',
             '@media print': {
               width: '100%',
@@ -209,134 +208,35 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
           }}
         >
           <TableHead>
-            <TableRow sx={{ 
-              backgroundColor: '#f5f5f5',
-              '@media print': {
-                backgroundColor: '#f0f0f0'
-              }
-            }}>
-              <TableCell sx={{ 
-                width: '5%', 
-                minWidth: '40px',
-                '@media print': { width: '5%', minWidth: 'auto', padding: '4px' }
-              }}><strong>S.No</strong></TableCell>
-              <TableCell sx={{ 
-                width: '12%', 
-                minWidth: '80px',
-                '@media print': { width: '12%', minWidth: 'auto', padding: '4px' }
-              }}><strong>HS Code</strong></TableCell>
-              <TableCell sx={{ 
-                width: '25%', 
-                minWidth: '150px',
-                '@media print': { width: '25%', minWidth: 'auto', padding: '4px' }
-              }}><strong>Description</strong></TableCell>
-              <TableCell sx={{ 
-                width: '10%', 
-                minWidth: '70px',
-                '@media print': { width: '10%', minWidth: 'auto', padding: '4px' }
-              }}><strong>UoM</strong></TableCell>
-              <TableCell align="right" sx={{ 
-                width: '8%', 
-                minWidth: '60px',
-                '@media print': { width: '8%', minWidth: 'auto', padding: '4px' }
-              }}><strong>Qty</strong></TableCell>
-              <TableCell align="right" sx={{ 
-                width: '8%', 
-                minWidth: '60px',
-                '@media print': { width: '8%', minWidth: 'auto', padding: '4px' }
-              }}><strong>Rate</strong></TableCell>
-              <TableCell align="right" sx={{ 
-                width: '10%', 
-                minWidth: '80px',
-                '@media print': { width: '10%', minWidth: 'auto', padding: '4px' }
-              }}><strong>Value (Ex. ST)</strong></TableCell>
-              <TableCell align="right" sx={{ 
-                width: '10%', 
-                minWidth: '80px',
-                '@media print': { width: '10%', minWidth: 'auto', padding: '4px' }
-              }}><strong>Sales Tax</strong></TableCell>
-              <TableCell align="right" sx={{ 
-                width: '7%', 
-                minWidth: '60px',
-                '@media print': { width: '7%', minWidth: 'auto', padding: '4px' }
-              }}><strong>FED</strong></TableCell>
-              <TableCell align="right" sx={{ 
-                width: '10%', 
-                minWidth: '80px',
-                '@media print': { width: '10%', minWidth: 'auto', padding: '4px' }
-              }}><strong>Total</strong></TableCell>
+            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableCell sx={{ width: '5%' }}><strong>S.No</strong></TableCell>
+              <TableCell sx={{ width: '12%' }}><strong>HS Code</strong></TableCell>
+              <TableCell sx={{ width: '25%' }}><strong>Description</strong></TableCell>
+              <TableCell sx={{ width: '10%' }}><strong>UoM</strong></TableCell>
+              <TableCell align="right" sx={{ width: '8%' }}><strong>Qty</strong></TableCell>
+              <TableCell align="right" sx={{ width: '8%' }}><strong>Rate</strong></TableCell>
+              <TableCell align="right" sx={{ width: '10%' }}><strong>Value (Ex. ST)</strong></TableCell>
+              <TableCell align="right" sx={{ width: '10%' }}><strong>Sales Tax</strong></TableCell>
+              <TableCell align="right" sx={{ width: '7%' }}><strong>FED</strong></TableCell>
+              <TableCell align="right" sx={{ width: '10%' }}><strong>Total</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {invoiceData.items.map((item, index) => {
-              // Calculate correct item total: Value + Sales Tax + FED - Discount
               const itemTotal = item.valueSalesExcludingST + item.salesTaxApplicable + item.fedPayable - item.discount;
-              
+
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ 
-                    width: '5%', 
-                    minWidth: '40px', 
-                    textAlign: 'center',
-                    '@media print': { width: '5%', minWidth: 'auto', padding: '2px', fontSize: '0.75rem' }
-                  }}>{index + 1}</TableCell>
-                  <TableCell sx={{ 
-                    width: '12%', 
-                    minWidth: '80px',
-                    wordBreak: 'break-word',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '12%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ 
-                    width: '25%', 
-                    minWidth: '150px',
-                    wordBreak: 'break-word',
-                    whiteSpace: 'normal',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '25%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ 
-                    width: '10%', 
-                    minWidth: '70px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '10%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.uoM}</TableCell>
-                  <TableCell align="right" sx={{ 
-                    width: '8%', 
-                    minWidth: '60px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '8%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.quantity}</TableCell>
-                  <TableCell align="right" sx={{ 
-                    width: '8%', 
-                    minWidth: '60px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '8%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.rate}</TableCell>
-                  <TableCell align="right" sx={{ 
-                    width: '10%', 
-                    minWidth: '80px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '10%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.valueSalesExcludingST.toFixed(2)}</TableCell>
-                  <TableCell align="right" sx={{ 
-                    width: '10%', 
-                    minWidth: '80px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '10%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.salesTaxApplicable.toFixed(2)}</TableCell>
-                  <TableCell align="right" sx={{ 
-                    width: '7%', 
-                    minWidth: '60px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '7%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}>{item.fedPayable.toFixed(2)}</TableCell>
-                  <TableCell align="right" sx={{ 
-                    width: '10%', 
-                    minWidth: '80px',
-                    fontSize: '0.875rem',
-                    '@media print': { width: '10%', minWidth: 'auto', padding: '2px', fontSize: '0.7rem' }
-                  }}><strong>{itemTotal.toFixed(2)}</strong></TableCell>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{item.hsCode}</TableCell>
+                  <TableCell>{item.productDescription}</TableCell>
+                  <TableCell>{item.uoM}</TableCell>
+                  <TableCell align="right">{item.quantity}</TableCell>
+                  <TableCell align="right">{item.rate}</TableCell>
+                  <TableCell align="right">{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell align="right">{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell align="right">{formatAmount(item.fedPayable)}</TableCell>
+                  <TableCell align="right"><strong>{formatAmount(itemTotal)}</strong></TableCell>
                 </TableRow>
               );
             })}
@@ -344,7 +244,6 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
         </Table>
       </TableContainer>
 
-      {/* Totals Section */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
         <Box sx={{ minWidth: 300 }}>
           <Grid container spacing={1}>
@@ -352,25 +251,25 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
               <Typography variant="body2">Subtotal (Ex. Tax):</Typography>
             </Grid>
             <Grid size={{ xs: 4 }}>
-              <Typography variant="body2" align="right">{totals.subtotal.toFixed(2)}</Typography>
+              <Typography variant="body2" align="right">{formatAmount(totals.subtotal)}</Typography>
             </Grid>
             <Grid size={{ xs: 8 }}>
               <Typography variant="body2">Total Sales Tax:</Typography>
             </Grid>
             <Grid size={{ xs: 4 }}>
-              <Typography variant="body2" align="right">{totals.totalSalesTax.toFixed(2)}</Typography>
+              <Typography variant="body2" align="right">{formatAmount(totals.totalSalesTax)}</Typography>
             </Grid>
             <Grid size={{ xs: 8 }}>
               <Typography variant="body2">Total FED:</Typography>
             </Grid>
             <Grid size={{ xs: 4 }}>
-              <Typography variant="body2" align="right">{totals.totalFED.toFixed(2)}</Typography>
+              <Typography variant="body2" align="right">{formatAmount(totals.totalFED)}</Typography>
             </Grid>
             <Grid size={{ xs: 8 }}>
               <Typography variant="body2">Total Discount:</Typography>
             </Grid>
             <Grid size={{ xs: 4 }}>
-              <Typography variant="body2" align="right">{totals.totalDiscount.toFixed(2)}</Typography>
+              <Typography variant="body2" align="right">{formatAmount(totals.totalDiscount)}</Typography>
             </Grid>
             <Grid size={{ xs: 12 }}>
               <Divider sx={{ my: 1 }} />
@@ -380,14 +279,13 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
             </Grid>
             <Grid size={{ xs: 4 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold' }} align="right">
-                {totals.grandTotal.toFixed(2)}
+                {formatAmount(totals.grandTotal)}
               </Typography>
             </Grid>
           </Grid>
         </Box>
       </Box>
 
-      {/* Footer */}
       <Box sx={{ mt: 4, pt: 2, borderTop: '1px solid #e0e0e0', textAlign: 'center' }}>
         <Typography variant="body2" color="text.secondary">
           This is a computer-generated invoice and does not require a signature.
@@ -398,6 +296,173 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fb
       </Box>
     </Box>
   );
+};
+
+const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
+  const totals = calculateTotals(invoiceData.items);
+
+  return (
+    <Box sx={{
+      backgroundColor: '#fff',
+      color: '#000',
+      p: 2.5,
+      margin: '0 auto',
+      width: '100%',
+      maxWidth: '210mm',
+      border: '1px solid #000',
+      fontFamily: '"Times New Roman", serif',
+      '@media print': {
+        border: '1px solid #000',
+        boxShadow: 'none'
+      }
+    }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+        <Box sx={{ width: '68%' }}>
+          <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, mb: 0.5 }}>
+            SELLER NAME & ADDRESS
+          </Typography>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase' }}>
+            {invoiceData.sellerBusinessName}
+          </Typography>
+          <Typography sx={{ fontSize: '0.82rem', whiteSpace: 'pre-line' }}>
+            {invoiceData.sellerAddress}
+          </Typography>
+          <Typography sx={{ fontSize: '0.8rem' }}>
+            {invoiceData.sellerProvince}
+          </Typography>
+          <Typography sx={{ fontSize: '0.76rem', mt: 0.5 }}>
+            NTN / ST REG NO. : {invoiceData.sellerNTNCNIC || 'N/A'}
+          </Typography>
+        </Box>
+
+        <Box sx={{ width: '30%', textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '0.8rem' }}>
+            <strong>Invoice No. :</strong> {invoiceData.invoiceRefNo || 'N/A'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.8rem', mb: 1 }}>
+            <strong>Date :</strong> {format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy')}
+          </Typography>
+          {fbrResponse?.invoiceNumber && (
+            <Typography sx={{ fontSize: '0.72rem' }}>
+              <strong>FBR Ref :</strong> {fbrResponse.invoiceNumber}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      <Box sx={{ textAlign: 'center', mb: 1.5 }}>
+        <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase' }}>
+          Sales Tax Invoice
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 1.5 }}>
+        <Box sx={{ width: '50%' }}>
+          <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, mb: 0.5 }}>
+            BUYER NAME & ADDRESS
+          </Typography>
+          <Typography sx={{ fontSize: '0.95rem', fontWeight: 700 }}>
+            {invoiceData.buyerBusinessName}
+          </Typography>
+          <Typography sx={{ fontSize: '0.82rem', whiteSpace: 'pre-line' }}>
+            {invoiceData.buyerAddress}
+          </Typography>
+          <Typography sx={{ fontSize: '0.8rem' }}>
+            {invoiceData.buyerProvince}
+          </Typography>
+          <Typography sx={{ fontSize: '0.76rem', mt: 0.5 }}>
+            NTN / ST REG NO. : {invoiceData.buyerNTNCNIC || 'N/A'}
+          </Typography>
+        </Box>
+        <Box sx={{ width: '50%', textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '0.76rem' }}>
+            <strong>Buyer Registration Type :</strong> {invoiceData.buyerRegistrationType}
+          </Typography>
+          <Typography sx={{ fontSize: '0.76rem' }}>
+            <strong>PO No. :</strong> {invoiceData.poNumber || 'N/A'}
+          </Typography>
+        </Box>
+      </Box>
+
+      <TableContainer sx={{ mb: 1.5 }}>
+        <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '5%' }}>S.</TableCell>
+              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '8%' }}>Quantity</TableCell>
+              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '28%' }}>Description Of Goods</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '11%' }}>Unit Price</TableCell>
+              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '12%' }}>H. S. CODE</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '12%' }}>Val. Excl. S.Tax</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '8%' }}>Rate Of S. Tax</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '8%' }}>Sales Tax</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '12%' }}>Val. Incl. S.Tax</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {invoiceData.items.map((item, index) => {
+              const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
+              const valueIncludingTax = item.valueSalesExcludingST + item.salesTaxApplicable;
+
+              return (
+                <TableRow key={index}>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{index + 1}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.productDescription}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.hsCode}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.rate}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(valueIncludingTax)}</TableCell>
+                </TableRow>
+              );
+            })}
+            <TableRow>
+              <TableCell colSpan={5} sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+                Total Amount :
+              </TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+                {formatAmount(totals.subtotal)}
+              </TableCell>
+              <TableCell sx={{ border: '1px solid #000', fontSize: '0.75rem', px: 0.75, py: 0.7 }} />
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+                {formatAmount(totals.totalSalesTax)}
+              </TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+                {formatAmount(totals.subtotal + totals.totalSalesTax)}
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+        <Box>
+          <Typography sx={{ fontSize: '0.76rem' }}>
+            Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center', minWidth: 180 }}>
+          <Typography sx={{ fontSize: '0.78rem', mb: 3 }}>
+            For {invoiceData.sellerBusinessName}
+          </Typography>
+          <Divider sx={{ borderColor: '#000' }} />
+          <Typography sx={{ fontSize: '0.72rem', mt: 0.6 }}>
+            Authorized Signature
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+};
+
+const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
+  if (props.template === 'template2') {
+    return <TemplateTwo {...props} />;
+  }
+
+  return <TemplateOne {...props} />;
 };
 
 export default SalesInvoiceReport;

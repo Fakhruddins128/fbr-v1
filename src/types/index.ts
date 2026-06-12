@@ -26,6 +26,7 @@ export interface Company {
   ntnNumber: string;
   cnic: string;
   businessNameForSalesInvoice?: string;
+  salesInvoiceTemplate?: 'template1' | 'template2';
   address: string;
   city: string;
   province: string;
