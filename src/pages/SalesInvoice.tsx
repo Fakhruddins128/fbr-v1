@@ -2881,7 +2881,7 @@ const SalesInvoice: React.FC = () => {
             display: 'none'
           }
         }}>
-          <Typography variant="h6">Invoice Preview</Typography>
+          <Typography variant="h6">Invoice Preview 1</Typography>
           <IconButton 
             onClick={() => setShowInvoicePreview(false)}
             sx={{

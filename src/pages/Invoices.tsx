@@ -1295,6 +1295,7 @@ const Invoices: React.FC = () => {
             onClick={() => setShowPrintDialog(false)}
             sx={{
               '@media print': {
+                
                 display: 'none'
               }
             }}
