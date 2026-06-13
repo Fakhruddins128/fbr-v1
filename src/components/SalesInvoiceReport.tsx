@@ -300,6 +300,26 @@ const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
 const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
   const totals = calculateTotals(invoiceData.items);
+  const headerTitleSx = {
+    border: '3px solid #000',
+    textAlign: 'center' as const,
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    lineHeight: 1.1,
+    py: 0.3,
+    mb: 0.9,
+    backgroundColor: '#f5f5f5'
+  };
+  const headerBodySx = {
+    border: '1.5px solid #000',
+    backgroundColor: '#ececec',
+    minHeight: 138,
+    px: 2,
+    py: 1.2,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'space-between'
+  };
 
   return (
     <Box sx={{
@@ -316,26 +336,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         boxShadow: 'none'
       }
     }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-        <Box sx={{ width: '68%' }}>
-          <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, mb: 0.5 }}>
-            SELLER NAME & ADDRESS
-          </Typography>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase' }}>
-            {invoiceData.sellerBusinessName}
-          </Typography>
-          <Typography sx={{ fontSize: '0.82rem', whiteSpace: 'pre-line' }}>
-            {invoiceData.sellerAddress}
-          </Typography>
-          <Typography sx={{ fontSize: '0.8rem' }}>
-            {invoiceData.sellerProvince}
-          </Typography>
-          <Typography sx={{ fontSize: '0.76rem', mt: 0.5 }}>
-            NTN / ST REG NO. : {invoiceData.sellerNTNCNIC || 'N/A'}
-          </Typography>
-        </Box>
-
-        <Box sx={{ width: '30%', textAlign: 'right' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.2 }}>
+        <Box sx={{ width: '100%', textAlign: 'right' }}>
           <Typography sx={{ fontSize: '0.8rem' }}>
             <strong>Invoice No. :</strong> {invoiceData.invoiceRefNo || 'N/A'}
           </Typography>
@@ -356,32 +358,69 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 1.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3, mb: 2 }}>
         <Box sx={{ width: '50%' }}>
-          <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, mb: 0.5 }}>
+          <Box sx={headerTitleSx}>
+            SELLER NAME & ADDRESS
+          </Box>
+          <Box sx={headerBodySx}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', textDecoration: 'underline', mb: 0.5 }}>
+                {invoiceData.sellerBusinessName}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'pre-line', lineHeight: 1.35 }}>
+                {invoiceData.sellerAddress}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mt: 0.35 }}>
+                {invoiceData.sellerProvince}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center', mt: 1.2 }}>
+              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
+                SALES TAX REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+              </Typography>
+              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
+                N T N REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '50%' }}>
+          <Box sx={headerTitleSx}>
             BUYER NAME & ADDRESS
-          </Typography>
-          <Typography sx={{ fontSize: '0.95rem', fontWeight: 700 }}>
-            {invoiceData.buyerBusinessName}
-          </Typography>
-          <Typography sx={{ fontSize: '0.82rem', whiteSpace: 'pre-line' }}>
-            {invoiceData.buyerAddress}
-          </Typography>
-          <Typography sx={{ fontSize: '0.8rem' }}>
-            {invoiceData.buyerProvince}
-          </Typography>
-          <Typography sx={{ fontSize: '0.76rem', mt: 0.5 }}>
-            NTN / ST REG NO. : {invoiceData.buyerNTNCNIC || 'N/A'}
-          </Typography>
+          </Box>
+          <Box sx={headerBodySx}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'underline', mb: 0.5 }}>
+                {invoiceData.buyerBusinessName}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'pre-line', lineHeight: 1.35 }}>
+                {invoiceData.buyerAddress}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mt: 0.35 }}>
+                {invoiceData.buyerProvince}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center', mt: 1.2 }}>
+              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
+                SALES TAX REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
+              </Typography>
+              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
+                N T N REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
+              </Typography>
+            </Box>
+          </Box>
         </Box>
-        <Box sx={{ width: '50%', textAlign: 'right' }}>
-          <Typography sx={{ fontSize: '0.76rem' }}>
-            <strong>Buyer Registration Type :</strong> {invoiceData.buyerRegistrationType}
-          </Typography>
-          <Typography sx={{ fontSize: '0.76rem' }}>
-            <strong>PO No. :</strong> {invoiceData.poNumber || 'N/A'}
-          </Typography>
-        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, fontSize: '0.76rem' }}>
+        <Typography sx={{ fontSize: '0.76rem' }}>
+          <strong>Buyer Registration Type :</strong> {invoiceData.buyerRegistrationType}
+        </Typography>
+        <Typography sx={{ fontSize: '0.76rem' }}>
+          <strong>PO No. :</strong> {invoiceData.poNumber || 'N/A'}
+        </Typography>
       </Box>
 
       <TableContainer sx={{ mb: 1.5 }}>
