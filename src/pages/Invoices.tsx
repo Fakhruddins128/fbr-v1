@@ -1290,12 +1290,12 @@ const Invoices: React.FC = () => {
             display: 'none'
           }
         }}>
-          <Typography variant="h6">Invoice Preview</Typography>
+          <Typography variant="h6">Invoice Preview 2</Typography>
           <IconButton 
             onClick={() => setShowPrintDialog(false)}
             sx={{
               '@media print': {
-                
+
                 display: 'none'
               }
             }}
