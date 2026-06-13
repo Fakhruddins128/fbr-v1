@@ -329,33 +329,36 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       margin: '0 auto',
       width: '100%',
       maxWidth: '210mm',
-      border: '1px solid #000',
+      border: '0',
       fontFamily: '"Times New Roman", serif',
       '@media print': {
-        border: '1px solid #000',
+        border: '0',
         boxShadow: 'none'
       }
     }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.2 }}>
-        <Box sx={{ width: '100%', textAlign: 'right' }}>
-          <Typography sx={{ fontSize: '0.8rem' }}>
-            <strong>Invoice No. :</strong> {invoiceData.invoiceRefNo || 'N/A'}
-          </Typography>
-          <Typography sx={{ fontSize: '0.8rem', mb: 1 }}>
-            <strong>Date :</strong> {format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy')}
-          </Typography>
-          {fbrResponse?.invoiceNumber && (
-            <Typography sx={{ fontSize: '0.72rem' }}>
-              <strong>FBR Ref :</strong> {fbrResponse.invoiceNumber}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
-      <Box sx={{ textAlign: 'center', mb: 1.5 }}>
-        <Typography sx={{ fontSize: '1.2rem', fontWeight: 700, textTransform: 'uppercase' }}>
+      <Box sx={{ textAlign: 'center', mb: 1.25 }}>
+        <Typography sx={{ fontSize: '2rem', fontWeight: 400, lineHeight: 1.1 }}>
           Sales Tax Invoice
         </Typography>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.8, px: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Typography sx={{ fontSize: '0.92rem' }}>
+            Invoice No. :
+          </Typography>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'underline' }}>
+            {invoiceData.invoiceRefNo || 'N/A'}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Typography sx={{ fontSize: '0.92rem' }}>
+            Date :
+          </Typography>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'underline' }}>
+            {format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy')}
+          </Typography>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3, mb: 2 }}>
@@ -418,24 +421,32 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         <Typography sx={{ fontSize: '0.76rem' }}>
           <strong>Buyer Registration Type :</strong> {invoiceData.buyerRegistrationType}
         </Typography>
-        <Typography sx={{ fontSize: '0.76rem' }}>
-          <strong>PO No. :</strong> {invoiceData.poNumber || 'N/A'}
-        </Typography>
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '0.76rem' }}>
+            <strong>PO No. :</strong> {invoiceData.poNumber || 'N/A'}
+          </Typography>
+          {fbrResponse?.invoiceNumber && (
+            <Typography sx={{ fontSize: '0.72rem' }}>
+              <strong>FBR Ref :</strong> {fbrResponse.invoiceNumber}
+            </Typography>
+          )}
+        </Box>
       </Box>
+
+      <Box sx={{ borderTop: '3px solid #000', mb: 1.2 }} />
 
       <TableContainer sx={{ mb: 1.5 }}>
         <Table size="small" sx={{ borderCollapse: 'collapse' }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '5%' }}>S.</TableCell>
-              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '8%' }}>Quantity</TableCell>
-              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '28%' }}>Description Of Goods</TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '11%' }}>Unit Price</TableCell>
-              <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '12%' }}>H. S. CODE</TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '12%' }}>Val. Excl. S.Tax</TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '8%' }}>Rate Of S. Tax</TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '8%' }}>Sales Tax</TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.75, py: 0.6, width: '12%' }}>Val. Incl. S.Tax</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '10%', textAlign: 'center' }}>Quantity</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '8%', textAlign: 'center' }}>H. S.<br />CODE</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '30%', textAlign: 'center' }}>Description Of Goods</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '10%' }}>Unit Price</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '14%' }}>Val. Excl.<br />S.Tax</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '7%' }}>Rate Of<br />S. Tax</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '10%' }}>Sales Tax</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '11%' }}>Val. Incl.<br />S.Tax</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -445,30 +456,29 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{index + 1}</TableCell>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.productDescription}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.hsCode}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{item.rate}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.75, py: 0.5 }}>{formatAmount(valueIncludingTax)}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45, textAlign: 'center' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45, textAlign: 'center' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{item.productDescription}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell align="center" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{item.rate}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(valueIncludingTax)}</TableCell>
                 </TableRow>
               );
             })}
             <TableRow>
-              <TableCell colSpan={5} sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+              <TableCell colSpan={4} sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
                 Total Amount :
               </TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
                 {formatAmount(totals.subtotal)}
               </TableCell>
-              <TableCell sx={{ border: '1px solid #000', fontSize: '0.75rem', px: 0.75, py: 0.7 }} />
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+              <TableCell sx={{ border: '1px solid #000', fontSize: '0.75rem', px: 0.55, py: 0.7 }} />
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
                 {formatAmount(totals.totalSalesTax)}
               </TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.75, py: 0.7 }}>
+              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
                 {formatAmount(totals.subtotal + totals.totalSalesTax)}
               </TableCell>
             </TableRow>
