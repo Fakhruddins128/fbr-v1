@@ -459,10 +459,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             </Box>
             <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.3 }}>
-                SALES TAX REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+                REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
               <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.3 }}>
-                N T N REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+                N T N NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
             </Box>
           </Box>
@@ -509,10 +509,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             </Box>
             <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.3 }}>
-                SALES TAX REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
+                REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
               </Typography>
               <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.3 }}>
-                N T N REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
+                N T N NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
               </Typography>
             </Box>
           </Box>
