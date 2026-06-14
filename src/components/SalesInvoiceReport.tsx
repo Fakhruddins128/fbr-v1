@@ -684,17 +684,31 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               {qrValue}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: '0.16in' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.16in' }}>
             <Box
               component="img"
               src="/fbr-digital-logo.png"
               alt="FBR Digital"
-              sx={{ width: '0.62in', height: '0.62in', objectFit: 'contain' }}
+              sx={{ width: '0.7in', height: '0.7in', objectFit: 'contain', display: 'block' }}
             />
-            <Box sx={{ p: '0.02in', backgroundColor: '#fff' }}>
+            <Box
+              sx={{
+                width: '0.7in',
+                height: '0.7in',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fff',
+                '& canvas': {
+                  width: '0.7in !important',
+                  height: '0.7in !important',
+                  display: 'block'
+                }
+              }}
+            >
               <QRCodeCanvas
                 value={qrValue}
-                size={60}
+                size={68}
                 level="H"
                 includeMargin={false}
               />
