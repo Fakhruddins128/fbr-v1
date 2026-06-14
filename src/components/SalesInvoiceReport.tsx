@@ -577,11 +577,12 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             {invoiceData.items.map((item, index) => {
               const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
               const lineInclusive = item.valueSalesExcludingST + item.salesTaxApplicable;
+              const displayUom = item.uoM === 'Numbers, pieces, units' ? 'NOS' : item.uoM;
 
               return (
                 <TableRow key={index}>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{item.uoM}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{displayUom}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{item.hsCode}</TableCell>
                   <TableCell sx={bodyCellSx}>{item.productDescription}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>{formatAmount(unitPrice)}</TableCell>
