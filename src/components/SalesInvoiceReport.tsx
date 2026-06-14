@@ -343,6 +343,17 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
     px: 0.35,
     py: 0.36
   };
+  const totalRowCellSx = {
+    borderTop: `2px solid ${borderColor}`,
+    borderBottom: `2px solid ${borderColor}`,
+    borderLeft: `1px solid ${borderColor}`,
+    borderRight: `1px solid ${borderColor}`,
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    py: 0.55,
+    px: 0.22,
+    whiteSpace: 'nowrap'
+  };
 
   return (
     <Box
@@ -426,23 +437,25 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              px: 1.25,
-              pt: 1.15,
+              px: 0,
+              pt: 0.02,
               pb: 0.45
             }}
           >
             <Box>
-              <Typography sx={{ textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', mb: 0.35 }}>
-                {invoiceData.sellerBusinessName || 'N/A'}
-              </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line' }}>
+              <Box sx={{ backgroundColor: '#c9c9c9', py: 0.18, px: 0.8, mb: 0.3 }}>
+                <Typography sx={{ textAlign: 'center', fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', lineHeight: 1.1 }}>
+                  {invoiceData.sellerBusinessName || 'N/A'}
+                </Typography>
+              </Box>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
                 {invoiceData.sellerAddress || 'N/A'}
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
                 {invoiceData.sellerProvince || ''}
               </Typography>
             </Box>
-            <Box sx={{ pt: 0.35 }}>
+            <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.3 }}>
                 SALES TAX REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
@@ -474,23 +487,25 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              px: 1.25,
-              pt: 1.15,
+              px: 0,
+              pt: 0.02,
               pb: 0.45
             }}
           >
             <Box>
-              <Typography sx={{ textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', mb: 0.35 }}>
-                {invoiceData.buyerBusinessName || 'N/A'}
-              </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line' }}>
+              <Box sx={{ backgroundColor: '#c9c9c9', py: 0.18, px: 0.8, mb: 0.3 }}>
+                <Typography sx={{ textAlign: 'center', fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', lineHeight: 1.1 }}>
+                  {invoiceData.buyerBusinessName || 'N/A'}
+                </Typography>
+              </Box>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
                 {invoiceData.buyerAddress || 'N/A'}
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
                 {invoiceData.buyerProvince || ''}
               </Typography>
             </Box>
-            <Box sx={{ pt: 0.35 }}>
+            <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', lineHeight: 1.3 }}>
                 SALES TAX REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
               </Typography>
@@ -595,89 +610,55 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             <TableRow>
               <TableCell
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
+                  ...totalRowCellSx,
                   textAlign: 'center',
-                  py: 0.6
+                  fontSize: '0.85rem'
                 }}
               >
                 {totalQuantity || ''}
               </TableCell>
               <TableCell
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  py: 0.6
+                  ...totalRowCellSx
                 }}
               />
               <TableCell
                 colSpan={3}
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
+                  ...totalRowCellSx,
                   textAlign: 'center',
-                  py: 0.6
+                  fontSize: '0.85rem'
                 }}
               >
                 Total Amount :
               </TableCell>
               <TableCell
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
-                  textAlign: 'right',
-                  py: 0.6
+                  ...totalRowCellSx,
+                  textAlign: 'right'
                 }}
               >
                 {formatAmount(totals.subtotal)}
               </TableCell>
               <TableCell
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  py: 0.6
+                  ...totalRowCellSx
                 }}
               />
               <TableCell
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
+                  ...totalRowCellSx,
                   textAlign: 'right',
-                  py: 0.6
+                  fontSize: '0.74rem'
                 }}
               >
                 {formatAmount(totals.totalSalesTax)}
               </TableCell>
               <TableCell
                 sx={{
-                  borderTop: `2px solid ${borderColor}`,
-                  borderBottom: `2px solid ${borderColor}`,
-                  borderLeft: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
+                  ...totalRowCellSx,
                   textAlign: 'right',
-                  py: 0.6
+                  fontSize: '0.74rem'
                 }}
               >
                 {formatAmount(inclusiveAmount)}
