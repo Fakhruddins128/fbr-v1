@@ -361,16 +361,18 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         backgroundColor: '#fff',
         color: '#111',
         margin: '0 auto',
-        width: '8.5in',
-        minHeight: '11in',
-        px: '0.38in',
-        py: '0.34in',
+        width: '210mm',
+        minHeight: '297mm',
+        boxSizing: 'border-box',
+        px: '0.5in',
+        py: '0.5in',
         fontFamily: 'Arial, Helvetica, sans-serif',
         '@media print': {
-          width: '8.5in',
-          minHeight: '11in',
-          px: '0.38in',
-          py: '0.34in',
+          width: '210mm',
+          minHeight: '297mm',
+          boxSizing: 'border-box',
+          px: '0.5in',
+          py: '0.5in',
           boxShadow: 'none'
         }
       }}
