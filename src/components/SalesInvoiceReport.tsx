@@ -300,204 +300,244 @@ const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
 const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
   const totals = calculateTotals(invoiceData.items);
-  const headerTitleSx = {
-    border: '3px solid #000',
-    textAlign: 'center' as const,
-    fontSize: '0.82rem',
-    fontWeight: 700,
-    lineHeight: 1.1,
-    py: 0.3,
-    mb: 0.9,
-    backgroundColor: '#f5f5f5'
-  };
-  const headerBodySx = {
-    border: '1.5px solid #000',
-    backgroundColor: '#ececec',
-    minHeight: 138,
-    px: 2,
-    py: 1.2,
+  const invoiceDate = format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy');
+  const metaBoxSx = {
+    border: '2px solid #000',
+    px: 1.2,
+    py: 0.8,
+    minHeight: 42,
     display: 'flex',
-    flexDirection: 'column' as const,
+    alignItems: 'center',
     justifyContent: 'space-between'
+  };
+  const partyHeaderSx = {
+    border: '2px solid #000',
+    borderBottom: '0',
+    textAlign: 'center' as const,
+    py: 0.45,
+    fontWeight: 700,
+    fontSize: '0.8rem',
+    letterSpacing: 0.4,
+    backgroundColor: '#f4f4f4'
+  };
+  const partyBodySx = {
+    border: '2px solid #000',
+    minHeight: 160,
+    px: 1.5,
+    py: 1.1
   };
 
   return (
-    <Box sx={{
-      backgroundColor: '#fff',
-      color: '#000',
-      p: 2.5,
-      margin: '0 auto',
-      width: '100%',
-      maxWidth: '210mm',
-      border: '0',
-      fontFamily: '"Times New Roman", serif',
-      '@media print': {
-        border: '0',
-        boxShadow: 'none'
-      }
-    }}>
-      <Box sx={{ textAlign: 'center', mb: 1.25 }}>
-        <Typography sx={{ fontSize: '2rem', fontWeight: 400, lineHeight: 1.1 }}>
-          Sales Tax Invoice
+    <Box
+      sx={{
+        backgroundColor: '#fff',
+        color: '#000',
+        p: 2,
+        margin: '0 auto',
+        width: '100%',
+        maxWidth: '210mm',
+        fontFamily: '"Times New Roman", serif',
+        '@media print': {
+          p: 1.5,
+          boxShadow: 'none'
+        }
+      }}
+    >
+      <Box sx={{ border: '3px solid #000', px: 1.5, py: 1.1, mb: 1.25 }}>
+        <Typography sx={{ textAlign: 'center', fontSize: '1.9rem', fontWeight: 700, lineHeight: 1.05 }}>
+          SALES TAX INVOICE
+        </Typography>
+        <Typography sx={{ textAlign: 'center', fontSize: '0.76rem', mt: 0.35 }}>
+          Original / Customer Copy
         </Typography>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.8, px: 0.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography sx={{ fontSize: '0.92rem' }}>
-            Invoice No. :
-          </Typography>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'underline' }}>
-            {invoiceData.invoiceRefNo || 'N/A'}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography sx={{ fontSize: '0.92rem' }}>
-            Date :
-          </Typography>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'underline' }}>
-            {format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy')}
-          </Typography>
-        </Box>
-      </Box>
+      <Grid container spacing={1.1} sx={{ mb: 1.2 }}>
+        <Grid size={{ xs: 6 }}>
+          <Box sx={metaBoxSx}>
+            <Typography sx={{ fontSize: '0.82rem', fontWeight: 700 }}>Invoice No.</Typography>
+            <Typography sx={{ fontSize: '0.86rem', fontWeight: 700 }}>{invoiceData.invoiceRefNo || 'N/A'}</Typography>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 6 }}>
+          <Box sx={metaBoxSx}>
+            <Typography sx={{ fontSize: '0.82rem', fontWeight: 700 }}>Invoice Date</Typography>
+            <Typography sx={{ fontSize: '0.86rem', fontWeight: 700 }}>{invoiceDate}</Typography>
+          </Box>
+        </Grid>
+      </Grid>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3, mb: 2 }}>
-        <Box sx={{ width: '50%' }}>
-          <Box sx={headerTitleSx}>
-            SELLER NAME & ADDRESS
-          </Box>
-          <Box sx={headerBodySx}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', textDecoration: 'underline', mb: 0.5 }}>
-                {invoiceData.sellerBusinessName}
-              </Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'pre-line', lineHeight: 1.35 }}>
-                {invoiceData.sellerAddress}
-              </Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mt: 0.35 }}>
-                {invoiceData.sellerProvince}
-              </Typography>
-            </Box>
-            <Box sx={{ textAlign: 'center', mt: 1.2 }}>
-              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
-                SALES TAX REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
-              </Typography>
-              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
-                N T N REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ width: '50%' }}>
-          <Box sx={headerTitleSx}>
-            BUYER NAME & ADDRESS
-          </Box>
-          <Box sx={headerBodySx}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '1rem', fontWeight: 800, textDecoration: 'underline', mb: 0.5 }}>
-                {invoiceData.buyerBusinessName}
-              </Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'pre-line', lineHeight: 1.35 }}>
-                {invoiceData.buyerAddress}
-              </Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mt: 0.35 }}>
-                {invoiceData.buyerProvince}
-              </Typography>
-            </Box>
-            <Box sx={{ textAlign: 'center', mt: 1.2 }}>
-              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
-                SALES TAX REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
-              </Typography>
-              <Typography sx={{ fontSize: '0.76rem', lineHeight: 1.4 }}>
-                N T N REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5, fontSize: '0.76rem' }}>
-        <Typography sx={{ fontSize: '0.76rem' }}>
-          <strong>Buyer Registration Type :</strong> {invoiceData.buyerRegistrationType}
-        </Typography>
-        <Box sx={{ textAlign: 'right' }}>
-          <Typography sx={{ fontSize: '0.76rem' }}>
-            <strong>PO No. :</strong> {invoiceData.poNumber || 'N/A'}
-          </Typography>
-          {fbrResponse?.invoiceNumber && (
-            <Typography sx={{ fontSize: '0.72rem' }}>
-              <strong>FBR Ref :</strong> {fbrResponse.invoiceNumber}
+      <Grid container spacing={1.2} sx={{ mb: 1.2 }}>
+        <Grid size={{ xs: 6 }}>
+          <Box sx={partyHeaderSx}>SELLER NAME & ADDRESS</Box>
+          <Box sx={partyBodySx}>
+            <Typography sx={{ fontSize: '0.96rem', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', mb: 0.8 }}>
+              {invoiceData.sellerBusinessName}
             </Typography>
-          )}
-        </Box>
-      </Box>
+            <Typography sx={{ fontSize: '0.78rem', lineHeight: 1.4, textAlign: 'center', whiteSpace: 'pre-line' }}>
+              {invoiceData.sellerAddress}
+            </Typography>
+            <Typography sx={{ fontSize: '0.78rem', lineHeight: 1.4, textAlign: 'center', mt: 0.4 }}>
+              {invoiceData.sellerProvince}
+            </Typography>
+            <Box sx={{ mt: 1.5, borderTop: '1px solid #000', pt: 0.8 }}>
+              <Typography sx={{ fontSize: '0.74rem', lineHeight: 1.5 }}>
+                <strong>Sales Tax Reg. No:</strong> {invoiceData.sellerNTNCNIC || 'N/A'}
+              </Typography>
+              <Typography sx={{ fontSize: '0.74rem', lineHeight: 1.5 }}>
+                <strong>NTN / CNIC:</strong> {invoiceData.sellerNTNCNIC || 'N/A'}
+              </Typography>
+            </Box>
+          </Box>
+        </Grid>
 
-      <Box sx={{ borderTop: '3px solid #000', mb: 1.2 }} />
+        <Grid size={{ xs: 6 }}>
+          <Box sx={partyHeaderSx}>BUYER NAME & ADDRESS</Box>
+          <Box sx={partyBodySx}>
+            <Typography sx={{ fontSize: '0.96rem', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', mb: 0.8 }}>
+              {invoiceData.buyerBusinessName}
+            </Typography>
+            <Typography sx={{ fontSize: '0.78rem', lineHeight: 1.4, textAlign: 'center', whiteSpace: 'pre-line' }}>
+              {invoiceData.buyerAddress}
+            </Typography>
+            <Typography sx={{ fontSize: '0.78rem', lineHeight: 1.4, textAlign: 'center', mt: 0.4 }}>
+              {invoiceData.buyerProvince}
+            </Typography>
+            <Box sx={{ mt: 1.5, borderTop: '1px solid #000', pt: 0.8 }}>
+              <Typography sx={{ fontSize: '0.74rem', lineHeight: 1.5 }}>
+                <strong>Sales Tax Reg. No:</strong> {invoiceData.buyerNTNCNIC || 'N/A'}
+              </Typography>
+              <Typography sx={{ fontSize: '0.74rem', lineHeight: 1.5 }}>
+                <strong>Buyer Type:</strong> {invoiceData.buyerRegistrationType || 'N/A'}
+              </Typography>
+            </Box>
+          </Box>
+        </Grid>
+      </Grid>
 
-      <TableContainer sx={{ mb: 1.5 }}>
-        <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+      <Grid container spacing={1.1} sx={{ mb: 1.3 }}>
+        <Grid size={{ xs: 4 }}>
+          <Box sx={{ ...metaBoxSx, minHeight: 36 }}>
+            <Typography sx={{ fontSize: '0.76rem', fontWeight: 700 }}>PO No.</Typography>
+            <Typography sx={{ fontSize: '0.76rem' }}>{invoiceData.poNumber || 'N/A'}</Typography>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 4 }}>
+          <Box sx={{ ...metaBoxSx, minHeight: 36 }}>
+            <Typography sx={{ fontSize: '0.76rem', fontWeight: 700 }}>Scenario</Typography>
+            <Typography sx={{ fontSize: '0.76rem' }}>{invoiceData.scenarioId || 'N/A'}</Typography>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 4 }}>
+          <Box sx={{ ...metaBoxSx, minHeight: 36 }}>
+            <Typography sx={{ fontSize: '0.76rem', fontWeight: 700 }}>FBR Ref.</Typography>
+            <Typography sx={{ fontSize: '0.76rem' }}>{fbrResponse?.invoiceNumber || 'N/A'}</Typography>
+          </Box>
+        </Grid>
+      </Grid>
+
+      <TableContainer sx={{ mb: 1.2 }}>
+        <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '10%', textAlign: 'center' }}>Quantity</TableCell>
-              <TableCell sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '8%', textAlign: 'center' }}>H. S.<br />CODE</TableCell>
-              <TableCell sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '30%', textAlign: 'center' }}>Description Of Goods</TableCell>
-              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '10%' }}>Unit Price</TableCell>
-              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '14%' }}>Val. Excl.<br />S.Tax</TableCell>
-              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '7%' }}>Rate Of<br />S. Tax</TableCell>
-              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '10%' }}>Sales Tax</TableCell>
-              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.7rem', fontWeight: 700, px: 0.55, py: 0.45, width: '11%' }}>Val. Incl.<br />S.Tax</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '6%', textAlign: 'center' }}>S#</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '10%', textAlign: 'center' }}>Quantity</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '11%', textAlign: 'center' }}>HS Code</TableCell>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '27%', textAlign: 'center' }}>Description Of Goods</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '8%' }}>UoM</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '10%' }}>Unit Price</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '11%' }}>Value Excl. S.T.</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '7%' }}>Rate</TableCell>
+              <TableCell align="center" sx={{ border: '2px solid #000', fontSize: '0.68rem', fontWeight: 700, px: 0.45, py: 0.55, width: '10%' }}>Sales Tax</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {invoiceData.items.map((item, index) => {
               const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
-              const valueIncludingTax = item.valueSalesExcludingST + item.salesTaxApplicable;
-
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45, textAlign: 'center' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45, textAlign: 'center' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{item.productDescription}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell align="center" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{item.rate}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.72rem', px: 0.55, py: 0.45 }}>{formatAmount(valueIncludingTax)}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45, textAlign: 'center' }}>{index + 1}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45, textAlign: 'center' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45, textAlign: 'center' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45 }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45, textAlign: 'center' }}>{item.uoM}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45 }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45 }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45, textAlign: 'center' }}>{item.rate}</TableCell>
+                  <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.7rem', px: 0.45, py: 0.45 }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
                 </TableRow>
               );
             })}
+
             <TableRow>
-              <TableCell colSpan={4} sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
-                Total Amount :
+              <TableCell colSpan={6} sx={{ border: '2px solid #000', fontSize: '0.73rem', fontWeight: 700, px: 0.45, py: 0.65 }}>
+                TOTAL AMOUNT
               </TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
+              <TableCell align="right" sx={{ border: '2px solid #000', fontSize: '0.73rem', fontWeight: 700, px: 0.45, py: 0.65 }}>
                 {formatAmount(totals.subtotal)}
               </TableCell>
-              <TableCell sx={{ border: '1px solid #000', fontSize: '0.75rem', px: 0.55, py: 0.7 }} />
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
+              <TableCell sx={{ border: '2px solid #000', fontSize: '0.73rem', px: 0.45, py: 0.65 }} />
+              <TableCell align="right" sx={{ border: '2px solid #000', fontSize: '0.73rem', fontWeight: 700, px: 0.45, py: 0.65 }}>
                 {formatAmount(totals.totalSalesTax)}
-              </TableCell>
-              <TableCell align="right" sx={{ border: '1px solid #000', fontSize: '0.75rem', fontWeight: 700, px: 0.55, py: 0.7 }}>
-                {formatAmount(totals.subtotal + totals.totalSalesTax)}
               </TableCell>
             </TableRow>
           </TableBody>
         </Table>
       </TableContainer>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+      <Grid container spacing={1.2} sx={{ mb: 1.3 }}>
+        <Grid size={{ xs: 7.5 }}>
+          <Box sx={{ border: '2px solid #000', minHeight: 92, px: 1.2, py: 0.9 }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, mb: 0.5 }}>Remarks / Notes</Typography>
+            <Typography sx={{ fontSize: '0.72rem', lineHeight: 1.5 }}>
+              Buyer Type: {invoiceData.buyerRegistrationType || 'N/A'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.72rem', lineHeight: 1.5 }}>
+              FBR Invoice No: {fbrResponse?.invoiceNumber || 'N/A'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.72rem', lineHeight: 1.5 }}>
+              This is a computer generated sales tax invoice.
+            </Typography>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 4.5 }}>
+          <Box sx={{ border: '2px solid #000' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #000', px: 1, py: 0.65 }}>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>Subtotal</Typography>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totals.subtotal)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #000', px: 1, py: 0.65 }}>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>Sales Tax</Typography>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totals.totalSalesTax)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #000', px: 1, py: 0.65 }}>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>FED</Typography>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totals.totalFED)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #000', px: 1, py: 0.65 }}>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>Discount</Typography>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totals.totalDiscount)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, py: 0.8, backgroundColor: '#f4f4f4' }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>Grand Total</Typography>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>{formatAmount(totals.grandTotal)}</Typography>
+            </Box>
+          </Box>
+        </Grid>
+      </Grid>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2.1 }}>
         <Box>
-          <Typography sx={{ fontSize: '0.76rem' }}>
+          <Typography sx={{ fontSize: '0.72rem' }}>
             Generated on: {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
           </Typography>
         </Box>
-        <Box sx={{ textAlign: 'center', minWidth: 180 }}>
-          <Typography sx={{ fontSize: '0.78rem', mb: 3 }}>
+        <Box sx={{ width: 210, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: '0.75rem', mb: 3.5 }}>
             For {invoiceData.sellerBusinessName}
           </Typography>
           <Divider sx={{ borderColor: '#000' }} />
-          <Typography sx={{ fontSize: '0.72rem', mt: 0.6 }}>
+          <Typography sx={{ fontSize: '0.72rem', mt: 0.55 }}>
             Authorized Signature
           </Typography>
         </Box>
