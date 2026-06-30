@@ -399,6 +399,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '0.98rem',
+          ml: '-1.0in',
           mb: '0.14in',
           px: '0.05in'
         }}
@@ -551,12 +552,12 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             <col style={{ width: '6.3%' }} />
             <col style={{ width: '5.3%' }} />
             <col style={{ width: '9.1%' }} />
-            <col style={{ width: '24.8%' }} />
+            <col style={{ width: '25.8%' }} />
             <col style={{ width: '9.9%' }} />
             <col style={{ width: '13.4%' }} />
             <col style={{ width: '7.4%' }} />
             <col style={{ width: '9.6%' }} />
-            <col style={{ width: '14.2%' }} />
+            <col style={{ width: '13.2%' }} />
           </colgroup>
           <TableHead>
             <TableRow>
