@@ -425,7 +425,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '0.13in', ml:'-1.0in',  mr: '-0.6in' }}>
-        <Box sx={{ width: '55.8%' }}>
+        <Box sx={{ width: '47.8%' }}>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
@@ -475,7 +475,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Box>
         </Box>
 
-        <Box sx={{ width: '55.8%' }}>
+        <Box sx={{ width: '47.8%' }}>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
@@ -532,7 +532,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           alignItems: 'center',
           borderBottom: `1.5px solid ${borderColor}`,
           ml: '-1.0in',
-          mr: '0.6in',
+          mr: '-0.4in',
           mb: '0.11in',
           pb: '0.02in'
         }}
@@ -730,7 +730,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Box>
         </Box>
 
-        <Box sx={{ width: '36%', mr: '-0.6in' }}>
+        <Box sx={{ width: '36%', mr: '-0.4in' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
             <Typography sx={{ fontSize: '0.88rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
             <Typography sx={{ fontSize: '0.88rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
