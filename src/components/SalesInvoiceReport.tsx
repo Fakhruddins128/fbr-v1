@@ -629,7 +629,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
                 sx={{
                   ...totalRowCellSx,
                   textAlign: 'center',
-                  fontSize: '0.85rem'
+                  fontSize: '1.00rem'
                 }}
               >
                 {totalQuantity || ''}
@@ -644,7 +644,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
                 sx={{
                   ...totalRowCellSx,
                   textAlign: 'center',
-                  fontSize: '0.85rem'
+                  fontSize: '1.00rem'   
                 }}
               >
                 Total Amount :
@@ -666,7 +666,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
                 sx={{
                   ...totalRowCellSx,
                   textAlign: 'right',
-                  fontSize: '0.74rem'
+                  fontSize: '1.00rem'
                 }}
               >
                 {formatAmount(totals.totalSalesTax)}
@@ -675,7 +675,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
                 sx={{
                   ...totalRowCellSx,
                   textAlign: 'right',
-                  fontSize: '0.74rem'
+                  fontSize: '1.00rem'
                 }}
               >
                 {formatAmount(inclusiveAmount)}
@@ -691,10 +691,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             Comments:
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
               FBR INVOICE :
             </Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
               {qrValue}
             </Typography>
           </Box>
@@ -703,19 +703,19 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               component="img"
               src="/fbr-digital-logo.png"
               alt="FBR Digital"
-              sx={{ width: '0.7in', height: '0.7in', objectFit: 'contain', display: 'block' }}
+              sx={{ width: '1.25in', height: '1.25in', objectFit: 'contain', display: 'block' }}
             />
             <Box
               sx={{
-                width: '0.7in',
-                height: '0.7in',
+                width: '1.25in',
+                height: '1.25in',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: '#fff',
                 '& canvas': {
-                  width: '0.7in !important',
-                  height: '0.7in !important',
+                  width: '1.25in !important',
+                  height: '1.25in !important',
                   display: 'block'
                 }
               }}
