@@ -685,7 +685,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         </Table>
       </TableContainer>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', ml:'-1.0in' }}>
         <Box sx={{ width: '48%', pl: '0.02in' }}>
           <Typography sx={{ fontSize: '0.92rem', fontWeight: 700, mb: '0.08in' }}>
             Comments:
