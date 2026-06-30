@@ -541,8 +541,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       <TableContainer
         sx={{
           mb: '0.18in',
-          width: '130%',
-          mx: 'auto'
+          width: '120%',
+          mx: '1.0in'
         }}
       >
         <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' }}>
