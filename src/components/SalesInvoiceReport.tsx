@@ -364,15 +364,17 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         width: '210mm',
         minHeight: '297mm',
         boxSizing: 'border-box',
-        px: '0.5in',
-        py: '0.5in',
+        px: '0.22in',
+        py: '0.2in',
         fontFamily: 'Arial, Helvetica, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
         '@media print': {
           width: '210mm',
           minHeight: '297mm',
           boxSizing: 'border-box',
-          px: '0.5in',
-          py: '0.5in',
+          px: '0.22in',
+          py: '0.2in',
           boxShadow: 'none'
         }
       }}
@@ -380,10 +382,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       <Typography
         sx={{
           textAlign: 'center',
-          fontSize: '1.78rem',
+          fontSize: '2rem',
           fontWeight: 500,
           lineHeight: 1.05,
-          mb: '0.34in'
+          mb: '0.24in'
         }}
       >
         Sales Tax Invoice
@@ -394,31 +396,31 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '0.92rem',
-          mb: '0.12in',
-          px: '0.1in'
+          fontSize: '0.98rem',
+          mb: '0.14in',
+          px: '0.05in'
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography component="span" sx={{ fontSize: '0.92rem' }}>
+          <Typography component="span" sx={{ fontSize: '0.98rem' }}>
             Invoice No. :
           </Typography>
-          <Typography component="span" sx={{ fontSize: '0.98rem', fontWeight: 700, textDecoration: 'underline' }}>
+          <Typography component="span" sx={{ fontSize: '1.04rem', fontWeight: 700, textDecoration: 'underline' }}>
             {invoiceData.invoiceRefNo || 'N/A'}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography component="span" sx={{ fontSize: '0.92rem' }}>
+          <Typography component="span" sx={{ fontSize: '0.98rem' }}>
             Date :
           </Typography>
-          <Typography component="span" sx={{ fontSize: '0.98rem', fontWeight: 700, textDecoration: 'underline' }}>
+          <Typography component="span" sx={{ fontSize: '1.04rem', fontWeight: 700, textDecoration: 'underline' }}>
             {invoiceDate}
           </Typography>
         </Box>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '0.13in' }}>
-        <Box sx={{ width: '45.8%' }}>
+        <Box sx={{ width: '47.8%' }}>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
@@ -435,7 +437,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             sx={{
               border: `1.5px solid ${borderColor}`,
               borderTop: '0',
-              minHeight: '1.55in',
+              minHeight: '1.7in',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -468,7 +470,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Box>
         </Box>
 
-        <Box sx={{ width: '45.0%' }}>
+        <Box sx={{ width: '47.8%' }}>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
@@ -485,7 +487,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             sx={{
               border: `1.5px solid ${borderColor}`,
               borderTop: '0',
-              minHeight: '1.55in',
+              minHeight: '1.7in',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -524,8 +526,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           display: 'flex',
           alignItems: 'center',
           borderBottom: `1.5px solid ${borderColor}`,
-          ml: '0.02in',
-          mr: '0.01in',
+          ml: 0,
+          mr: 0,
           mb: '0.11in',
           pb: '0.02in'
         }}
@@ -537,15 +539,15 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       <TableContainer sx={{ mb: '0.18in' }}>
         <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' }}>
           <colgroup>
-            <col style={{ width: '6.64%' }} />
-            <col style={{ width: '4.10%' }} />
-            <col style={{ width: '9.20%' }} />
-            <col style={{ width: '25.55%' }} />
-            <col style={{ width: '9.74%' }} />
-            <col style={{ width: '13.70%' }} />
-            <col style={{ width: '6.81%' }} />
-            <col style={{ width: '9.58%' }} />
-            <col style={{ width: '14.68%' }} />
+            <col style={{ width: '6.3%' }} />
+            <col style={{ width: '5.3%' }} />
+            <col style={{ width: '9.1%' }} />
+            <col style={{ width: '24.8%' }} />
+            <col style={{ width: '9.9%' }} />
+            <col style={{ width: '13.4%' }} />
+            <col style={{ width: '7.4%' }} />
+            <col style={{ width: '9.6%' }} />
+            <col style={{ width: '14.2%' }} />
           </colgroup>
           <TableHead>
             <TableRow>
@@ -584,7 +586,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               return (
                 <TableRow key={index}>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap' }}>{displayUom}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6 }}>{item.hsCode}</TableCell>
                   <TableCell sx={bodyCellSx}>{item.productDescription}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>{formatAmount(unitPrice)}</TableCell>
@@ -755,7 +757,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         sx={{
           textAlign: 'center',
           fontSize: '0.72rem',
-          mt: '0.62in',
+          mt: 'auto',
+          pt: '0.42in',
           fontFamily: '"Times New Roman", serif'
         }}
       >
