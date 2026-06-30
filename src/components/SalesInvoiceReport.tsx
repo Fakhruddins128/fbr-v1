@@ -730,7 +730,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Box>
         </Box>
 
-        <Box sx={{ width: '36%', mr: '0.6in' }}>
+        <Box sx={{ width: '36%', mr: '-0.6in' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
             <Typography sx={{ fontSize: '0.88rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
             <Typography sx={{ fontSize: '0.88rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
