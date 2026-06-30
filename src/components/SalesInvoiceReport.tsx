@@ -531,8 +531,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           display: 'flex',
           alignItems: 'center',
           borderBottom: `1.5px solid ${borderColor}`,
-          ml: 1.0in,
-          mr: 0,
+          ml: '-1.0in',
+          mr: '0.6in',
           mb: '0.11in',
           pb: '0.02in'
         }}
