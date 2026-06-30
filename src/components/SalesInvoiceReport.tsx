@@ -308,7 +308,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
   const qrValue = (fbrResponse?.invoiceNumber || invoiceData.invoiceRefNo || 'N/A').trim();
-  const blankRows = Math.max(0, 13 - invoiceData.items.length);
+  const blankRows = Math.max(0, 18 - invoiceData.items.length);
 
   const formatPercentage = (value: number) => {
     if (!Number.isFinite(value) || value === 0) {
@@ -325,23 +325,25 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const headerCellSx = {
     border: `1.5px solid ${borderColor}`,
     color: '#111',
-    fontSize: '0.94rem',
+    fontSize: '1rem',
     fontWeight: 700,
     lineHeight: 1.05,
     px: 0.4,
-    py: 0.72,
-    textAlign: 'center'
+    py: 0.92,
+    textAlign: 'center',
+    height: '0.56in'
   };
   const bodyCellSx = {
     borderLeft: `1px solid ${borderColor}`,
     borderRight: `1px solid ${borderColor}`,
     borderBottom: '0',
     borderTop: '0',
-    fontSize: '0.74rem',
+    fontSize: '0.82rem',
     color: '#222',
     lineHeight: 1,
     px: 0.35,
-    py: 0.36
+    py: 0.5,
+    height: '0.28in'
   };
   const totalRowCellSx = {
     borderTop: `2px solid ${borderColor}`,
@@ -585,15 +587,15 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap' }}>{displayUom}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6 }}>{item.hsCode}</TableCell>
-                  <TableCell sx={bodyCellSx}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>{item.rate}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right' }}>{formatAmount(lineInclusive)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top' }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(lineInclusive)}</TableCell>
                 </TableRow>
               );
             })}
