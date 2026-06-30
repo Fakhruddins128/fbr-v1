@@ -400,8 +400,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           alignItems: 'center',
           fontSize: '0.98rem',
           ml: '-1.0in',
+          mr: '1.0in',
           mb: '0.14in',
           px: '0.05in'
+
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -422,8 +424,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '0.13in' }}>
-        <Box sx={{ width: '47.8%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '0.13in', ml:'-1.0in', mr:'1.0in' }}>
+        <Box sx={{ width: '57.8%' }}>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
@@ -473,7 +475,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Box>
         </Box>
 
-        <Box sx={{ width: '47.8%' }}>
+        <Box sx={{ width: '57.8%' }}>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
