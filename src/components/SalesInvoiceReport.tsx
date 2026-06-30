@@ -398,7 +398,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '0.98rem',
+          fontSize: '1.25rem',
           ml: '-1.0in',
           mr: '-0.6in',
           mb: '0.14in',
@@ -407,7 +407,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography component="span" sx={{ fontSize: '0.98rem' }}>
+          <Typography component="span" sx={{ fontSize: '1.25rem' }}>
             Invoice No. :
           </Typography>
           <Typography component="span" sx={{ fontSize: '1.04rem', fontWeight: 700, textDecoration: 'underline' }}>
@@ -415,7 +415,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography component="span" sx={{ fontSize: '0.98rem' }}>
+          <Typography component="span" sx={{ fontSize: '1.25rem' }}>
             Date :
           </Typography>
           <Typography component="span" sx={{ fontSize: '1.04rem', fontWeight: 700, textDecoration: 'underline' }}>
