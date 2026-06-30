@@ -538,7 +538,13 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         <Typography sx={{ fontSize: '0.9rem' }}>CREDIT/CASH</Typography>
       </Box>
 
-      <TableContainer sx={{ mb: '0.18in' }}>
+      <TableContainer
+        sx={{
+          mb: '0.18in',
+          width: '80%',
+          mx: 'auto'
+        }}
+      >
         <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' }}>
           <colgroup>
             <col style={{ width: '6.3%' }} />
