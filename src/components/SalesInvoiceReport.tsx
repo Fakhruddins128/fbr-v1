@@ -553,13 +553,13 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           <colgroup>
             <col style={{ width: '6.3%' }} />
             <col style={{ width: '5.3%' }} />
-            <col style={{ width: '9.1%' }} />
-            <col style={{ width: '25.8%' }} />
+            <col style={{ width: '9.4%' }} />
+            <col style={{ width: '26.1%' }} />
             <col style={{ width: '9.9%' }} />
-            <col style={{ width: '13.4%' }} />
+            <col style={{ width: '13.0%' }} />
             <col style={{ width: '7.4%' }} />
             <col style={{ width: '9.6%' }} />
-            <col style={{ width: '13.2%' }} />
+            <col style={{ width: '13.0%' }} />
           </colgroup>
           <TableHead>
             <TableRow>
