@@ -597,15 +597,15 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{displayUom}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top' }}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top' }}>{item.rate}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(lineInclusive)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem' }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(lineInclusive)}</TableCell>
                 </TableRow>
               );
             })}
@@ -652,7 +652,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               <TableCell
                 sx={{
                   ...totalRowCellSx,
-                  textAlign: 'right'
+                  textAlign: 'right',
+                  fontSize: '1.00rem'
                 }}
               >
                 {formatAmount(totals.subtotal)}
