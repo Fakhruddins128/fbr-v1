@@ -685,15 +685,15 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem' }}>{displayUom}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(lineInclusive)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{formatAmount(lineInclusive)}</TableCell>
                 </TableRow>
               );
             })}
