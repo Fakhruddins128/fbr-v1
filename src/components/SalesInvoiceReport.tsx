@@ -433,7 +433,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               fontSize: '1.25rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 1
+              lineHeight: 2
             }}
           >
             SELLER NAME &amp; ADDRESS
@@ -447,7 +447,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               flexDirection: 'column',
               justifyContent: 'space-between',
               px: 0,
-              pt: 0.02,
+              pt: 0.45,
               pb: 0.45
             }}
           >
