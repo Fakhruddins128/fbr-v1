@@ -370,7 +370,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
   const qrValue = (fbrResponse?.invoiceNumber || invoiceData.invoiceRefNo || 'N/A').trim();
-  const blankRows = Math.max(0, 12 - invoiceData.items.length);   // to ensure 12 rows are used
+  const blankRows = Math.max(0, 13 - invoiceData.items.length);   // to ensure 13 rows are used
 
   const formatPercentage = (value: number) => {
     if (!Number.isFinite(value) || value === 0) {
@@ -859,7 +859,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       <Typography
         sx={{
           textAlign: 'center',
-          fontSize: '0.72rem',
+          fontSize: '1.25rem',
           mt: 'auto',
           pt: '0.42in',
           fontFamily: '"Times New Roman", serif'
