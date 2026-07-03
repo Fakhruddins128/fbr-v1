@@ -514,7 +514,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             }}
           >
             <Box>
-              <Box sx={{ backgroundColor: '#c9c9c9', py: 0.18, px: 0.8, mb: 0.3 }}>
+              <Box sx={{ backgroundColor: '#1e81f3ff', py: 0.18, px: 0.18, mb: 0.5 }}>
                 <Typography sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', lineHeight: 1.1 }}>
                   {invoiceData.sellerBusinessName || 'N/A'}
                 </Typography>
@@ -545,7 +545,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               fontSize: '1.25rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 1
+              lineHeight: 2
             }}
           >
             BUYER NAME &amp; ADDRESS
@@ -559,12 +559,12 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               flexDirection: 'column',
               justifyContent: 'space-between',
               px: 0,
-              pt: 0.02,
+              pt: 0.45,
               pb: 0.45
             }}
           >
             <Box>
-              <Box sx={{ backgroundColor: '#c9c9c9', py: 0.18, px: 0.8, mb: 0.3 }}>
+              <Box sx={{ backgroundColor: '#1e81f3ff', py: 0.18, px: 0.18, mb: 0.5 }}>
                 <Typography sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', lineHeight: 1.1 }}>
                   {invoiceData.buyerBusinessName || 'N/A'}
                 </Typography>
