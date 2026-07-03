@@ -72,7 +72,7 @@ interface SalesInvoiceReportProps {
     items: InvoiceItem[];
   };
   fbrResponse?: FbrResponse;
-  template?: 'template1' | 'template2';
+  template?: 'template1' | 'template2' | 'template3';
 }
 
 const formatAmount = (value: number): string => value.toLocaleString(undefined, {
@@ -88,6 +88,68 @@ const calculateTotals = (items: InvoiceItem[]) => {
   const grandTotal = subtotal + totalSalesTax + totalFED - totalDiscount;
 
   return { subtotal, totalSalesTax, totalFED, totalDiscount, grandTotal };
+};
+
+const SMALL_NUMBER_WORDS = [
+  'Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+  'Seventeen', 'Eighteen', 'Nineteen'
+];
+
+const TENS_WORDS = [
+  '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+];
+
+const numberToWords = (value: number): string => {
+  const whole = Math.floor(Math.abs(value));
+
+  if (whole < 20) {
+    return SMALL_NUMBER_WORDS[whole];
+  }
+
+  if (whole < 100) {
+    const tens = Math.floor(whole / 10);
+    const remainder = whole % 10;
+    return remainder ? `${TENS_WORDS[tens]}-${SMALL_NUMBER_WORDS[remainder]}` : TENS_WORDS[tens];
+  }
+
+  if (whole < 1000) {
+    const hundreds = Math.floor(whole / 100);
+    const remainder = whole % 100;
+    return remainder
+      ? `${SMALL_NUMBER_WORDS[hundreds]} Hundred ${numberToWords(remainder)}`
+      : `${SMALL_NUMBER_WORDS[hundreds]} Hundred`;
+  }
+
+  if (whole < 1000000) {
+    const thousands = Math.floor(whole / 1000);
+    const remainder = whole % 1000;
+    return remainder
+      ? `${numberToWords(thousands)} Thousand ${numberToWords(remainder)}`
+      : `${numberToWords(thousands)} Thousand`;
+  }
+
+  if (whole < 1000000000) {
+    const millions = Math.floor(whole / 1000000);
+    const remainder = whole % 1000000;
+    return remainder
+      ? `${numberToWords(millions)} Million ${numberToWords(remainder)}`
+      : `${numberToWords(millions)} Million`;
+  }
+
+  const billions = Math.floor(whole / 1000000000);
+  const remainder = whole % 1000000000;
+  return remainder
+    ? `${numberToWords(billions)} Billion ${numberToWords(remainder)}`
+    : `${numberToWords(billions)} Billion`;
+};
+
+const amountToWords = (amount: number): string => {
+  const whole = Math.floor(amount);
+  const paisa = Math.round((amount - whole) * 100);
+  const wholeText = numberToWords(whole);
+  const paisaText = paisa > 0 ? ` And ${numberToWords(paisa)} Paisa` : '';
+  return `${wholeText}${paisaText} Only`;
 };
 
 const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
@@ -553,13 +615,13 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           <colgroup>
             <col style={{ width: '6.3%' }} />
             <col style={{ width: '5.3%' }} />
-            <col style={{ width: '9.1%' }} />
-            <col style={{ width: '25.8%' }} />
+            <col style={{ width: '9.5%' }} />
+            <col style={{ width: '26.4%' }} />
             <col style={{ width: '9.9%' }} />
-            <col style={{ width: '13.4%' }} />
+            <col style={{ width: '12.8%' }} />
             <col style={{ width: '7.4%' }} />
             <col style={{ width: '9.6%' }} />
-            <col style={{ width: '13.2%' }} />
+            <col style={{ width: '12.8%' }} />
           </colgroup>
           <TableHead>
             <TableRow>
@@ -597,15 +659,15 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
 
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{displayUom}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top' }}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top' }}>{item.rate}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(lineInclusive)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem' }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(lineInclusive)}</TableCell>
                 </TableRow>
               );
             })}
@@ -652,7 +714,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               <TableCell
                 sx={{
                   ...totalRowCellSx,
-                  textAlign: 'right'
+                  textAlign: 'right',
+                  fontSize: '1.00rem'
                 }}
               >
                 {formatAmount(totals.subtotal)}
@@ -780,9 +843,288 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   );
 };
 
+const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
+  const totals = calculateTotals(invoiceData.items);
+  const invoiceDate = format(new Date(invoiceData.invoiceDate), 'dd-MMM-yyyy');
+  const printDateTime = format(new Date(), 'EEEE, d MMMM, yyyy  h:mm:ss a');
+  const fbrInvoiceNo = fbrResponse?.invoiceNumber || 'N/A';
+  const companyTopLine = [
+    invoiceData.sellerAddress,
+    invoiceData.sellerProvince
+  ].filter(Boolean).join('   ');
+  const items = invoiceData.items.map((item, index) => {
+    const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
+    const inclusiveValue = item.valueSalesExcludingST + item.salesTaxApplicable;
+    return {
+      serial: index + 1,
+      description: `${item.hsCode} - ${item.productDescription}`,
+      uom: item.uoM === 'Numbers, pieces, units' ? 'NOS' : item.uoM,
+      quantity: item.quantity,
+      unitPrice,
+      exclusiveValue: item.valueSalesExcludingST,
+      taxRate: item.rate,
+      taxAmount: item.salesTaxApplicable,
+      inclusiveValue
+    };
+  });
+  const totalInclusive = totals.subtotal + totals.totalSalesTax;
+  const totalAdvanceTax = invoiceData.items.reduce((sum, item) => sum + (item.salesTaxWithheldAtSource || 0), 0);
+  const netTotal = totalInclusive + totalAdvanceTax;
+  const amountInWords = amountToWords(netTotal);
+
+  const panelTitleSx = {
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    color: '#222',
+    mb: 0.3,
+    textTransform: 'uppercase'
+  };
+
+  const infoRowSx = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 1.5,
+    mb: 0.2
+  };
+
+  const smallLabelSx = {
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    color: '#333'
+  };
+
+  const smallValueSx = {
+    fontSize: '0.68rem',
+    color: '#111'
+  };
+
+  return (
+    <Box
+      sx={{
+        backgroundColor: '#fff',
+        color: '#111',
+        margin: '0 auto',
+        width: '210mm',
+        minHeight: '297mm',
+        boxSizing: 'border-box',
+        px: '0.28in',
+        py: '0.18in',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        '@media print': {
+          width: '210mm',
+          minHeight: '297mm',
+          boxSizing: 'border-box',
+          px: '0.28in',
+          py: '0.18in',
+          boxShadow: 'none'
+        }
+      }}
+    >
+      <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', mb: 0.15 }}>
+        {companyTopLine}
+      </Typography>
+      <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', mb: 0.15 }}>
+        {invoiceData.sellerBusinessName}
+      </Typography>
+      <Typography sx={{ textAlign: 'center', fontSize: '1.55rem', fontWeight: 700, letterSpacing: 0.3, mb: 0.35 }}>
+        SALES TAX INVOICE
+      </Typography>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.35 }}>
+        <Box>
+          <Typography sx={{ fontSize: '0.74rem' }}>
+            <strong>Transaction No.:</strong> {invoiceData.invoiceRefNo || 'N/A'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', mt: 0.15 }}>
+            <strong>Transaction Date:</strong> {invoiceDate}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', mt: 0.15 }}>
+            <strong>FBR Invoice No.:</strong> {fbrInvoiceNo}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '0.74rem' }}>
+            <strong>Transaction Type:</strong> {invoiceData.items[0]?.saleType || invoiceData.invoiceType || 'N/A'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', mt: 0.15 }}>
+            <strong>Sale No. Ref.:</strong> {invoiceData.invoiceRefNo || 'N/A'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.74rem', mt: 0.15 }}>
+            <strong>Buyer NTN / CNIC:</strong> {invoiceData.buyerNTNCNIC || 'N/A'}
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1.5, mb: 0.4 }}>
+        <Box sx={{ width: '49%', border: '1px solid #777', p: 0.5, minHeight: '0.95in' }}>
+          <Typography sx={panelTitleSx}>Supplier Details</Typography>
+          <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.2 }}>
+            {invoiceData.sellerBusinessName || 'N/A'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.72rem', whiteSpace: 'pre-line', mb: 0.18 }}>
+            {invoiceData.sellerAddress || 'N/A'}
+          </Typography>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>Name:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.sellerBusinessName || 'N/A'}</Typography>
+          </Box>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>Address:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.sellerProvince || 'N/A'}</Typography>
+          </Box>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>NTN:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.sellerNTNCNIC || 'N/A'}</Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '49%', border: '1px solid #777', p: 0.5, minHeight: '0.95in' }}>
+          <Typography sx={panelTitleSx}>Customer Details</Typography>
+          <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, mb: 0.2 }}>
+            {invoiceData.buyerBusinessName || 'N/A'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.72rem', whiteSpace: 'pre-line', mb: 0.18 }}>
+            {invoiceData.buyerAddress || 'N/A'}
+          </Typography>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>Name:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.buyerBusinessName || 'N/A'}</Typography>
+          </Box>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>Address:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.buyerProvince || 'N/A'}</Typography>
+          </Box>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>NTN / CNIC:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.buyerNTNCNIC || 'N/A'}</Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      <TableContainer sx={{ border: '1px solid #666', mb: 0.3 }}>
+        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '5%', px: 0.35, py: 0.35 }}>S. #</TableCell>
+              <TableCell sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '29%', px: 0.35, py: 0.35 }}>Description</TableCell>
+              <TableCell sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '8%', px: 0.35, py: 0.35 }}>UOM</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '8%', px: 0.35, py: 0.35 }}>Quantity</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '10%', px: 0.35, py: 0.35 }}>Price</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '13%', px: 0.35, py: 0.35 }}>Taxes Exclusive Value</TableCell>
+              <TableCell align="center" sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '7%', px: 0.35, py: 0.35 }}>Tax Rate</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '10%', px: 0.35, py: 0.35 }}>Tax Amount</TableCell>
+              <TableCell align="right" sx={{ border: '1px solid #777', fontSize: '0.68rem', fontWeight: 700, width: '10%', px: 0.35, py: 0.35 }}>Taxes Inclusive Value</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.serial}>
+                <TableCell sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{item.serial}</TableCell>
+                <TableCell sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{item.description}</TableCell>
+                <TableCell sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{item.uom}</TableCell>
+                <TableCell align="right" sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{formatAmount(item.quantity)}</TableCell>
+                <TableCell align="right" sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{formatAmount(item.unitPrice)}</TableCell>
+                <TableCell align="right" sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{formatAmount(item.exclusiveValue)}</TableCell>
+                <TableCell align="center" sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{item.taxRate}</TableCell>
+                <TableCell align="right" sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{formatAmount(item.taxAmount)}</TableCell>
+                <TableCell align="right" sx={{ border: '1px solid #ddd', fontSize: '0.68rem', px: 0.35, py: 0.28 }}>{formatAmount(item.inclusiveValue)}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow>
+              <TableCell colSpan={5} sx={{ borderTop: '1px solid #666', fontSize: '0.72rem', fontWeight: 700, textAlign: 'right', px: 0.45, py: 0.4 }}>
+                Total
+              </TableCell>
+              <TableCell align="right" sx={{ borderTop: '1px solid #666', fontSize: '0.72rem', fontWeight: 700, px: 0.45, py: 0.4 }}>
+                {formatAmount(totals.subtotal)}
+              </TableCell>
+              <TableCell sx={{ borderTop: '1px solid #666' }} />
+              <TableCell align="right" sx={{ borderTop: '1px solid #666', fontSize: '0.72rem', fontWeight: 700, px: 0.45, py: 0.4 }}>
+                {formatAmount(totals.totalSalesTax)}
+              </TableCell>
+              <TableCell align="right" sx={{ borderTop: '1px solid #666', fontSize: '0.72rem', fontWeight: 700, px: 0.45, py: 0.4 }}>
+                {formatAmount(totalInclusive)}
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Typography sx={{ fontSize: '0.72rem', mb: 0.28 }}>
+        {amountInWords}
+      </Typography>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 0.45 }}>
+        <Box sx={{ width: '42%' }}>
+          <Typography sx={{ fontSize: '0.72rem', mb: 0.15 }}>
+            <strong>Remarks:</strong>
+          </Typography>
+          <Typography sx={{ fontSize: '0.72rem', mb: 0.15 }}>
+            <strong>Site Name:</strong> Head Office
+          </Typography>
+          <Typography sx={{ fontSize: '0.72rem', mb: 0.15 }}>
+            <strong>Store Name:</strong> Store 01
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mt: 0.2 }}>
+            <Box
+              component="img"
+              src="/fbr-digital-logo.png"
+              alt="FBR Digital"
+              sx={{ width: '0.9in', height: '0.9in', objectFit: 'contain', display: 'block' }}
+            />
+            <Box sx={{ '& canvas': { width: '0.9in !important', height: '0.9in !important', display: 'block' } }}>
+              <QRCodeCanvas value={fbrInvoiceNo !== 'N/A' ? fbrInvoiceNo : invoiceData.invoiceRefNo || 'N/A'} size={72} level="H" includeMargin={false} />
+            </Box>
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '40%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.22 }}>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>Total Taxes Exclusive Value</Typography>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totals.subtotal)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.22 }}>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>Total Tax Amount @ 18%</Typography>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totals.totalSalesTax)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.22 }}>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>Advance Income Tax</Typography>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 700 }}>{formatAmount(totalAdvanceTax)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #777', pt: 0.22 }}>
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 700 }}>Net Total</Typography>
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.35, pt: 0.55 }}>
+        {['Prepared By', 'Authorized By', 'Approved By'].map((label) => (
+          <Box key={label} sx={{ width: '30%', textAlign: 'center' }}>
+            <Box sx={{ borderTop: '1px solid #555', mb: 0.12 }} />
+            <Typography sx={{ fontSize: '0.72rem' }}>{label}</Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.55, pt: 0.22, borderTop: '1px solid #ddd' }}>
+        <Typography sx={{ fontSize: '0.68rem' }}>
+          Print Date Time: {printDateTime}
+        </Typography>
+        <Typography sx={{ fontSize: '0.68rem' }}>
+          Page 1 of 1
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
 const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
   if (props.template === 'template2') {
     return <TemplateTwo {...props} />;
+  }
+
+  if (props.template === 'template3') {
+    return <TemplateThree {...props} />;
   }
 
   return <TemplateOne {...props} />;

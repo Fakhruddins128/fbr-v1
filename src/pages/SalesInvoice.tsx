@@ -73,6 +73,7 @@ interface InvoiceFormData {
   buyerRegistrationNo: string;
   buyerName: string;
   buyerType: string;
+  buyerAddress: string;
   invoiceType: string;
   transactionType: string;
   invoiceNo: string;
@@ -1033,6 +1034,7 @@ const SalesInvoice: React.FC = () => {
     buyerRegistrationNo: '',
     buyerName: '',
     buyerType: 'Unregistered',
+    buyerAddress: '',
     invoiceType: 'Select',
     transactionType: 'Select',
     invoiceNo: '',
@@ -1087,6 +1089,7 @@ const SalesInvoice: React.FC = () => {
               buyerRegistrationNo: invoice.buyerNTNCNIC || '',
               buyerName: invoice.buyerBusinessName || '',
               buyerType: invoice.buyerRegistrationType || 'Unregistered',
+              buyerAddress: invoice.buyerAddress || '',
               invoiceType: invoice.invoiceType || 'Select',
               transactionType: mapInvoiceTypeToTransactionType(invoice.invoiceType || ''),
               invoiceNo: invoice.invoiceRefNo || '',
@@ -1180,6 +1183,7 @@ const SalesInvoice: React.FC = () => {
           ...prev,
           buyerName: matchingCustomer.buyerBusinessName,
           buyerType: matchingCustomer.buyerRegistrationType || prev.buyerType,
+          buyerAddress: matchingCustomer.buyerAddress || prev.buyerAddress,
           destinationOfSupply: matchingCustomer.buyerProvince || prev.destinationOfSupply
         }));
       }
@@ -1405,6 +1409,7 @@ const SalesInvoice: React.FC = () => {
       buyerRegistrationNo: '',
       buyerName: '',
       buyerType: 'Unregistered',
+      buyerAddress: '',
       invoiceType: 'Select',
       transactionType: 'Select',
       invoiceNo: '',
@@ -1645,7 +1650,7 @@ const SalesInvoice: React.FC = () => {
       buyerNTNCNIC: formData.buyerRegistrationNo,
       buyerBusinessName: formData.buyerName,
       buyerProvince: formData.destinationOfSupply,
-      buyerAddress: 'Buyer Address',
+      buyerAddress: formData.buyerAddress,
       invoiceRefNo: formData.invoiceNo,
       scenarioId: determineFbrScenario(),
       buyerRegistrationType: formData.buyerType,
@@ -1925,7 +1930,7 @@ const SalesInvoice: React.FC = () => {
       buyerNTNCNIC: formData.buyerRegistrationNo,
       buyerBusinessName: formData.buyerName,
       buyerProvince: formData.destinationOfSupply,
-      buyerAddress: 'Buyer Address',
+      buyerAddress: formData.buyerAddress,
       invoiceRefNo: formData.invoiceNo,
       poNumber: formData.poNumber,
       buyerRegistrationType: formData.buyerType,
@@ -1994,7 +1999,7 @@ const SalesInvoice: React.FC = () => {
         buyerNTNCNIC: formData.buyerRegistrationNo,
         buyerBusinessName: formData.buyerName,
         buyerProvince: formData.destinationOfSupply,
-        buyerAddress: 'Buyer Address', // You may want to add this field to the form
+        buyerAddress: formData.buyerAddress,
         buyerRegistrationType: formData.buyerType,
         invoiceRefNo: formData.invoiceNo,
         poNumber: formData.poNumber,
@@ -2172,6 +2177,19 @@ const SalesInvoice: React.FC = () => {
                 </MenuItem>
               ))}
             </TextField>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              label="Buyer Address"
+              value={formData.buyerAddress}
+              onChange={(e) => handleInputChange('buyerAddress', e.target.value)}
+              size="small"
+              disabled={isInvoiceSentToFBR()}
+              multiline
+              minRows={2}
+            />
           </Grid>
 
           {/* Second Row */}
