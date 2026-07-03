@@ -396,8 +396,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
     height: '0.56in'
   };
   const bodyCellSx = {
-    borderLeft: `1px solid ${borderColor}`,
-    borderRight: `1px solid ${borderColor}`,
+    borderLeft: `1.5px solid ${borderColor}`,
+    borderRight: `1.5px solid ${borderColor}`,
     borderBottom: '0',
     borderTop: '0',
     fontSize: '0.82rem',
@@ -405,7 +405,9 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
     lineHeight: 1,
     px: 0.35,
     py: 0.5,
-    height: '0.28in'
+    height: '0.28in',
+    paddingTop: '20px',
+    paddingBottom: '20px'
   };
   const totalRowCellSx = {
     borderTop: `2px solid ${borderColor}`,
