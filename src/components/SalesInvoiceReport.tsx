@@ -502,6 +502,18 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </Box>
           <Box
             sx={{
+              border: `0`,
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              py: 0.2,
+              lineHeight: 2
+            }}
+          >
+            &amp; 
+          </Box>
+          <Box
+            sx={{
               border: `1.5px solid ${borderColor}`,
               borderTop: '0',
               minHeight: '1.7in',
@@ -514,7 +526,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             }}
           >
             <Box>
-              <Box sx={{ backgroundColor: '#1e81f3ff', py: 0.18, px: 0.18, mb: 0.5 }}>
+              <Box sx={{ backgroundColor: '#8dc1fcff', py: 0.18, px: 0.18, mb: 0.5 }}>
                 <Typography sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', lineHeight: 1.1 }}>
                   {invoiceData.sellerBusinessName || 'N/A'}
                 </Typography>
@@ -550,6 +562,18 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           >
             BUYER NAME &amp; ADDRESS
           </Box>
+              <Box
+            sx={{
+              border: `0`,
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              py: 0.2,
+              lineHeight: 2
+            }}
+          >
+            &amp; 
+          </Box>
           <Box
             sx={{
               border: `1.5px solid ${borderColor}`,
@@ -564,7 +588,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             }}
           >
             <Box>
-              <Box sx={{ backgroundColor: '#1e81f3ff', py: 0.18, px: 0.18, mb: 0.5 }}>
+              <Box sx={{ backgroundColor: '#8dc1fcff', py: 0.18, px: 0.18, mb: 0.5 }}>
                 <Typography sx={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase', textDecoration: 'underline', lineHeight: 1.1 }}>
                   {invoiceData.buyerBusinessName || 'N/A'}
                 </Typography>
