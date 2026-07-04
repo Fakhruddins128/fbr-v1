@@ -3,6 +3,8 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 export interface Customer {
   id: string;
   buyerNTNCNIC: string;
+  buyerNIC?: string;
+  buyerNTN?: string;
   buyerBusinessName: string;
   buyerProvince: string;
   buyerAddress: string;
@@ -20,6 +22,8 @@ export interface Customer {
 
 export interface CreateCustomerRequest {
   buyerNTNCNIC: string;
+  buyerNIC?: string;
+  buyerNTN?: string;
   buyerBusinessName: string;
   buyerProvince: string;
   buyerAddress: string;
@@ -104,6 +108,8 @@ class CustomerApi {
         headers: this.getAuthHeaders(),
         body: JSON.stringify({
           buyerNTNCNIC: customerData.buyerNTNCNIC,
+          buyerNIC: customerData.buyerNIC,
+          buyerNTN: customerData.buyerNTN,
           buyerBusinessName: customerData.buyerBusinessName,
           buyerProvince: customerData.buyerProvince,
           buyerAddress: customerData.buyerAddress,
@@ -112,6 +118,8 @@ class CustomerApi {
           buyerEmail: customerData.buyerEmail,
           buyerCellphone: customerData.buyerCellphone,
           contactPersonName: customerData.contactPersonName,
+          businessActivity: customerData.businessActivity,
+          sector: customerData.sector,
         }),
       });
 

@@ -50,6 +50,8 @@ import {
 
 interface CustomerFormData {
   buyerNTNCNIC: string;
+  buyerNIC: string;
+  buyerNTN: string;
   buyerBusinessName: string;
   buyerProvince: string;
   buyerAddress: string;
@@ -69,6 +71,8 @@ const Customers: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState<CustomerFormData>({
     buyerNTNCNIC: '',
+    buyerNIC: '',
+    buyerNTN: '',
     buyerBusinessName: '',
     buyerProvince: '',
     buyerAddress: '',
@@ -155,6 +159,8 @@ const Customers: React.FC = () => {
     setSelectedCustomer(null);
     setFormData({
       buyerNTNCNIC: '',
+      buyerNIC: '',
+      buyerNTN: '',
       buyerBusinessName: '',
       buyerProvince: '',
       buyerAddress: '',
@@ -177,6 +183,8 @@ const Customers: React.FC = () => {
     
     setFormData({
       buyerNTNCNIC: customer.buyerNTNCNIC,
+      buyerNIC: customer.buyerNIC || '',
+      buyerNTN: customer.buyerNTN || '',
       buyerBusinessName: customer.buyerBusinessName,
       buyerProvince: customer.buyerProvince,
       buyerAddress: customer.buyerAddress,
@@ -294,6 +302,8 @@ const Customers: React.FC = () => {
 
         const customer: CreateCustomerRequest = {
           buyerNTNCNIC: values[headers.indexOf('buyerntncnic')] || '',
+          buyerNIC: values[headers.indexOf('buyernic')] || '',
+          buyerNTN: values[headers.indexOf('buyerntn')] || '',
           buyerBusinessName: values[headers.indexOf('buyerbusinessname')] || '',
           buyerProvince: values[headers.indexOf('buyerprovince')] || '',
           buyerAddress: values[headers.indexOf('buyeraddress')] || '',
@@ -346,9 +356,11 @@ const Customers: React.FC = () => {
     downloadCSVFile(
       `customers_${new Date().toISOString().split('T')[0]}.csv`,
       [
-        ['BuyerNTNCNIC', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName', 'BusinessActivity', 'Sector', 'IsActive', 'CreatedAt'],
+        ['BuyerNTNCNIC', 'BuyerNIC', 'BuyerNTN', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName', 'BusinessActivity', 'Sector', 'IsActive', 'CreatedAt'],
         ...customers.map(customer => [
           customer.buyerNTNCNIC,
+          customer.buyerNIC || '',
+          customer.buyerNTN || '',
           customer.buyerBusinessName,
           customer.buyerProvince,
           customer.buyerAddress,
@@ -372,9 +384,11 @@ const Customers: React.FC = () => {
     downloadCSVFile(
       'customers_import_template.csv',
       [
-        ['BuyerNTNCNIC', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName'],
+        ['BuyerNTNCNIC', 'BuyerNIC', 'BuyerNTN', 'BuyerBusinessName', 'BuyerProvince', 'BuyerAddress', 'BuyerRegistrationType', 'BuyerRegistrationNo', 'BuyerEmail', 'BuyerCellphone', 'ContactPersonName'],
         [
           '1234567',
+          '42101-1234567-1',
+          '1234567-8',
           'Sample Customer',
           'Sindh',
           'Karachi',
@@ -547,6 +561,8 @@ const Customers: React.FC = () => {
             <TableHead sx={{ backgroundColor: 'grey.50' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 'bold' }}>NTN/CNIC</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>NIC</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>NTN</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Registration No</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Business Name</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Contact Person</TableCell>
@@ -559,6 +575,8 @@ const Customers: React.FC = () => {
               {customers.map((customer) => (
                 <TableRow key={customer.id} hover>
                   <TableCell>{customer.buyerNTNCNIC}</TableCell>
+                  <TableCell>{customer.buyerNIC || 'N/A'}</TableCell>
+                  <TableCell>{customer.buyerNTN || 'N/A'}</TableCell>
                   <TableCell>{customer.buyerRegistrationNo || 'N/A'}</TableCell>
                   <TableCell>{customer.buyerBusinessName}</TableCell>
                    <TableCell>{customer.contactPersonName || 'N/A'}</TableCell>
@@ -608,6 +626,22 @@ const Customers: React.FC = () => {
                 label="NTN/CNIC"
                 value={formData.buyerNTNCNIC}
                 onChange={(e) => setFormData({ ...formData, buyerNTNCNIC: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="NIC"
+                value={formData.buyerNIC}
+                onChange={(e) => setFormData({ ...formData, buyerNIC: e.target.value })}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                label="NTN"
+                value={formData.buyerNTN}
+                onChange={(e) => setFormData({ ...formData, buyerNTN: e.target.value })}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

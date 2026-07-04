@@ -147,6 +147,8 @@ BEGIN
         CustomerID UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
         CompanyID UNIQUEIDENTIFIER NOT NULL,
         Buyer_NTNCNIC NVARCHAR(20) NOT NULL,
+        Buyer_NIC NVARCHAR(20) NULL,
+        Buyer_NTN NVARCHAR(50) NULL,
         Buyer_Business_Name NVARCHAR(100) NOT NULL,
         Buyer_Province NVARCHAR(50) NOT NULL,
         Buyer_Address NVARCHAR(255) NOT NULL,
@@ -170,6 +172,10 @@ BEGIN
 END
 GO
 
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Customers') AND name = 'Buyer_NIC')
+    ALTER TABLE Customers ADD Buyer_NIC NVARCHAR(20) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Customers') AND name = 'Buyer_NTN')
+    ALTER TABLE Customers ADD Buyer_NTN NVARCHAR(50) NULL;
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Customers') AND name = 'Buyer_RegistrationNo')
     ALTER TABLE Customers ADD Buyer_RegistrationNo NVARCHAR(50) NULL;
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Customers') AND name = 'Buyer_Email')

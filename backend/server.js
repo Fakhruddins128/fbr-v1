@@ -3543,6 +3543,8 @@ app.get("/api/customers", authenticateToken, async (req, res) => {
         SELECT 
           CustomerID as id,
           Buyer_NTNCNIC as buyerNTNCNIC,
+          Buyer_NIC as buyerNIC,
+          Buyer_NTN as buyerNTN,
           Buyer_Business_Name as buyerBusinessName,
           Buyer_Province as buyerProvince,
           Buyer_Address as buyerAddress,
@@ -3551,8 +3553,8 @@ app.get("/api/customers", authenticateToken, async (req, res) => {
           Buyer_Email as buyerEmail,
           Buyer_Cellphone as buyerCellphone,
           ContactPersonName as contactPersonName,
-          BusinessActivity,
-          Sector,
+          BusinessActivity as businessActivityJson,
+          Sector as sectorJson,
           IsActive as isActive,
           CreatedAt as createdAt,
           UpdatedAt as updatedAt
@@ -3561,17 +3563,17 @@ app.get("/api/customers", authenticateToken, async (req, res) => {
         ORDER BY CreatedAt DESC
       `);
 
-    const formattedVendors = result.recordset.map((vendor) => ({
-      ...vendor,
-      businessActivity: vendor.BusinessActivity
-        ? JSON.parse(vendor.BusinessActivity)
+    const formattedCustomers = result.recordset.map((customer) => ({
+      ...customer,
+      businessActivity: customer.businessActivityJson
+        ? JSON.parse(customer.businessActivityJson)
         : [],
-      sector: vendor.Sector ? JSON.parse(vendor.Sector) : [],
+      sector: customer.sectorJson ? JSON.parse(customer.sectorJson) : [],
     }));
 
     res.json({
       success: true,
-      data: formattedVendors,
+      data: formattedCustomers,
     });
   } catch (error) {
     console.error("Error fetching customers:", error);
@@ -3588,6 +3590,8 @@ app.post("/api/customers", authenticateToken, async (req, res) => {
   try {
     const {
       buyerNTNCNIC,
+      buyerNIC,
+      buyerNTN,
       buyerBusinessName,
       buyerProvince,
       buyerAddress,
@@ -3618,6 +3622,8 @@ app.post("/api/customers", authenticateToken, async (req, res) => {
       .request()
       .input("companyId", sql.UniqueIdentifier, req.user.companyId)
       .input("buyerNTNCNIC", sql.NVarChar(20), buyerNTNCNIC)
+      .input("buyerNIC", sql.NVarChar(20), buyerNIC || null)
+      .input("buyerNTN", sql.NVarChar(50), buyerNTN || null)
       .input("buyerBusinessName", sql.NVarChar(100), buyerBusinessName)
       .input("buyerProvince", sql.NVarChar(50), buyerProvince)
       .input("buyerAddress", sql.NVarChar(255), buyerAddress)
@@ -3640,18 +3646,18 @@ app.post("/api/customers", authenticateToken, async (req, res) => {
         sql.NVarChar(sql.MAX),
         sector ? JSON.stringify(sector) : null
       ).query(`
-        INSERT INTO Customers (CompanyID, Buyer_NTNCNIC, Buyer_Business_Name, Buyer_Province, Buyer_Address, Buyer_RegistrationType, Buyer_RegistrationNo, Buyer_Email, Buyer_Cellphone, ContactPersonName, BusinessActivity, Sector)
-        OUTPUT INSERTED.CustomerID, INSERTED.Buyer_NTNCNIC, INSERTED.Buyer_Business_Name, INSERTED.Buyer_Province, INSERTED.Buyer_Address, INSERTED.Buyer_RegistrationType, INSERTED.Buyer_RegistrationNo, INSERTED.Buyer_Email, INSERTED.Buyer_Cellphone, INSERTED.ContactPersonName, INSERTED.BusinessActivity, INSERTED.Sector, INSERTED.CreatedAt
-        VALUES (@companyId, @buyerNTNCNIC, @buyerBusinessName, @buyerProvince, @buyerAddress, @buyerRegistrationType, @buyerRegistrationNo, @buyerEmail, @buyerCellphone, @contactPersonName, @businessActivity, @sector)
+        INSERT INTO Customers (CompanyID, Buyer_NTNCNIC, Buyer_NIC, Buyer_NTN, Buyer_Business_Name, Buyer_Province, Buyer_Address, Buyer_RegistrationType, Buyer_RegistrationNo, Buyer_Email, Buyer_Cellphone, ContactPersonName, BusinessActivity, Sector)
+        OUTPUT INSERTED.CustomerID as id, INSERTED.Buyer_NTNCNIC as buyerNTNCNIC, INSERTED.Buyer_NIC as buyerNIC, INSERTED.Buyer_NTN as buyerNTN, INSERTED.Buyer_Business_Name as buyerBusinessName, INSERTED.Buyer_Province as buyerProvince, INSERTED.Buyer_Address as buyerAddress, INSERTED.Buyer_RegistrationType as buyerRegistrationType, INSERTED.Buyer_RegistrationNo as buyerRegistrationNo, INSERTED.Buyer_Email as buyerEmail, INSERTED.Buyer_Cellphone as buyerCellphone, INSERTED.ContactPersonName as contactPersonName, INSERTED.BusinessActivity as businessActivityJson, INSERTED.Sector as sectorJson, INSERTED.IsActive as isActive, INSERTED.CreatedAt as createdAt, INSERTED.UpdatedAt as updatedAt
+        VALUES (@companyId, @buyerNTNCNIC, @buyerNIC, @buyerNTN, @buyerBusinessName, @buyerProvince, @buyerAddress, @buyerRegistrationType, @buyerRegistrationNo, @buyerEmail, @buyerCellphone, @contactPersonName, @businessActivity, @sector)
       `);
 
     const newCustomer = result.recordset[0];
     const formattedCustomer = {
       ...newCustomer,
-      businessActivity: newCustomer.BusinessActivity
-        ? JSON.parse(newCustomer.BusinessActivity)
+      businessActivity: newCustomer.businessActivityJson
+        ? JSON.parse(newCustomer.businessActivityJson)
         : [],
-      sector: newCustomer.Sector ? JSON.parse(newCustomer.Sector) : [],
+      sector: newCustomer.sectorJson ? JSON.parse(newCustomer.sectorJson) : [],
     };
 
     res.status(201).json({
@@ -3675,6 +3681,8 @@ app.put("/api/customers/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
     const {
       buyerNTNCNIC,
+      buyerNIC,
+      buyerNTN,
       buyerBusinessName,
       buyerProvince,
       buyerAddress,
@@ -3706,6 +3714,8 @@ app.put("/api/customers/:id", authenticateToken, async (req, res) => {
       .input("customerId", sql.UniqueIdentifier, id)
       .input("companyId", sql.UniqueIdentifier, req.user.companyId)
       .input("buyerNTNCNIC", sql.NVarChar(20), buyerNTNCNIC)
+      .input("buyerNIC", sql.NVarChar(20), buyerNIC || null)
+      .input("buyerNTN", sql.NVarChar(50), buyerNTN || null)
       .input("buyerBusinessName", sql.NVarChar(100), buyerBusinessName)
       .input("buyerProvince", sql.NVarChar(50), buyerProvince)
       .input("buyerAddress", sql.NVarChar(255), buyerAddress)
@@ -3731,6 +3741,8 @@ app.put("/api/customers/:id", authenticateToken, async (req, res) => {
         UPDATE Customers 
         SET 
           Buyer_NTNCNIC = @buyerNTNCNIC,
+          Buyer_NIC = @buyerNIC,
+          Buyer_NTN = @buyerNTN,
           Buyer_Business_Name = @buyerBusinessName,
           Buyer_Province = @buyerProvince,
           Buyer_Address = @buyerAddress,
@@ -3742,7 +3754,7 @@ app.put("/api/customers/:id", authenticateToken, async (req, res) => {
           BusinessActivity = @businessActivity,
           Sector = @sector,
           UpdatedAt = GETDATE()
-        OUTPUT INSERTED.CustomerID, INSERTED.Buyer_NTNCNIC, INSERTED.Buyer_Business_Name, INSERTED.Buyer_Province, INSERTED.Buyer_Address, INSERTED.Buyer_RegistrationType, INSERTED.Buyer_RegistrationNo, INSERTED.Buyer_Email, INSERTED.Buyer_Cellphone, INSERTED.ContactPersonName, INSERTED.BusinessActivity, INSERTED.Sector, INSERTED.UpdatedAt
+        OUTPUT INSERTED.CustomerID as id, INSERTED.Buyer_NTNCNIC as buyerNTNCNIC, INSERTED.Buyer_NIC as buyerNIC, INSERTED.Buyer_NTN as buyerNTN, INSERTED.Buyer_Business_Name as buyerBusinessName, INSERTED.Buyer_Province as buyerProvince, INSERTED.Buyer_Address as buyerAddress, INSERTED.Buyer_RegistrationType as buyerRegistrationType, INSERTED.Buyer_RegistrationNo as buyerRegistrationNo, INSERTED.Buyer_Email as buyerEmail, INSERTED.Buyer_Cellphone as buyerCellphone, INSERTED.ContactPersonName as contactPersonName, INSERTED.BusinessActivity as businessActivityJson, INSERTED.Sector as sectorJson, INSERTED.IsActive as isActive, INSERTED.CreatedAt as createdAt, INSERTED.UpdatedAt as updatedAt
         WHERE CustomerID = @customerId AND CompanyID = @companyId
       `);
 
@@ -3756,10 +3768,10 @@ app.put("/api/customers/:id", authenticateToken, async (req, res) => {
     const updatedCustomer = result.recordset[0];
     const formattedCustomer = {
       ...updatedCustomer,
-      businessActivity: updatedCustomer.BusinessActivity
-        ? JSON.parse(updatedCustomer.BusinessActivity)
+      businessActivity: updatedCustomer.businessActivityJson
+        ? JSON.parse(updatedCustomer.businessActivityJson)
         : [],
-      sector: updatedCustomer.Sector ? JSON.parse(updatedCustomer.Sector) : [],
+      sector: updatedCustomer.sectorJson ? JSON.parse(updatedCustomer.sectorJson) : [],
     };
 
     res.json({
