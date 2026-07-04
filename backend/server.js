@@ -202,6 +202,8 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
         sellerProvince: invoice.SellerProvince,
         sellerAddress: invoice.SellerAddress,
         buyerNTNCNIC: invoice.BuyerNTNCNIC,
+        buyerNIC: invoice.Buyer_NIC,
+        buyerNTN: invoice.Buyer_NTN,
         buyerBusinessName: invoice.BuyerBusinessName,
         buyerProvince: invoice.BuyerProvince,
         buyerAddress: invoice.BuyerAddress,
@@ -328,6 +330,8 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       sellerProvince: invoice.SellerProvince,
       sellerAddress: invoice.SellerAddress,
       buyerNTNCNIC: invoice.BuyerNTNCNIC,
+      buyerNIC: invoice.Buyer_NIC,
+      buyerNTN: invoice.Buyer_NTN,
       buyerBusinessName: invoice.BuyerBusinessName,
       buyerProvince: invoice.BuyerProvince,
       buyerAddress: invoice.BuyerAddress,
@@ -375,6 +379,8 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
       sellerProvince,
       sellerAddress,
       buyerNTNCNIC,
+      buyerNIC,
+      buyerNTN,
       buyerBusinessName,
       buyerProvince,
       buyerAddress,
@@ -444,6 +450,8 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         .input("sellerProvince", sql.NVarChar, sellerProvince)
         .input("sellerAddress", sql.NVarChar, sellerAddress)
         .input("buyerNTNCNIC", sql.NVarChar, buyerNTNCNIC)
+        .input("buyerNIC", sql.NVarChar(20), buyerNIC || null)
+        .input("buyerNTN", sql.NVarChar(50), buyerNTN || null)
         .input("buyerBusinessName", sql.NVarChar, buyerBusinessName)
         .input("buyerProvince", sql.NVarChar, buyerProvince)
         .input("buyerAddress", sql.NVarChar, buyerAddress)
@@ -458,14 +466,14 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         .input("createdBy", sql.UniqueIdentifier, req.user.userId).query(`
           INSERT INTO Invoices (
             CompanyID, InvoiceNumber, InvoiceType, InvoiceDate, SellerNTNCNIC, SellerBusinessName,
-            SellerProvince, SellerAddress, BuyerNTNCNIC, BuyerBusinessName,
+            SellerProvince, SellerAddress, BuyerNTNCNIC, Buyer_NIC, Buyer_NTN, BuyerBusinessName,
             BuyerProvince, BuyerAddress, BuyerRegistrationType, InvoiceRefNo, PONumber,
             ScenarioID, TotalAmount, TotalSalesTax, TotalFurtherTax, TotalDiscount, CreatedBy
           )
           OUTPUT INSERTED.InvoiceID
           VALUES (
             @companyId, @invoiceNumber, @invoiceType, @invoiceDate, @sellerNTNCNIC, @sellerBusinessName,
-            @sellerProvince, @sellerAddress, @buyerNTNCNIC, @buyerBusinessName,
+            @sellerProvince, @sellerAddress, @buyerNTNCNIC, @buyerNIC, @buyerNTN, @buyerBusinessName,
             @buyerProvince, @buyerAddress, @buyerRegistrationType, @invoiceRefNo, @poNumber,
             @scenarioID, @totalAmount, @totalSalesTax, @totalFurtherTax, @totalDiscount, @createdBy
           )
@@ -565,11 +573,38 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           WHERE i.InvoiceID = @invoiceId
         `);
 
+      const createdInvoiceRow = createdInvoice.recordset[0];
       const invoice = {
-        ...createdInvoice.recordset[0],
-        items: createdInvoice.recordset[0].Items
-          ? JSON.parse(createdInvoice.recordset[0].Items)
-          : [],
+        invoiceID: createdInvoiceRow.InvoiceID,
+        companyID: createdInvoiceRow.CompanyID,
+        invoiceNumber: createdInvoiceRow.InvoiceNumber,
+        invoiceType: createdInvoiceRow.InvoiceType,
+        invoiceDate: createdInvoiceRow.InvoiceDate,
+        sellerNTNCNIC: createdInvoiceRow.SellerNTNCNIC,
+        sellerBusinessName: createdInvoiceRow.SellerBusinessName,
+        sellerProvince: createdInvoiceRow.SellerProvince,
+        sellerAddress: createdInvoiceRow.SellerAddress,
+        buyerNTNCNIC: createdInvoiceRow.BuyerNTNCNIC,
+        buyerNIC: createdInvoiceRow.Buyer_NIC,
+        buyerNTN: createdInvoiceRow.Buyer_NTN,
+        buyerBusinessName: createdInvoiceRow.BuyerBusinessName,
+        buyerProvince: createdInvoiceRow.BuyerProvince,
+        buyerAddress: createdInvoiceRow.BuyerAddress,
+        buyerRegistrationType: createdInvoiceRow.BuyerRegistrationType,
+        invoiceRefNo: createdInvoiceRow.InvoiceRefNo,
+        poNumber: createdInvoiceRow.PONumber,
+        totalAmount: createdInvoiceRow.TotalAmount,
+        totalSalesTax: createdInvoiceRow.TotalSalesTax,
+        totalFurtherTax: createdInvoiceRow.TotalFurtherTax,
+        totalDiscount: createdInvoiceRow.TotalDiscount,
+        scenarioID: createdInvoiceRow.ScenarioID,
+        fbrInvoiceNumber: createdInvoiceRow.FBRInvoiceNumber,
+        fbrResponseStatus: createdInvoiceRow.FBRResponseStatus,
+        fbrResponseMessage: createdInvoiceRow.FBRResponseMessage,
+        createdAt: createdInvoiceRow.CreatedAt,
+        updatedAt: createdInvoiceRow.UpdatedAt,
+        createdBy: createdInvoiceRow.CreatedBy,
+        items: createdInvoiceRow.Items ? JSON.parse(createdInvoiceRow.Items) : [],
       };
 
       res.status(201).json({
@@ -681,6 +716,8 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       sellerProvince,
       sellerAddress,
       buyerNTNCNIC,
+      buyerNIC,
+      buyerNTN,
       buyerBusinessName,
       buyerProvince,
       buyerAddress,
@@ -733,6 +770,8 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         .input("sellerProvince", sql.NVarChar, sellerProvince)
         .input("sellerAddress", sql.NVarChar, sellerAddress)
         .input("buyerNTNCNIC", sql.NVarChar, buyerNTNCNIC)
+        .input("buyerNIC", sql.NVarChar(20), buyerNIC || null)
+        .input("buyerNTN", sql.NVarChar(50), buyerNTN || null)
         .input("buyerBusinessName", sql.NVarChar, buyerBusinessName)
         .input("buyerProvince", sql.NVarChar, buyerProvince)
         .input("buyerAddress", sql.NVarChar, buyerAddress)
@@ -751,6 +790,8 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
             SellerProvince = @sellerProvince,
             SellerAddress = @sellerAddress,
             BuyerNTNCNIC = @buyerNTNCNIC,
+            Buyer_NIC = @buyerNIC,
+            Buyer_NTN = @buyerNTN,
             BuyerBusinessName = @buyerBusinessName,
             BuyerProvince = @buyerProvince,
             BuyerAddress = @buyerAddress,
@@ -871,11 +912,38 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           WHERE i.InvoiceID = @invoiceId
         `);
 
+      const updatedInvoiceRow = updatedInvoice.recordset[0];
       const invoice = {
-        ...updatedInvoice.recordset[0],
-        items: updatedInvoice.recordset[0].Items
-          ? JSON.parse(updatedInvoice.recordset[0].Items)
-          : [],
+        invoiceID: updatedInvoiceRow.InvoiceID,
+        companyID: updatedInvoiceRow.CompanyID,
+        invoiceNumber: updatedInvoiceRow.InvoiceNumber,
+        invoiceType: updatedInvoiceRow.InvoiceType,
+        invoiceDate: updatedInvoiceRow.InvoiceDate,
+        sellerNTNCNIC: updatedInvoiceRow.SellerNTNCNIC,
+        sellerBusinessName: updatedInvoiceRow.SellerBusinessName,
+        sellerProvince: updatedInvoiceRow.SellerProvince,
+        sellerAddress: updatedInvoiceRow.SellerAddress,
+        buyerNTNCNIC: updatedInvoiceRow.BuyerNTNCNIC,
+        buyerNIC: updatedInvoiceRow.Buyer_NIC,
+        buyerNTN: updatedInvoiceRow.Buyer_NTN,
+        buyerBusinessName: updatedInvoiceRow.BuyerBusinessName,
+        buyerProvince: updatedInvoiceRow.BuyerProvince,
+        buyerAddress: updatedInvoiceRow.BuyerAddress,
+        buyerRegistrationType: updatedInvoiceRow.BuyerRegistrationType,
+        invoiceRefNo: updatedInvoiceRow.InvoiceRefNo,
+        poNumber: updatedInvoiceRow.PONumber,
+        totalAmount: updatedInvoiceRow.TotalAmount,
+        totalSalesTax: updatedInvoiceRow.TotalSalesTax,
+        totalFurtherTax: updatedInvoiceRow.TotalFurtherTax,
+        totalDiscount: updatedInvoiceRow.TotalDiscount,
+        scenarioID: updatedInvoiceRow.ScenarioID,
+        fbrInvoiceNumber: updatedInvoiceRow.FBRInvoiceNumber,
+        fbrResponseStatus: updatedInvoiceRow.FBRResponseStatus,
+        fbrResponseMessage: updatedInvoiceRow.FBRResponseMessage,
+        createdAt: updatedInvoiceRow.CreatedAt,
+        updatedAt: updatedInvoiceRow.UpdatedAt,
+        createdBy: updatedInvoiceRow.CreatedBy,
+        items: updatedInvoiceRow.Items ? JSON.parse(updatedInvoiceRow.Items) : [],
       };
 
       res.json({

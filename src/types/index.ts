@@ -110,6 +110,8 @@ export interface Invoice {
   sellerProvince: string;
   sellerAddress: string;
   buyerNTNCNIC: string;
+  buyerNIC?: string;
+  buyerNTN?: string;
   buyerBusinessName: string;
   buyerProvince: string;
   buyerAddress: string;

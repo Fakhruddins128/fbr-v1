@@ -471,6 +471,8 @@ BEGIN
         SellerProvince NVARCHAR(50) NOT NULL,
         SellerAddress NVARCHAR(255) NOT NULL,
         BuyerNTNCNIC NVARCHAR(20) NOT NULL,
+        Buyer_NIC NVARCHAR(20) NULL,
+        Buyer_NTN NVARCHAR(50) NULL,
         BuyerBusinessName NVARCHAR(255) NOT NULL,
         BuyerProvince NVARCHAR(50) NOT NULL,
         BuyerAddress NVARCHAR(255) NOT NULL,
@@ -499,6 +501,10 @@ BEGIN
 END
 GO
 
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Invoices') AND name = 'Buyer_NIC')
+    ALTER TABLE Invoices ADD Buyer_NIC NVARCHAR(20) NULL;
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Invoices') AND name = 'Buyer_NTN')
+    ALTER TABLE Invoices ADD Buyer_NTN NVARCHAR(50) NULL;
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_Invoices_CompanyID')
 BEGIN
     CREATE INDEX IX_Invoices_CompanyID ON Invoices(CompanyID);

@@ -1103,13 +1103,15 @@ const SalesInvoice: React.FC = () => {
              const invoice = Array.isArray(response.data) ? response.data[0] : response.data;
              setEditingInvoice(invoice);
             
-            const matchingCustomer = findMatchingCustomer(invoice.buyerNTNCNIC || '');
+            const matchingCustomer = findMatchingCustomer(
+              invoice.buyerNTNCNIC || invoice.buyerNIC || invoice.buyerNTN || ''
+            );
 
             setFormData({
               buyerRegistrationNo: invoice.buyerNTNCNIC || '',
               buyerName: invoice.buyerBusinessName || '',
-              buyerNIC: matchingCustomer?.buyerNIC || '',
-              buyerNTN: matchingCustomer?.buyerNTN || '',
+              buyerNIC: invoice.buyerNIC || matchingCustomer?.buyerNIC || '',
+              buyerNTN: invoice.buyerNTN || matchingCustomer?.buyerNTN || '',
               buyerType: invoice.buyerRegistrationType || 'Unregistered',
               buyerAddress: invoice.buyerAddress || '',
               invoiceType: invoice.invoiceType || 'Select',
@@ -2034,6 +2036,8 @@ const SalesInvoice: React.FC = () => {
         sellerAddress: currentCompany?.address || 'Your Company Address',
         buyerNTNCNIC: formData.buyerRegistrationNo,
         buyerBusinessName: formData.buyerName,
+         buyerNIC: formData.buyerNIC,
+      buyerNTN: formData.buyerNTN,
         buyerProvince: formData.destinationOfSupply,
         buyerAddress: formData.buyerAddress,
         buyerRegistrationType: formData.buyerType,
