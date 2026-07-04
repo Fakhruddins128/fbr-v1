@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -72,6 +72,8 @@ interface InvoiceItem {
 interface InvoiceFormData {
   buyerRegistrationNo: string;
   buyerName: string;
+  buyerNIC: string;
+  buyerNTN: string;
   buyerType: string;
   buyerAddress: string;
   invoiceType: string;
@@ -1033,6 +1035,8 @@ const SalesInvoice: React.FC = () => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     buyerRegistrationNo: '',
     buyerName: '',
+    buyerNIC: '',
+    buyerNTN: '',
     buyerType: 'Unregistered',
     buyerAddress: '',
     invoiceType: 'Select',
@@ -1074,6 +1078,20 @@ const SalesInvoice: React.FC = () => {
     fetchData();
   }, []);
 
+  const findMatchingCustomer = useCallback((value: string) => {
+    const normalizedValue = value.trim();
+    if (!normalizedValue) {
+      return undefined;
+    }
+
+    return customers.find((customer) =>
+      customer.buyerRegistrationNo === normalizedValue ||
+      customer.buyerNTNCNIC === normalizedValue ||
+      customer.buyerNIC === normalizedValue ||
+      customer.buyerNTN === normalizedValue
+    );
+  }, [customers]);
+
   // Load invoice data when in edit mode
   useEffect(() => {
     const loadInvoiceForEdit = async () => {
@@ -1085,9 +1103,13 @@ const SalesInvoice: React.FC = () => {
              const invoice = Array.isArray(response.data) ? response.data[0] : response.data;
              setEditingInvoice(invoice);
             
+            const matchingCustomer = findMatchingCustomer(invoice.buyerNTNCNIC || '');
+
             setFormData({
               buyerRegistrationNo: invoice.buyerNTNCNIC || '',
               buyerName: invoice.buyerBusinessName || '',
+              buyerNIC: matchingCustomer?.buyerNIC || '',
+              buyerNTN: matchingCustomer?.buyerNTN || '',
               buyerType: invoice.buyerRegistrationType || 'Unregistered',
               buyerAddress: invoice.buyerAddress || '',
               invoiceType: invoice.invoiceType || 'Select',
@@ -1149,7 +1171,7 @@ const SalesInvoice: React.FC = () => {
     };
 
     loadInvoiceForEdit();
-  }, [invoiceId, items]);
+  }, [invoiceId, items, findMatchingCustomer]);
 
   const [currentItem, setCurrentItem] = useState<InvoiceItem>({
     id: '',
@@ -1177,14 +1199,22 @@ const SalesInvoice: React.FC = () => {
 
     // Auto-fill Buyer Name and details based on Registration No.
     if (field === 'buyerRegistrationNo' && typeof value === 'string') {
-      const matchingCustomer = customers.find(c => c.buyerRegistrationNo === value || c.buyerNTNCNIC === value);
+      const matchingCustomer = findMatchingCustomer(value);
       if (matchingCustomer) {
         setFormData(prev => ({
           ...prev,
           buyerName: matchingCustomer.buyerBusinessName,
+          buyerNIC: matchingCustomer.buyerNIC || '',
+          buyerNTN: matchingCustomer.buyerNTN || '',
           buyerType: matchingCustomer.buyerRegistrationType || prev.buyerType,
           buyerAddress: matchingCustomer.buyerAddress || prev.buyerAddress,
           destinationOfSupply: matchingCustomer.buyerProvince || prev.destinationOfSupply
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          buyerNIC: '',
+          buyerNTN: ''
         }));
       }
     }
@@ -1408,6 +1438,8 @@ const SalesInvoice: React.FC = () => {
     setFormData({
       buyerRegistrationNo: '',
       buyerName: '',
+      buyerNIC: '',
+      buyerNTN: '',
       buyerType: 'Unregistered',
       buyerAddress: '',
       invoiceType: 'Select',
@@ -1648,6 +1680,8 @@ const SalesInvoice: React.FC = () => {
       sellerNTNCNIC: currentCompany?.ntnNumber || '1234567',
       sellerAddress: currentCompany?.address || 'Company Address',
       buyerNTNCNIC: formData.buyerRegistrationNo,
+      buyerNIC: formData.buyerNIC,
+      buyerNTN: formData.buyerNTN,
       buyerBusinessName: formData.buyerName,
       buyerProvince: formData.destinationOfSupply,
       buyerAddress: formData.buyerAddress,
@@ -1928,6 +1962,8 @@ const SalesInvoice: React.FC = () => {
       sellerProvince: formData.saleOriginationProvince,
       sellerAddress: currentCompany?.address || 'Your Company Address',
       buyerNTNCNIC: formData.buyerRegistrationNo,
+      buyerNIC: formData.buyerNIC,
+      buyerNTN: formData.buyerNTN,
       buyerBusinessName: formData.buyerName,
       buyerProvince: formData.destinationOfSupply,
       buyerAddress: formData.buyerAddress,
@@ -2177,6 +2213,24 @@ const SalesInvoice: React.FC = () => {
                 </MenuItem>
               ))}
             </TextField>
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <TextField
+              fullWidth
+              label="Buyer NIC"
+              value={formData.buyerNIC}
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <TextField
+              fullWidth
+              label="Buyer NTN"
+              value={formData.buyerNTN}
+              size="small"
+              InputProps={{ readOnly: true }}
+            />
           </Grid>
 
           <Grid size={{ xs: 12 }}>

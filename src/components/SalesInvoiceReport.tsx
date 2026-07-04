@@ -62,6 +62,8 @@ interface SalesInvoiceReportProps {
     sellerProvince: string;
     sellerAddress: string;
     buyerNTNCNIC: string;
+    buyerNIC?: string;
+    buyerNTN?: string;
     buyerBusinessName: string;
     buyerProvince: string;
     buyerAddress: string;
@@ -218,6 +220,8 @@ const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             </Typography>
             <Typography variant="body2"><strong>Business Name:</strong> {invoiceData.buyerBusinessName}</Typography>
             <Typography variant="body2"><strong>NTN/CNIC:</strong> {invoiceData.buyerNTNCNIC}</Typography>
+            <Typography variant="body2"><strong>NIC:</strong> {invoiceData.buyerNIC || 'N/A'}</Typography>
+            <Typography variant="body2"><strong>NTN:</strong> {invoiceData.buyerNTN || 'N/A'}</Typography>
             <Typography variant="body2"><strong>Province:</strong> {invoiceData.buyerProvince}</Typography>
             <Typography variant="body2"><strong>Address:</strong> {invoiceData.buyerAddress}</Typography>
             <Typography variant="body2"><strong>Registration Type:</strong> {invoiceData.buyerRegistrationType}</Typography>
@@ -613,10 +617,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             </Box>
             <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
-                REG NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
+                NIC NO. : <strong>{invoiceData.buyerNIC || 'N/A'}</strong>
               </Typography>
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
-                N T N NO. : <strong>{invoiceData.buyerNTNCNIC || 'N/A'}</strong>
+                N T N NO. : <strong>{invoiceData.buyerNTN || 'N/A'}</strong>
               </Typography>
             </Box>
           </Box>
@@ -987,6 +991,9 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
           <Typography sx={{ fontSize: '0.74rem', mt: 0.15 }}>
             <strong>Buyer NTN / CNIC:</strong> {invoiceData.buyerNTNCNIC || 'N/A'}
           </Typography>
+          <Typography sx={{ fontSize: '0.74rem', mt: 0.15 }}>
+            <strong>Buyer NIC:</strong> {invoiceData.buyerNIC || 'N/A'}
+          </Typography>
         </Box>
       </Box>
 
@@ -1028,6 +1035,14 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
           <Box sx={infoRowSx}>
             <Typography sx={smallLabelSx}>Address:</Typography>
             <Typography sx={smallValueSx}>{invoiceData.buyerProvince || 'N/A'}</Typography>
+          </Box>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>NIC:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.buyerNIC || 'N/A'}</Typography>
+          </Box>
+          <Box sx={infoRowSx}>
+            <Typography sx={smallLabelSx}>NTN:</Typography>
+            <Typography sx={smallValueSx}>{invoiceData.buyerNTN || 'N/A'}</Typography>
           </Box>
           <Box sx={infoRowSx}>
             <Typography sx={smallLabelSx}>NTN / CNIC:</Typography>
