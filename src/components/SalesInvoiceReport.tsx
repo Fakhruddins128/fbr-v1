@@ -497,7 +497,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               fontSize: '1.25rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 2
+              lineHeight: 2,
+              backgroundColor: '#1976d2'
             }}
           >
             SELLER NAME &amp; ADDRESS
@@ -560,7 +561,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               fontSize: '1.25rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 2
+              lineHeight: 2,
+              backgroundColor: '#1976d2'
             }}
           >
             BUYER NAME &amp; ADDRESS
