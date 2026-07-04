@@ -866,7 +866,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       <Typography
         sx={{
           textAlign: 'center',
-          fontSize: '1.00rem',
+          fontSize: '0.85rem',
           mt: 'auto',
           pt: '0.42in',
           fontFamily: '"Times New Roman", serif'
