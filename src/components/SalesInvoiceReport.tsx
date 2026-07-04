@@ -386,6 +386,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const borderColor = '#222';
   const headerCellSx = {
     border: `1.5px solid ${borderColor}`,
+    backgroundColor: '#88b4e0ff',
     color: '#111',
     fontSize: '1rem',
     fontWeight: 700,
@@ -418,7 +419,9 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
     fontWeight: 700,
     py: 0.55,
     px: 0.22,
-    whiteSpace: 'nowrap'
+    whiteSpace: 'nowrap',
+    backgroundColor: '#88b4e0ff',
+    color: '#111',
   };
 
   return (
@@ -863,7 +866,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
       <Typography
         sx={{
           textAlign: 'center',
-          fontSize: '1.25rem',
+          fontSize: '1.00rem',
           mt: 'auto',
           pt: '0.42in',
           fontFamily: '"Times New Roman", serif'
