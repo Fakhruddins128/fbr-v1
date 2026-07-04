@@ -542,9 +542,9 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
                 {invoiceData.sellerAddress || 'N/A'}
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
+              {/* <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
                 {invoiceData.sellerProvince || ''}
-              </Typography>
+              </Typography> */}
             </Box>
             <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
@@ -607,9 +607,9 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
                 {invoiceData.buyerAddress || 'N/A'}
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
+              {/* <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
                 {invoiceData.buyerProvince || ''}
-              </Typography>
+              </Typography> */}
             </Box>
             <Box sx={{ pt: 0.35, px: 1.25 }}>
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
