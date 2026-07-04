@@ -555,7 +555,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
                 REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
               <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
-                N T N NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+                NTN NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
             </Box>
           </Box>
