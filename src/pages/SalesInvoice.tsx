@@ -1956,6 +1956,9 @@ const SalesInvoice: React.FC = () => {
   };
 
   const prepareInvoiceData = () => {
+    const savedBuyerNIC = editingInvoice?.buyerNIC || editingInvoice?.Buyer_NIC || '';
+    const savedBuyerNTN = editingInvoice?.buyerNTN || editingInvoice?.Buyer_NTN || '';
+
     return {
       invoiceType: mapTransactionTypeToInvoiceType(formData.transactionType),
       invoiceDate: formData.invoiceDate,
@@ -1964,8 +1967,8 @@ const SalesInvoice: React.FC = () => {
       sellerProvince: formData.saleOriginationProvince,
       sellerAddress: currentCompany?.address || 'Your Company Address',
       buyerNTNCNIC: formData.buyerRegistrationNo,
-      buyerNIC: formData.buyerNIC,
-      buyerNTN: formData.buyerNTN,
+      buyerNIC: formData.buyerNIC || savedBuyerNIC,
+      buyerNTN: formData.buyerNTN || savedBuyerNTN,
       buyerBusinessName: formData.buyerName,
       buyerProvince: formData.destinationOfSupply,
       buyerAddress: formData.buyerAddress,
