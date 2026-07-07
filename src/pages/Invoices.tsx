@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -43,6 +43,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '../utils/formatUtils';
+import { printElementContent } from '../utils/printUtils';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
 import { Invoice, InvoiceItem, Company } from '../types';
 import { invoiceAPI } from '../services/invoiceApi';
@@ -73,10 +74,27 @@ const Invoices: React.FC = () => {
   // Print state
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const printPreviewRef = useRef<HTMLDivElement | null>(null);
 
   const handlePrint = (invoice: Invoice) => {
     setPrintInvoice(invoice);
     setShowPrintDialog(true);
+  };
+
+  const handlePrintPreview = () => {
+    if (!printPreviewRef.current || !printInvoice) {
+      setSnackbar({ open: true, message: 'Invoice preview is not ready yet', severity: 'error' });
+      return;
+    }
+
+    const didOpenPrintWindow = printElementContent(
+      printPreviewRef.current,
+      `Invoice ${printInvoice.invoiceRefNo || printInvoice.invoiceID}`
+    );
+
+    if (!didOpenPrintWindow) {
+      setSnackbar({ open: true, message: 'Allow pop-ups to print the invoice', severity: 'error' });
+    }
   };
 
   const printInvoiceCompany = React.useMemo(() => {
@@ -1318,26 +1336,7 @@ const Invoices: React.FC = () => {
           }
         }}>
           {printInvoice && (
-            <Box className="invoice-print-area" sx={{ backgroundColor: '#fff' }}>
-              <style>{`
-                @media print {
-                  body * {
-                    visibility: hidden !important;
-                  }
-                  .invoice-print-area,
-                  .invoice-print-area * {
-                    visibility: visible !important;
-                  }
-                  .invoice-print-area {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    background: #fff !important;
-                    overflow: visible !important;
-                  }
-                }
-              `}</style>
+            <Box ref={printPreviewRef} sx={{ backgroundColor: '#fff' }}>
               <SalesInvoiceReport 
                 invoiceData={{
                   invoiceType: printInvoice.invoiceType,
@@ -1386,7 +1385,7 @@ const Invoices: React.FC = () => {
             Close
           </Button>
           <Button 
-            onClick={() => window.print()} 
+            onClick={handlePrintPreview}
             color="primary"
             variant="contained"
             startIcon={<PrintIcon />}

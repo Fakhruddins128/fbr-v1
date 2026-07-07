@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -47,6 +47,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import fbrApiService from '../api/fbrApi';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
+import { printElementContent } from '../utils/printUtils';
 // Scenario mapping imports removed - business activities and sectors now come from company profile
 
 // Types for the invoice form
@@ -1032,6 +1033,7 @@ const SalesInvoice: React.FC = () => {
     severity: 'success'
   });
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const invoicePreviewRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState<InvoiceFormData>({
     buyerRegistrationNo: '',
     buyerName: '',
@@ -1945,14 +1947,32 @@ const SalesInvoice: React.FC = () => {
       });
       return;
     }
-    
-    // Open preview modal first, then trigger print
+
     setShowInvoicePreview(true);
-    
-    // Delay print to allow modal to render
-    setTimeout(() => {
-      window.print();
-    }, 500);
+  };
+
+  const handlePrintPreview = () => {
+    if (!invoicePreviewRef.current) {
+      setNotification({
+        open: true,
+        message: 'Invoice preview is not ready yet',
+        severity: 'error'
+      });
+      return;
+    }
+
+    const didOpenPrintWindow = printElementContent(
+      invoicePreviewRef.current,
+      `Invoice ${formData.invoiceNo || formData.buyerName || 'Preview'}`
+    );
+
+    if (!didOpenPrintWindow) {
+      setNotification({
+        open: true,
+        message: 'Allow pop-ups to print the invoice',
+        severity: 'error'
+      });
+    }
   };
 
   const prepareInvoiceData = () => {
@@ -2987,26 +3007,7 @@ const SalesInvoice: React.FC = () => {
           }
         }}>
           {showInvoicePreview && (
-            <Box className="invoice-print-area" sx={{ backgroundColor: '#fff' }}>
-              <style>{`
-                @media print {
-                  body * {
-                    visibility: hidden !important;
-                  }
-                  .invoice-print-area,
-                  .invoice-print-area * {
-                    visibility: visible !important;
-                  }
-                  .invoice-print-area {
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    background: #fff !important;
-                    overflow: visible !important;
-                  }
-                }
-              `}</style>
+            <Box ref={invoicePreviewRef} sx={{ backgroundColor: '#fff' }}>
               <SalesInvoiceReport 
                 invoiceData={prepareInvoiceData()}
                 fbrResponse={fbrResponse}
@@ -3028,7 +3029,7 @@ const SalesInvoice: React.FC = () => {
             Close
           </Button>
           <Button 
-            onClick={() => window.print()} 
+            onClick={handlePrintPreview}
             color="primary"
             variant="contained"
             startIcon={<PrintIcon />}
