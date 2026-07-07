@@ -1186,7 +1186,7 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
   const invoiceNo = invoiceData.invoiceRefNo || 'N/A';
   const customerId = invoiceData.buyerNTNCNIC || 'N/A';
   const poNumber = invoiceData.poNumber || 'N/A';
-  const dueDate = invoiceDate;
+  // const dueDate = invoiceDate;
 
   const headerBlue = '#0b4d73';
   const lightGray = '#d9d9d9';
