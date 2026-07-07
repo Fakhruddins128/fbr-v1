@@ -434,8 +434,8 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     py: 0.55,
     px: 0.22,
     whiteSpace: 'nowrap',
-    backgroundColor: '#88b4e0ff',
-    color: '#111',
+    backgroundColor: '#0b4d73', 
+    color: '#ffffffff',
   };
 
   return (
@@ -517,7 +517,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
               py: 0.2,
               lineHeight: 2,
               backgroundColor: '#d9d9d9',
-              color:'#0000'
+              color:'#000000'
             }}
           >
             SELLER NAME &amp; ADDRESS
@@ -582,7 +582,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
               py: 0.2,
               lineHeight: 2,
               backgroundColor: '#d9d9d9',
-               color:'#0000'
+               color:'#000000ff'
             }}
           >
             BUYER NAME &amp; ADDRESS
