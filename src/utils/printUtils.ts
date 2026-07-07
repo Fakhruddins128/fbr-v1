@@ -46,7 +46,7 @@ const replaceCanvasWithImages = (sourceRoot: HTMLElement, clonedRoot: HTMLElemen
 };
 
 export const printElementContent = (element: HTMLElement, title = 'Invoice Preview') => {
-  const printWindow = window.open('', '_blank', 'width=1024,height=900,noopener,noreferrer');
+  const printWindow = window.open('about:blank', '_blank', 'width=1024,height=900,left=120,top=80');
 
   if (!printWindow) {
     return false;
@@ -55,7 +55,8 @@ export const printElementContent = (element: HTMLElement, title = 'Invoice Previ
   const clonedRoot = element.cloneNode(true) as HTMLElement;
   replaceCanvasWithImages(element, clonedRoot);
 
-  const printDocument = `
+  printWindow.document.open();
+  printWindow.document.write(`
     <!DOCTYPE html>
     <html>
       <head>
@@ -75,6 +76,7 @@ export const printElementContent = (element: HTMLElement, title = 'Invoice Previ
 
           .print-shell {
             background: #fff;
+            min-height: 100vh;
           }
 
           @media print {
@@ -86,28 +88,23 @@ export const printElementContent = (element: HTMLElement, title = 'Invoice Previ
           }
         </style>
       </head>
-      <body>
-        <div class="print-shell">${clonedRoot.outerHTML}</div>
-      </body>
+      <body></body>
     </html>
-  `;
-
-  printWindow.document.open();
-  printWindow.document.write(printDocument);
+  `);
   printWindow.document.close();
+
+  const shell = printWindow.document.createElement('div');
+  shell.className = 'print-shell';
+  shell.innerHTML = clonedRoot.outerHTML;
+  printWindow.document.body.innerHTML = '';
+  printWindow.document.body.appendChild(shell);
 
   const triggerPrint = () => {
     printWindow.focus();
     printWindow.print();
   };
 
-  printWindow.onload = () => {
-    setTimeout(triggerPrint, 350);
-  };
-
-  printWindow.onafterprint = () => {
-    printWindow.close();
-  };
+  setTimeout(triggerPrint, 500);
 
   return true;
 };
