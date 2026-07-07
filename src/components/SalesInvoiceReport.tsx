@@ -384,7 +384,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
   const qrValue = (fbrResponse?.invoiceNumber || invoiceData.invoiceRefNo || 'N/A').trim();
-  const blankRows = Math.max(0, 12 - invoiceData.items.length);   // to ensure 12 rows are used
+  const printableWidth = '184.6mm';
+  const printableHeight = '271.6mm';
+  const desiredRows = 9;
+  const blankRows = Math.max(0, desiredRows - invoiceData.items.length);
   const printCss = `
     @page {
       size: A4;
@@ -421,13 +424,13 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     border: `2.0px solid ${borderColor}`,
     backgroundColor: '#0b4d73',
     color: '#fff',
-    fontSize: '1rem',
+    fontSize: '0.88rem',
     fontWeight: 700,
     lineHeight: 1.05,
-    px: 0.4,
-    py: 0.92,
+    px: 0.22,
+    py: 0.45,
     textAlign: 'center',
-    height: '0.56in'
+    height: '0.4in'
   };
   const bodyCellSx = {
     ...printColorExactSx,
@@ -435,14 +438,12 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     borderRight: `2.0px solid ${borderColor}`,
     borderBottom: '0',
     borderTop: '0',
-    fontSize: '0.82rem',
+    fontSize: '0.84rem',
     color: '#222',
     lineHeight: 1,
-    px: 0.35,
-    py: 0.5,
-    height: '0.28in',
-    paddingTop: '20px',
-    paddingBottom: '20px'
+    px: 0.18,
+    py: 0.22,
+    height: '0.18in'
   };
   const totalRowCellSx = {
     ...printColorExactSx,
@@ -450,9 +451,9 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     borderBottom: `2px solid ${borderColor}`,
     borderLeft: `2px solid ${borderColor}`,
     borderRight: `2px solid ${borderColor}`,
-    fontSize: '0.78rem',
+    fontSize: '0.82rem',
     fontWeight: 700,
-    py: 0.55,
+    py: 0.32,
     px: 0.22,
     whiteSpace: 'nowrap',
     backgroundColor: '#0b4d73', 
@@ -465,21 +466,23 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         backgroundColor: '#fff',
         color: '#111',
         margin: '0 auto',
-        width: '210mm',
-        minHeight: '297mm',
+        width: '100%',
+        maxWidth: printableWidth,
+        minHeight: printableHeight,
         ...printColorExactSx,
         boxSizing: 'border-box',
-        px: '0.22in',
-        py: '0.2in',
+        px: 0,
+        py: 0,
         fontFamily: 'Arial, Helvetica, sans-serif',
         display: 'flex',
         flexDirection: 'column',
         '@media print': {
-          width: '210mm',
-          minHeight: '297mm',
+          width: '100%',
+          maxWidth: printableWidth,
+          minHeight: printableHeight,
           boxSizing: 'border-box',
-          px: '0.22in',
-          py: '0.2in',
+          px: 0,
+          py: 0,
           boxShadow: 'none',
           WebkitPrintColorAdjust: 'exact',
           printColorAdjust: 'exact',
@@ -509,43 +512,40 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: '1.25rem',
-          ml: '-1.0in',
-          mr: '-0.6in',
+          fontSize: '1.05rem',
           mb: '0.14in',
-          px: '0.05in'
-
+          px: 0
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography component="span" sx={{ fontSize: '1.25rem' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.45 }}>
+          <Typography component="span" sx={{ fontSize: '1.05rem' }}>
             Invoice No. :
           </Typography>
-          <Typography component="span" sx={{ fontSize: '1.25rem', fontWeight: 700, textDecoration: 'underline' }}>
+          <Typography component="span" sx={{ fontSize: '1.05rem', fontWeight: 700, textDecoration: 'underline' }}>
             {invoiceData.invoiceRefNo || 'N/A'}
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography component="span" sx={{ fontSize: '1.25rem' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.45 }}>
+          <Typography component="span" sx={{ fontSize: '1.05rem' }}>
             Date :
           </Typography>
-          <Typography component="span" sx={{ fontSize: '1.25rem', fontWeight: 700, textDecoration: 'underline' }}>
+          <Typography component="span" sx={{ fontSize: '1.05rem', fontWeight: 700, textDecoration: 'underline' }}>
             {invoiceDate}
           </Typography>
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '0.13in', ml:'-1.0in',  mr: '-0.6in' }}>
-        <Box sx={{ width: '47.8%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: '0.18in', mb: '0.13in' }}>
+        <Box sx={{ width: 'calc(50% - 0.09in)' }}>
           <Box
             sx={{
               ...printColorExactSx,
               border: `1.5px solid ${borderColor}`,
               textAlign: 'center',
-              fontSize: '1.25rem',
+              fontSize: '1.1rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 2,
+              lineHeight: 1.6,
               backgroundColor: '#d9d9d9',
               color:'#000000'
             }}
@@ -556,10 +556,10 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
             sx={{
               border: `0`,
               textAlign: 'center',
-              fontSize: '1.25rem',
+              fontSize: '1.1rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 2
+              lineHeight: 1.4
             }}
           >
              
@@ -567,52 +567,50 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           <Box
             sx={{
               border: `2.5px solid ${borderColor}`,
-              
-              minHeight: '1.7in',
+              minHeight: '1.45in',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               px: 0,
-              pt: 0.45,
-              pb: 0.45,
-              mt: 0.5,
-              
+              pt: 0.28,
+              pb: 0.28,
+              mt: 0.25
             }}
           >
             <Box>
-              <Box sx={{  py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
+              <Box sx={{ py: 0.14, px: 0.5, mb: 0.3 }}>
+                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff', fontSize: '1.05rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73' }}>
                   {invoiceData.sellerBusinessName || 'N/A'}
                 </Typography>
               </Box>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.35, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 0.8 }}>
                 {invoiceData.sellerAddress || 'N/A'}
               </Typography>
               {/* <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
                 {invoiceData.sellerProvince || ''}
               </Typography> */}
             </Box>
-            <Box sx={{ pt: 0.35, px: 1.25 }}>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+            <Box sx={{ pt: 0.22, px: 0.8 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.88rem', lineHeight: 1.2 }}>
                 REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.88rem', lineHeight: 1.2 }}>
                 NTN NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
               </Typography>
             </Box>
           </Box>
         </Box>
 
-        <Box sx={{ width: '47.8%' }}>
+        <Box sx={{ width: 'calc(50% - 0.09in)' }}>
           <Box
             sx={{
               ...printColorExactSx,
               border: `1.5px solid ${borderColor}`,
               textAlign: 'center',
-              fontSize: '1.25rem',
+              fontSize: '1.1rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 2,
+              lineHeight: 1.6,
               backgroundColor: '#d9d9d9',
                color:'#000000ff'
             }}
@@ -623,10 +621,10 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
             sx={{
               border: `0`,
               textAlign: 'center',
-              fontSize: '1.25rem',
+              fontSize: '1.1rem',
               fontWeight: 700,
               py: 0.2,
-              lineHeight: 2
+              lineHeight: 1.4
             }}
           >
              
@@ -634,35 +632,34 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           <Box
             sx={{
               border: `2.5px solid ${borderColor}`,
-             
-              minHeight: '1.7in',
+              minHeight: '1.45in',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               px: 0,
-              pt: 0.45,
-              pb: 0.45,
-              mt: 0.5
+              pt: 0.28,
+              pb: 0.28,
+              mt: 0.25
             }}
           >
             <Box>
-              <Box sx={{   py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff',fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
+              <Box sx={{ py: 0.14, px: 0.5, mb: 0.3 }}>
+                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff',fontSize: '1.05rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73' }}>
                   {invoiceData.buyerBusinessName || 'N/A'}
                 </Typography>
               </Box>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.35, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 0.8 }}>
                 {invoiceData.buyerAddress || 'N/A'}
               </Typography>
               {/* <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', mt: 0.15, px: 1.25 }}>
                 {invoiceData.buyerProvince || ''}
               </Typography> */}
             </Box>
-            <Box sx={{ pt: 0.35, px: 1.25 }}>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+            <Box sx={{ pt: 0.22, px: 0.8 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.88rem', lineHeight: 1.2 }}>
                 NIC NO. : <strong>{invoiceData.buyerNIC || 'N/A'}</strong>
               </Typography>
-              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '0.88rem', lineHeight: 1.2 }}>
                 NTN NO. : <strong>{invoiceData.buyerNTN || 'N/A'}</strong>
               </Typography>
             </Box>
@@ -675,8 +672,6 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           display: 'flex',
           alignItems: 'center',
           borderBottom: `1.5px solid ${borderColor}`,
-          ml: '-1.0in',
-          mr: '-0.5in',
           mb: '0.11in',
           pb: '0.02in'
         }}
@@ -688,9 +683,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
       <TableContainer
         sx={{
           mb: '0.18in',
-          width: '120%',
-          mr: '1.0in',
-          ml:'-1.0in'
+          width: '100%'
         }}
       >
         <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' , border: `2.0px solid ${borderColor}`,}}>
@@ -742,15 +735,15 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
 
               return (
                 <TableRow key={index}>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem'  }}>{displayUom}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(lineInclusive)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.22, whiteSpace: 'nowrap', verticalAlign: 'top'  }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.22, verticalAlign: 'top' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top' }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(lineInclusive)}</TableCell>
                 </TableRow>
               );
             })}
@@ -835,16 +828,16 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         </Table>
       </TableContainer>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', ml:'-1.0in' }}>
-        <Box sx={{ width: '48%', pl: '0.02in' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.2in' }}>
+        <Box sx={{ width: '56%', pl: 0 }}>
           <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, mb: '0.08in' }}>
             Comments:
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8, mb: '0.1in' }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700 }}>
               FBR INVOICE :
             </Typography>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700 }}>
               {qrValue}
             </Typography>
           </Box>
@@ -880,37 +873,37 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           </Box>
         </Box>
 
-        <Box sx={{ width: '36%', mr: '-0.5in' }}>
+        <Box sx={{ width: '40%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>FURTHER TAX :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>FURTHER TAX :</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '0.52in', textAlign: 'center' }}>
               {furtherTaxRate ? `@ ${furtherTaxRate}` : ''}
             </Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalFurtherTax)}</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatAmount(totalFurtherTax)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>ADVANCE TAX :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>ADVANCE TAX :</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '0.52in', textAlign: 'center' }}>
               {advanceTaxRate ? `@ ${advanceTaxRate}` : ''}
             </Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalAdvanceTax)}</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatAmount(totalAdvanceTax)}</Typography>
           </Box>
           {totalExtraTax > 0 && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>EXTRA TAX :</Typography>
-              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>EXTRA TAX :</Typography>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '0.52in', textAlign: 'center' }}>
                 &nbsp;
               </Typography>
-              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalExtraTax)}</Typography>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatAmount(totalExtraTax)}</Typography>
             </Box>
           )}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>NET TOTAL :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>NET TOTAL :</Typography>
+            <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
           </Box>
         </Box>
       </Box>
@@ -918,9 +911,9 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
       <Typography
         sx={{
           textAlign: 'center',
-          fontSize: '0.85rem',
+          fontSize: '0.78rem',
           mt: 'auto',
-          pt: '0.42in',
+          pt: '0.25in',
           fontFamily: '"Times New Roman", serif',
            fontWeight: 700
         }}
