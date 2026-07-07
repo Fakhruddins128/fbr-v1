@@ -390,18 +390,18 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
     if (!Number.isFinite(value) || value === 0) {
       return '';
     }
-
+ 
     const decimals = value < 1 ? 1 : value % 1 === 0 ? 0 : 2;
     return `${value.toFixed(decimals)}%`;
   };
-
+const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
   const furtherTaxRate = formatPercentage(totals.subtotal ? (totalFurtherTax / totals.subtotal) * 100 : 0);
   const advanceTaxRate = formatPercentage(inclusiveAmount ? (totalAdvanceTax / inclusiveAmount) * 100 : 0);
   const borderColor = '#222';
   const headerCellSx = {
     border: `1.5px solid ${borderColor}`,
-    backgroundColor: '#88b4e0ff',
-    color: '#111',
+    backgroundColor: '#0b4d73',
+    color: '#fff',
     fontSize: '1rem',
     fontWeight: 700,
     lineHeight: 1.05,
@@ -468,7 +468,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           fontSize: '2rem',
           fontWeight: 500,
           lineHeight: 1.05,
-          mb: '0.24in'
+          mb: '0.24in',
+          color :'#0b4d73'
         }}
       >
         Sales Tax Invoice
@@ -515,8 +516,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               fontWeight: 700,
               py: 0.2,
               lineHeight: 2,
-              backgroundColor: '#1976d2',
-              color:'#ffffff'
+              backgroundColor: '#d9d9d9',
+              color:'#0000'
             }}
           >
             SELLER NAME &amp; ADDRESS
@@ -548,8 +549,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             }}
           >
             <Box>
-              <Box sx={{ backgroundColor: '#c06048ff', py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ textAlign: 'center', color: '#fff', fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1 }}>
+              <Box sx={{  py: 0.18, px: 0.8, mb: 0.5 }}>
+                <Typography sx={{ textAlign: 'center', color: '#000', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1 }}>
                   {invoiceData.sellerBusinessName || 'N/A'}
                 </Typography>
               </Box>
@@ -580,8 +581,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               fontWeight: 700,
               py: 0.2,
               lineHeight: 2,
-              backgroundColor: '#1976d2',
-               color:'#ffffff'
+              backgroundColor: '#d9d9d9',
+               color:'#0000'
             }}
           >
             BUYER NAME &amp; ADDRESS
@@ -613,8 +614,8 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             }}
           >
             <Box>
-              <Box sx={{ backgroundColor: '#c06048ff', py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ textAlign: 'center', color: '#fff',fontSize: '1.5rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1 }}>
+              <Box sx={{   py: 0.18, px: 0.8, mb: 0.5 }}>
+                <Typography sx={{ textAlign: 'center', color: '#000',fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1 }}>
                   {invoiceData.buyerBusinessName || 'N/A'}
                 </Typography>
               </Box>
@@ -649,7 +650,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
         }}
       >
         <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '0.72in' }}>TERM :</Typography>
-        <Typography sx={{ fontSize: '0.9rem' }}>CREDIT/CASH</Typography>
+        <Typography sx={{ fontSize: '0.9rem' }}>{paymentTerm}</Typography>
       </Box>
 
       <TableContainer
