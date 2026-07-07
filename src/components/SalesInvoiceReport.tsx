@@ -536,7 +536,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           </Box>
           <Box
             sx={{
-              border: `1.5px solid ${borderColor}`,
+              border: `2.5px solid ${borderColor}`,
               
               minHeight: '1.7in',
               display: 'flex',
@@ -545,12 +545,13 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
               px: 0,
               pt: 0.45,
               pb: 0.45,
-              mt: 0.5
+              mt: 0.5,
+              
             }}
           >
             <Box>
               <Box sx={{  py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ textAlign: 'center', color: '#000', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1 }}>
+                <Typography sx={{ textAlign: 'center', color: '#ffffffff', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
                   {invoiceData.sellerBusinessName || 'N/A'}
                 </Typography>
               </Box>
@@ -601,7 +602,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           </Box>
           <Box
             sx={{
-              border: `1.5px solid ${borderColor}`,
+              border: `2.5px solid ${borderColor}`,
              
               minHeight: '1.7in',
               display: 'flex',
@@ -615,7 +616,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           >
             <Box>
               <Box sx={{   py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ textAlign: 'center', color: '#000',fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1 }}>
+                <Typography sx={{ textAlign: 'center', color: '#ffffffff',fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
                   {invoiceData.buyerBusinessName || 'N/A'}
                 </Typography>
               </Box>
