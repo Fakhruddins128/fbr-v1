@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -47,7 +47,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import fbrApiService from '../api/fbrApi';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
-import { printElementContent } from '../utils/printUtils';
+import { printReactContent } from '../utils/printUtils';
 // Scenario mapping imports removed - business activities and sectors now come from company profile
 
 // Types for the invoice form
@@ -1033,7 +1033,6 @@ const SalesInvoice: React.FC = () => {
     severity: 'success'
   });
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
-  const invoicePreviewRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState<InvoiceFormData>({
     buyerRegistrationNo: '',
     buyerName: '',
@@ -1952,17 +1951,12 @@ const SalesInvoice: React.FC = () => {
   };
 
   const handlePrintPreview = () => {
-    if (!invoicePreviewRef.current) {
-      setNotification({
-        open: true,
-        message: 'Invoice preview is not ready yet',
-        severity: 'error'
-      });
-      return;
-    }
-
-    const didOpenPrintWindow = printElementContent(
-      invoicePreviewRef.current,
+    const didOpenPrintWindow = printReactContent(
+      <SalesInvoiceReport
+        invoiceData={prepareInvoiceData()}
+        fbrResponse={fbrResponse}
+        template={currentCompany?.salesInvoiceTemplate || 'template1'}
+      />,
       `Invoice ${formData.invoiceNo || formData.buyerName || 'Preview'}`
     );
 
@@ -3007,7 +3001,7 @@ const SalesInvoice: React.FC = () => {
           }
         }}>
           {showInvoicePreview && (
-            <Box ref={invoicePreviewRef} sx={{ backgroundColor: '#fff' }}>
+            <Box sx={{ backgroundColor: '#fff' }}>
               <SalesInvoiceReport 
                 invoiceData={prepareInvoiceData()}
                 fbrResponse={fbrResponse}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -43,7 +43,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '../utils/formatUtils';
-import { printElementContent } from '../utils/printUtils';
+import { printReactContent } from '../utils/printUtils';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
 import { Invoice, InvoiceItem, Company } from '../types';
 import { invoiceAPI } from '../services/invoiceApi';
@@ -74,7 +74,6 @@ const Invoices: React.FC = () => {
   // Print state
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
-  const printPreviewRef = useRef<HTMLDivElement | null>(null);
 
   const handlePrint = (invoice: Invoice) => {
     setPrintInvoice(invoice);
@@ -82,13 +81,44 @@ const Invoices: React.FC = () => {
   };
 
   const handlePrintPreview = () => {
-    if (!printPreviewRef.current || !printInvoice) {
+    if (!printInvoice) {
       setSnackbar({ open: true, message: 'Invoice preview is not ready yet', severity: 'error' });
       return;
     }
 
-    const didOpenPrintWindow = printElementContent(
-      printPreviewRef.current,
+    const didOpenPrintWindow = printReactContent(
+      <SalesInvoiceReport
+        invoiceData={{
+          invoiceType: printInvoice.invoiceType,
+          invoiceDate: printInvoice.invoiceDate,
+          sellerNTNCNIC: printInvoice.sellerNTNCNIC || printInvoiceCompany?.ntnNumber || '',
+          sellerBusinessName: printInvoiceCompany?.businessNameForSalesInvoice || printInvoice.sellerBusinessName || printInvoiceCompany?.name || '',
+          sellerProvince: printInvoice.sellerProvince || printInvoiceCompany?.province || '',
+          sellerAddress: printInvoice.sellerAddress || printInvoiceCompany?.address || '',
+          buyerNTNCNIC: printInvoice.buyerNTNCNIC,
+          buyerNIC: printInvoice.buyerNIC || (printInvoice as any).Buyer_NIC || '',
+          buyerNTN: printInvoice.buyerNTN || (printInvoice as any).Buyer_NTN || '',
+          buyerBusinessName: printInvoice.buyerBusinessName,
+          buyerProvince: printInvoice.buyerProvince,
+          buyerAddress: printInvoice.buyerAddress,
+          invoiceRefNo: printInvoice.invoiceRefNo,
+          poNumber: printInvoice.poNumber,
+          buyerRegistrationType: printInvoice.buyerRegistrationType,
+          scenarioId: printInvoice.scenarioID,
+          items: printInvoice.items
+        }}
+        fbrResponse={printInvoice.fbrInvoiceNumber ? {
+          invoiceNumber: printInvoice.fbrInvoiceNumber,
+          dated: printInvoice.invoiceDate,
+          validationResponse: {
+            statusCode: '100',
+            status: 'COMPLIANT',
+            error: '',
+            invoiceStatuses: []
+          }
+        } : undefined}
+        template={printInvoiceCompany?.salesInvoiceTemplate || 'template1'}
+      />,
       `Invoice ${printInvoice.invoiceRefNo || printInvoice.invoiceID}`
     );
 
@@ -1336,7 +1366,7 @@ const Invoices: React.FC = () => {
           }
         }}>
           {printInvoice && (
-            <Box ref={printPreviewRef} sx={{ backgroundColor: '#fff' }}>
+            <Box sx={{ backgroundColor: '#fff' }}>
               <SalesInvoiceReport 
                 invoiceData={{
                   invoiceType: printInvoice.invoiceType,

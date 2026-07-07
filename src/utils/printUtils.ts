@@ -1,3 +1,9 @@
+import React from 'react';
+import createCache from '@emotion/cache';
+import { CacheProvider } from '@emotion/react';
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { createRoot } from 'react-dom/client';
+
 const escapeHtml = (value: string) =>
   value
     .replace(/&/g, '&amp;')
@@ -6,54 +12,41 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-const copyDocumentStyles = () =>
-  Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map((node) => node.outerHTML)
-    .join('\n');
-
-const replaceCanvasWithImages = (sourceRoot: HTMLElement, clonedRoot: HTMLElement) => {
-  const sourceCanvases = Array.from(sourceRoot.querySelectorAll('canvas'));
-  const clonedCanvases = Array.from(clonedRoot.querySelectorAll('canvas'));
-
-  sourceCanvases.forEach((sourceCanvas, index) => {
-    const clonedCanvas = clonedCanvases[index];
-
-    if (!clonedCanvas) {
-      return;
+const printTheme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2'
+    },
+    secondary: {
+      main: '#dc004e'
+    },
+    background: {
+      default: '#ffffff'
     }
-
-    try {
-      const image = document.createElement('img');
-      const computedStyle = window.getComputedStyle(sourceCanvas);
-
-      image.src = sourceCanvas.toDataURL('image/png');
-      image.alt = 'Canvas preview';
-      image.width = sourceCanvas.width;
-      image.height = sourceCanvas.height;
-      image.style.display = computedStyle.display === 'inline' ? 'inline-block' : computedStyle.display;
-      image.style.width = computedStyle.width;
-      image.style.height = computedStyle.height;
-      image.style.maxWidth = computedStyle.maxWidth;
-      image.style.maxHeight = computedStyle.maxHeight;
-      image.style.objectFit = 'contain';
-      image.style.verticalAlign = computedStyle.verticalAlign;
-
-      clonedCanvas.replaceWith(image);
-    } catch (error) {
-      console.error('Unable to copy canvas for printing:', error);
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 600
     }
-  });
-};
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none'
+        }
+      }
+    }
+  }
+});
 
-export const printElementContent = (element: HTMLElement, title = 'Invoice Preview') => {
+export const printReactContent = (content: React.ReactElement, title = 'Invoice Preview') => {
   const printWindow = window.open('about:blank', '_blank', 'width=1024,height=900,left=120,top=80');
 
   if (!printWindow) {
     return false;
   }
-
-  const clonedRoot = element.cloneNode(true) as HTMLElement;
-  replaceCanvasWithImages(element, clonedRoot);
 
   printWindow.document.open();
   printWindow.document.write(`
@@ -62,7 +55,6 @@ export const printElementContent = (element: HTMLElement, title = 'Invoice Previ
       <head>
         <meta charset="utf-8" />
         <title>${escapeHtml(title)}</title>
-        ${copyDocumentStyles()}
         <style>
           html, body {
             margin: 0;
@@ -93,11 +85,28 @@ export const printElementContent = (element: HTMLElement, title = 'Invoice Previ
   `);
   printWindow.document.close();
 
-  const shell = printWindow.document.createElement('div');
-  shell.className = 'print-shell';
-  shell.innerHTML = clonedRoot.outerHTML;
+  const rootElement = printWindow.document.createElement('div');
+  rootElement.id = 'print-root';
   printWindow.document.body.innerHTML = '';
-  printWindow.document.body.appendChild(shell);
+  printWindow.document.body.appendChild(rootElement);
+
+  const cache = createCache({
+    key: 'print',
+    container: printWindow.document.head
+  });
+
+  const root = createRoot(rootElement);
+  root.render(
+    React.createElement(
+      CacheProvider,
+      { value: cache },
+      React.createElement(
+        ThemeProvider,
+        { theme: printTheme },
+        React.createElement(React.Fragment, null, React.createElement(CssBaseline), content)
+      )
+    )
+  );
 
   const triggerPrint = () => {
     printWindow.focus();
@@ -105,6 +114,11 @@ export const printElementContent = (element: HTMLElement, title = 'Invoice Previ
   };
 
   setTimeout(triggerPrint, 500);
+
+  printWindow.onafterprint = () => {
+    root.unmount();
+    printWindow.close();
+  };
 
   return true;
 };
