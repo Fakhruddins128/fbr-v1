@@ -722,7 +722,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
             })}
 
             {Array.from({ length: blankRows }).map((_, index) => (
-              <TableRow key={`blank-${index}`}>
+              <TableRow key={`blank-${index}`} sx={{ backgroundColor: index % 2 === 0 ? '#fff' : '#d9d9d9' }} >
                 <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
                 <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
                 <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
@@ -1341,14 +1341,14 @@ html, body { margin: 0; padding: 0; }
           </Box>
         </Box>
 
-        {/* <Box sx={{ width: '50%' }}>
+        <Box sx={{ width: '50%' }}>
           <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.65, fontSize: fontMd, fontWeight: 700 }}>
             Ship To (If Different):
           </Box>
           <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
             <Typography sx={{ fontSize: fontSm, color: '#111' }}> </Typography>
           </Box>
-        </Box> */}
+        </Box>
       </Box>
 
       <TableContainer sx={{ mt: 1.4 }}>
