@@ -399,7 +399,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
   const advanceTaxRate = formatPercentage(inclusiveAmount ? (totalAdvanceTax / inclusiveAmount) * 100 : 0);
   const borderColor = '#222';
   const headerCellSx = {
-    border: `1.5px solid ${borderColor}`,
+    border: `2.0px solid ${borderColor}`,
     backgroundColor: '#0b4d73',
     color: '#fff',
     fontSize: '1rem',
@@ -411,8 +411,8 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     height: '0.56in'
   };
   const bodyCellSx = {
-    borderLeft: `1.5px solid ${borderColor}`,
-    borderRight: `1.5px solid ${borderColor}`,
+    borderLeft: `2.0px solid ${borderColor}`,
+    borderRight: `2.0px solid ${borderColor}`,
     borderBottom: '0',
     borderTop: '0',
     fontSize: '0.82rem',
@@ -427,8 +427,8 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
   const totalRowCellSx = {
     borderTop: `2px solid ${borderColor}`,
     borderBottom: `2px solid ${borderColor}`,
-    borderLeft: `1px solid ${borderColor}`,
-    borderRight: `1px solid ${borderColor}`,
+    borderLeft: `2px solid ${borderColor}`,
+    borderRight: `2px solid ${borderColor}`,
     fontSize: '0.78rem',
     fontWeight: 700,
     py: 0.55,
@@ -662,7 +662,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           ml:'-1.0in'
         }}
       >
-        <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' }}>
+        <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' , border: `2.0px solid ${borderColor}`,}}>
           <colgroup>
             <col style={{ width: '6.3%' }} />
             <col style={{ width: '5.3%' }} />
