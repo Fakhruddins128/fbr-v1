@@ -650,8 +650,8 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           pb: '0.02in'
         }}
       >
-        <Typography sx={{ fontSize: '0.9rem', fontWeight: 700, minWidth: '0.72in' }}>TERM :</Typography>
-        <Typography sx={{ fontSize: '0.9rem' }}>{paymentTerm}</Typography>
+        <Typography sx={{ fontSize: '0.9rem',  minWidth: '0.72in' }}>TERM :</Typography>
+        <Typography sx={{ fontSize: '0.9rem',fontWeight: 700 }}>{paymentTerm}</Typography>
       </Box>
 
       <TableContainer
