@@ -1318,38 +1318,59 @@ const Invoices: React.FC = () => {
           }
         }}>
           {printInvoice && (
-            <SalesInvoiceReport 
-              invoiceData={{
-                invoiceType: printInvoice.invoiceType,
-                invoiceDate: printInvoice.invoiceDate,
-                sellerNTNCNIC: printInvoice.sellerNTNCNIC || printInvoiceCompany?.ntnNumber || '',
-                sellerBusinessName: printInvoiceCompany?.businessNameForSalesInvoice || printInvoice.sellerBusinessName || printInvoiceCompany?.name || '',
-                sellerProvince: printInvoice.sellerProvince || printInvoiceCompany?.province || '',
-                sellerAddress: printInvoice.sellerAddress || printInvoiceCompany?.address || '',
-                buyerNTNCNIC: printInvoice.buyerNTNCNIC,
-                buyerNIC: printInvoice.buyerNIC || (printInvoice as any).Buyer_NIC || '',
-                buyerNTN: printInvoice.buyerNTN || (printInvoice as any).Buyer_NTN || '',
-                buyerBusinessName: printInvoice.buyerBusinessName,
-                buyerProvince: printInvoice.buyerProvince,
-                buyerAddress: printInvoice.buyerAddress,
-                invoiceRefNo: printInvoice.invoiceRefNo,
-                poNumber: printInvoice.poNumber,
-                buyerRegistrationType: printInvoice.buyerRegistrationType,
-                scenarioId: printInvoice.scenarioID,
-                items: printInvoice.items
-              }}
-              fbrResponse={printInvoice.fbrInvoiceNumber ? {
-                invoiceNumber: printInvoice.fbrInvoiceNumber,
-                dated: printInvoice.invoiceDate,
-                validationResponse: {
-                  statusCode: '100',
-                  status: 'COMPLIANT',
-                  error: '',
-                  invoiceStatuses: []
+            <Box className="invoice-print-area" sx={{ backgroundColor: '#fff' }}>
+              <style>{`
+                @media print {
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  .invoice-print-area,
+                  .invoice-print-area * {
+                    visibility: visible !important;
+                  }
+                  .invoice-print-area {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    background: #fff !important;
+                    overflow: visible !important;
+                  }
                 }
-              } : undefined}
-              template={printInvoiceCompany?.salesInvoiceTemplate || 'template1'}
-            />
+              `}</style>
+              <SalesInvoiceReport 
+                invoiceData={{
+                  invoiceType: printInvoice.invoiceType,
+                  invoiceDate: printInvoice.invoiceDate,
+                  sellerNTNCNIC: printInvoice.sellerNTNCNIC || printInvoiceCompany?.ntnNumber || '',
+                  sellerBusinessName: printInvoiceCompany?.businessNameForSalesInvoice || printInvoice.sellerBusinessName || printInvoiceCompany?.name || '',
+                  sellerProvince: printInvoice.sellerProvince || printInvoiceCompany?.province || '',
+                  sellerAddress: printInvoice.sellerAddress || printInvoiceCompany?.address || '',
+                  buyerNTNCNIC: printInvoice.buyerNTNCNIC,
+                  buyerNIC: printInvoice.buyerNIC || (printInvoice as any).Buyer_NIC || '',
+                  buyerNTN: printInvoice.buyerNTN || (printInvoice as any).Buyer_NTN || '',
+                  buyerBusinessName: printInvoice.buyerBusinessName,
+                  buyerProvince: printInvoice.buyerProvince,
+                  buyerAddress: printInvoice.buyerAddress,
+                  invoiceRefNo: printInvoice.invoiceRefNo,
+                  poNumber: printInvoice.poNumber,
+                  buyerRegistrationType: printInvoice.buyerRegistrationType,
+                  scenarioId: printInvoice.scenarioID,
+                  items: printInvoice.items
+                }}
+                fbrResponse={printInvoice.fbrInvoiceNumber ? {
+                  invoiceNumber: printInvoice.fbrInvoiceNumber,
+                  dated: printInvoice.invoiceDate,
+                  validationResponse: {
+                    statusCode: '100',
+                    status: 'COMPLIANT',
+                    error: '',
+                    invoiceStatuses: []
+                  }
+                } : undefined}
+                template={printInvoiceCompany?.salesInvoiceTemplate || 'template1'}
+              />
+            </Box>
           )}
         </DialogContent>
         <DialogActions sx={{

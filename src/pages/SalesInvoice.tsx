@@ -2987,11 +2987,32 @@ const SalesInvoice: React.FC = () => {
           }
         }}>
           {showInvoicePreview && (
-            <SalesInvoiceReport 
-              invoiceData={prepareInvoiceData()}
-              fbrResponse={fbrResponse}
-              template={currentCompany?.salesInvoiceTemplate || 'template1'}
-            />
+            <Box className="invoice-print-area" sx={{ backgroundColor: '#fff' }}>
+              <style>{`
+                @media print {
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  .invoice-print-area,
+                  .invoice-print-area * {
+                    visibility: visible !important;
+                  }
+                  .invoice-print-area {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    background: #fff !important;
+                    overflow: visible !important;
+                  }
+                }
+              `}</style>
+              <SalesInvoiceReport 
+                invoiceData={prepareInvoiceData()}
+                fbrResponse={fbrResponse}
+                template={currentCompany?.salesInvoiceTemplate || 'template1'}
+              />
+            </Box>
           )}
         </DialogContent>
         <DialogActions sx={{
