@@ -885,7 +885,8 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           fontSize: '0.85rem',
           mt: 'auto',
           pt: '0.42in',
-          fontFamily: '"Times New Roman", serif'
+          fontFamily: '"Times New Roman", serif',
+           fontWeight: 700
         }}
       >
         NOTE : THIS IS A SYSTEM GENERATED DOCUMENT DOES NOT REQUIRED ANY SIGNATURE AND STAMP
