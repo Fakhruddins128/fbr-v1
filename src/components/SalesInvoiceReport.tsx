@@ -385,6 +385,24 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
   const qrValue = (fbrResponse?.invoiceNumber || invoiceData.invoiceRefNo || 'N/A').trim();
   const blankRows = Math.max(0, 12 - invoiceData.items.length);   // to ensure 12 rows are used
+  const printCss = `
+    @page {
+      size: A4;
+      margin: 0.5in;
+    }
+
+    @media print {
+      html, body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+    }
+  `;
+  const printColorExactSx = {
+    WebkitPrintColorAdjust: 'exact',
+    printColorAdjust: 'exact'
+  };
 
   const formatPercentage = (value: number) => {
     if (!Number.isFinite(value) || value === 0) {
@@ -399,6 +417,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
   const advanceTaxRate = formatPercentage(inclusiveAmount ? (totalAdvanceTax / inclusiveAmount) * 100 : 0);
   const borderColor = '#222';
   const headerCellSx = {
+    ...printColorExactSx,
     border: `2.0px solid ${borderColor}`,
     backgroundColor: '#0b4d73',
     color: '#fff',
@@ -411,6 +430,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     height: '0.56in'
   };
   const bodyCellSx = {
+    ...printColorExactSx,
     borderLeft: `2.0px solid ${borderColor}`,
     borderRight: `2.0px solid ${borderColor}`,
     borderBottom: '0',
@@ -425,6 +445,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
     paddingBottom: '20px'
   };
   const totalRowCellSx = {
+    ...printColorExactSx,
     borderTop: `2px solid ${borderColor}`,
     borderBottom: `2px solid ${borderColor}`,
     borderLeft: `2px solid ${borderColor}`,
@@ -446,6 +467,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         margin: '0 auto',
         width: '210mm',
         minHeight: '297mm',
+        ...printColorExactSx,
         boxSizing: 'border-box',
         px: '0.22in',
         py: '0.2in',
@@ -458,10 +480,17 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           boxSizing: 'border-box',
           px: '0.22in',
           py: '0.2in',
-          boxShadow: 'none'
+          boxShadow: 'none',
+          WebkitPrintColorAdjust: 'exact',
+          printColorAdjust: 'exact',
+          '& *': {
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact'
+          }
         }
       }}
     >
+      <style>{printCss}</style>
       <Typography
         sx={{
           textAlign: 'center',
@@ -510,6 +539,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         <Box sx={{ width: '47.8%' }}>
           <Box
             sx={{
+              ...printColorExactSx,
               border: `1.5px solid ${borderColor}`,
               textAlign: 'center',
               fontSize: '1.25rem',
@@ -551,7 +581,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           >
             <Box>
               <Box sx={{  py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ textAlign: 'center', color: '#ffffffff', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
+                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
                   {invoiceData.sellerBusinessName || 'N/A'}
                 </Typography>
               </Box>
@@ -576,6 +606,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         <Box sx={{ width: '47.8%' }}>
           <Box
             sx={{
+              ...printColorExactSx,
               border: `1.5px solid ${borderColor}`,
               textAlign: 'center',
               fontSize: '1.25rem',
@@ -616,7 +647,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           >
             <Box>
               <Box sx={{   py: 0.18, px: 0.8, mb: 0.5 }}>
-                <Typography sx={{ textAlign: 'center', color: '#ffffffff',fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
+                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff',fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase',  lineHeight: 1.1, backgroundColor:'#0b4d73', }}>
                   {invoiceData.buyerBusinessName || 'N/A'}
                 </Typography>
               </Box>
@@ -707,35 +738,40 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
               const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
               const lineInclusive = item.valueSalesExcludingST + item.salesTaxApplicable;
               const displayUom = item.uoM === 'Numbers, pieces, units' ? 'NOS' : item.uoM;
+              const rowBackground = index % 2 === 0 ? '#fff' : '#d9d9d9';
 
               return (
-                <TableRow key={index}  sx={{ backgroundColor: index % 2 === 0 ? '#fff' : '#d9d9d9' }} >
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem'  }}>{displayUom}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(lineInclusive)}</TableCell>
+                <TableRow key={index}>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem'  }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(lineInclusive)}</TableCell>
                 </TableRow>
               );
             })}
 
-            {Array.from({ length: blankRows }).map((_, index) => (
-              <TableRow key={`blank-${index}`} sx={{ backgroundColor: index % 2 === 0 ? '#fff' : '#d9d9d9' }} >
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
-                <TableCell sx={bodyCellSx}>&nbsp;</TableCell>
+            {Array.from({ length: blankRows }).map((_, index) => {
+              const rowBackground = index % 2 === 0 ? '#fff' : '#d9d9d9';
+
+              return (
+              <TableRow key={`blank-${index}`}>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
               </TableRow>
-            ))}
+              );
+            })}
 
             <TableRow>
               <TableCell
