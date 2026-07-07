@@ -707,7 +707,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
               const displayUom = item.uoM === 'Numbers, pieces, units' ? 'NOS' : item.uoM;
 
               return (
-                <TableRow key={index}>
+                <TableRow key={index}  sx={{ backgroundColor: index % 2 === 0 ? '#fff' : '#d9d9d9' }} >
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{item.quantity}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{displayUom}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem', borderBottom: `1.5px solid ${borderColor}` }}>{item.hsCode}</TableCell>
