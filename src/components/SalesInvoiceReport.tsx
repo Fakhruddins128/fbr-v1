@@ -1178,6 +1178,8 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
   );
 };
 
+// Template 4 
+
 const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
   const totals = calculateTotals(invoiceData.items);
   const invoiceDate = format(new Date(invoiceData.invoiceDate), 'MMMM d, yyyy');
@@ -1189,9 +1191,9 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
   const headerBlue = '#0b4d73';
   const lightGray = '#d9d9d9';
   const borderColor = '#7a7a7a';
-  const fontSm = '9.5pt';
-  const fontMd = '10.5pt';
-  const fontLg = '18pt';
+  const fontSm = '10.5pt';
+  const fontMd = '13.5pt';
+  const fontLg = '21pt';
 
   const salesTaxRate = invoiceData.items.length ? parsePercentNumber(invoiceData.items[0].rate) : 0;
   const items = invoiceData.items.map((item) => {
@@ -1205,7 +1207,7 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
     };
   });
 
-  const desiredRows = 18;
+  const desiredRows = 12;
   const emptyRows = Math.max(0, desiredRows - items.length);
 
   const subtotal = totals.subtotal;
@@ -1213,11 +1215,12 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
   const shippingHandling = 0;
   const discount = totals.totalDiscount;
   const total = subtotal + salesTax + shippingHandling - discount;
+  const paymentTerm = total >= 50000 ? "Credit" : "Cash";
 
   const billToLines = [
     invoiceData.buyerBusinessName,
     invoiceData.buyerAddress,
-    invoiceData.buyerProvince
+    // invoiceData.buyerProvince
   ].filter(Boolean);
 
   const sellerLines = [
@@ -1269,8 +1272,8 @@ html, body { margin: 0; padding: 0; }
           <Typography sx={{ fontSize: fontLg, fontWeight: 700, lineHeight: 1.1 }}>
             {invoiceData.sellerBusinessName || 'My Company name'}
           </Typography>
-          <Typography sx={{ fontSize: fontSm, color: '#333', mt: 0.35 }}>
-            {sellerLines.join('  ')}
+          <Typography sx={{ fontSize: fontMd, color: '#333', mt: 0.35 }}>
+            {/* {sellerLines.join('  ')} */}
           </Typography>
 
           <Box
@@ -1288,22 +1291,22 @@ html, body { margin: 0; padding: 0; }
               fontSize: fontMd
             }}
           >
-            Insert Your Logo
+            {sellerLines.join('  ')}
           </Box>
         </Box>
 
         <Box sx={{ width: '42%', textAlign: 'right' }}>
-          <Typography sx={{ fontSize: '20pt', fontWeight: 700, color: headerBlue, mb: 0.4 }}>
+          <Typography sx={{ fontSize: fontLg, fontWeight: 700, color: headerBlue, mb: 0.4 }}>
             Invoice
           </Typography>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 1.2, rowGap: 0.45 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 1.2, rowGap: 0.45 , fontSize: fontSm}}>
             {[
               ['Date:', invoiceDate],
               ['Invoice #:', invoiceNo],
               ['Customer ID:', customerId],
               ['Purchase Order #', poNumber],
-              ['Payment Due by:', dueDate]
+              // ['Payment Due by:', dueDate]
             ].map(([label, value]) => (
               <React.Fragment key={label}>
                 <Typography sx={{ fontSize: fontSm, color: '#111', textAlign: 'left', fontWeight: 700 }}>{label}</Typography>
@@ -1331,28 +1334,28 @@ html, body { margin: 0; padding: 0; }
           </Box>
           <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
             {billToLines.map((line) => (
-              <Typography key={line} sx={{ fontSize: fontSm, color: '#111', mb: 0.2 }}>
+              <Typography key={line} sx={{ fontSize: fontMd, color: '#111', mb: 0.2 }}>
                 {line}
               </Typography>
             ))}
           </Box>
         </Box>
 
-        <Box sx={{ width: '50%' }}>
+        {/* <Box sx={{ width: '50%' }}>
           <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.65, fontSize: fontMd, fontWeight: 700 }}>
             Ship To (If Different):
           </Box>
           <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
             <Typography sx={{ fontSize: fontSm, color: '#111' }}> </Typography>
           </Box>
-        </Box>
+        </Box> */}
       </Box>
 
       <TableContainer sx={{ mt: 1.4 }}>
         <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
           <TableHead>
             <TableRow>
-              {['Salesperson', 'Shipping Method', 'Shipping Terms', 'Payment Terms', 'Due Date', 'Delivery Date'].map((label) => (
+              {[ 'Payment Terms'].map((label) => (
                 <TableCell
                   key={label}
                   sx={{
@@ -1372,7 +1375,7 @@ html, body { margin: 0; padding: 0; }
           </TableHead>
           <TableBody>
             <TableRow>
-              {['N/A', 'N/A', 'N/A', 'N/A', invoiceDate, 'N/A'].map((value, idx) => (
+              {[paymentTerm].map((value, idx) => (
                 <TableCell
                   key={idx}
                   sx={{
