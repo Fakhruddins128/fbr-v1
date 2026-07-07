@@ -41,7 +41,12 @@ const printTheme = createTheme({
   }
 });
 
-export const printReactContent = (content: React.ReactElement, title = 'Invoice Preview') => {
+export const printReactContent = (
+  content: React.ReactElement,
+  title = 'Invoice Preview',
+  options?: { scale?: number }
+) => {
+  const scale = options?.scale ?? 0.7;
   const printWindow = window.open('about:blank', '_blank', 'width=1024,height=900,left=120,top=80');
 
   if (!printWindow) {
@@ -69,6 +74,20 @@ export const printReactContent = (content: React.ReactElement, title = 'Invoice 
           .print-shell {
             background: #fff;
             min-height: 100vh;
+            overflow: visible;
+          }
+
+          .print-scale-wrap {
+            zoom: ${scale};
+            transform-origin: top left;
+          }
+
+          @supports not (zoom: 1) {
+            .print-scale-wrap {
+              transform: scale(${scale});
+              transform-origin: top left;
+              width: ${100 / scale}%;
+            }
           }
 
           @media print {
@@ -103,7 +122,12 @@ export const printReactContent = (content: React.ReactElement, title = 'Invoice 
       React.createElement(
         ThemeProvider,
         { theme: printTheme },
-        React.createElement(React.Fragment, null, React.createElement(CssBaseline), content)
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(CssBaseline),
+          React.createElement('div', { className: 'print-scale-wrap' }, content)
+        )
       )
     )
   );
