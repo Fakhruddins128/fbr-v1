@@ -1187,8 +1187,11 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
   const dueDate = invoiceDate;
 
   const headerBlue = '#0b4d73';
-  const lightGray = '#f1f1f1';
-  const borderColor = '#d2d2d2';
+  const lightGray = '#d9d9d9';
+  const borderColor = '#7a7a7a';
+  const fontSm = '9.5pt';
+  const fontMd = '10.5pt';
+  const fontLg = '18pt';
 
   const salesTaxRate = invoiceData.items.length ? parsePercentNumber(invoiceData.items[0].rate) : 0;
   const items = invoiceData.items.map((item) => {
@@ -1202,7 +1205,7 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
     };
   });
 
-  const desiredRows = 12;
+  const desiredRows = 18;
   const emptyRows = Math.max(0, desiredRows - items.length);
 
   const subtotal = totals.subtotal;
@@ -1222,36 +1225,51 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
     invoiceData.sellerProvince
   ].filter(Boolean);
 
+  const printCss = `
+@page { size: A4; margin: 0; }
+html, body { margin: 0; padding: 0; }
+* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+`;
+
   return (
     <Box
       sx={{
         backgroundColor: '#fff',
         color: '#111',
-        margin: '0 auto',
-        width: '210mm',
+        margin: 0,
+        width: '100%',
+        maxWidth: '210mm',
         minHeight: '297mm',
         boxSizing: 'border-box',
-        px: '12mm',
-        py: '10mm',
+        px: '8mm',
+        py: '6mm',
         fontFamily: 'Arial, Helvetica, sans-serif',
         display: 'flex',
         flexDirection: 'column',
         '@media print': {
-          width: '210mm',
+          width: '100%',
+          maxWidth: 'none',
           minHeight: '297mm',
           boxSizing: 'border-box',
-          px: '12mm',
-          py: '10mm',
-          boxShadow: 'none'
+          px: '8mm',
+          py: '6mm',
+          boxShadow: 'none',
+          WebkitPrintColorAdjust: 'exact',
+          printColorAdjust: 'exact',
+          '& *': {
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact'
+          }
         }
       }}
     >
+      <style>{printCss}</style>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Box sx={{ width: '55%' }}>
-          <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.1 }}>
+          <Typography sx={{ fontSize: fontLg, fontWeight: 700, lineHeight: 1.1 }}>
             {invoiceData.sellerBusinessName || 'My Company name'}
           </Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: '#666', mt: 0.35 }}>
+          <Typography sx={{ fontSize: fontSm, color: '#333', mt: 0.35 }}>
             {sellerLines.join('  ')}
           </Typography>
 
@@ -1267,7 +1285,7 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
               alignItems: 'center',
               justifyContent: 'center',
               color: '#8d8d8d',
-              fontSize: '0.95rem'
+              fontSize: fontMd
             }}
           >
             Insert Your Logo
@@ -1275,7 +1293,7 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
         </Box>
 
         <Box sx={{ width: '42%', textAlign: 'right' }}>
-          <Typography sx={{ fontSize: '1.55rem', fontWeight: 700, color: headerBlue, mb: 0.4 }}>
+          <Typography sx={{ fontSize: '20pt', fontWeight: 700, color: headerBlue, mb: 0.4 }}>
             Invoice
           </Typography>
 
@@ -1288,13 +1306,13 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
               ['Payment Due by:', dueDate]
             ].map(([label, value]) => (
               <React.Fragment key={label}>
-                <Typography sx={{ fontSize: '0.72rem', color: '#333', textAlign: 'left' }}>{label}</Typography>
+                <Typography sx={{ fontSize: fontSm, color: '#111', textAlign: 'left', fontWeight: 700 }}>{label}</Typography>
                 <Box
                   sx={{
                     border: `1px solid ${borderColor}`,
                     backgroundColor: '#fff',
                     padding: '4px 6px',
-                    fontSize: '0.72rem',
+                    fontSize: fontSm,
                     textAlign: 'left'
                   }}
                 >
@@ -1308,12 +1326,12 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 2 }}>
         <Box sx={{ width: '50%' }}>
-          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.55, fontSize: '0.78rem', fontWeight: 700 }}>
+          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.65, fontSize: fontMd, fontWeight: 700 }}>
             Bill To:
           </Box>
           <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
             {billToLines.map((line) => (
-              <Typography key={line} sx={{ fontSize: '0.74rem', color: '#222', mb: 0.2 }}>
+              <Typography key={line} sx={{ fontSize: fontSm, color: '#111', mb: 0.2 }}>
                 {line}
               </Typography>
             ))}
@@ -1321,11 +1339,11 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
         </Box>
 
         <Box sx={{ width: '50%' }}>
-          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.55, fontSize: '0.78rem', fontWeight: 700 }}>
+          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.65, fontSize: fontMd, fontWeight: 700 }}>
             Ship To (If Different):
           </Box>
           <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
-            <Typography sx={{ fontSize: '0.74rem', color: '#666' }}> </Typography>
+            <Typography sx={{ fontSize: fontSm, color: '#111' }}> </Typography>
           </Box>
         </Box>
       </Box>
@@ -1342,8 +1360,8 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
                     backgroundColor: headerBlue,
                     color: '#fff',
                     fontWeight: 700,
-                    fontSize: '0.68rem',
-                    py: 0.65,
+                    fontSize: fontSm,
+                    py: 0.75,
                     px: 0.7
                   }}
                 >
@@ -1359,8 +1377,8 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
                   key={idx}
                   sx={{
                     border: `1px solid ${borderColor}`,
-                    fontSize: '0.68rem',
-                    py: 0.55,
+                    fontSize: fontSm,
+                    py: 0.7,
                     px: 0.7
                   }}
                 >
@@ -1376,19 +1394,19 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
         <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '12%', py: 0.65, px: 0.8 }}>
+              <TableCell sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: fontSm, width: '12%', py: 0.75, px: 0.8 }}>
                 Item #
               </TableCell>
-              <TableCell sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '52%', py: 0.65, px: 0.8 }}>
+              <TableCell sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: fontSm, width: '52%', py: 0.75, px: 0.8 }}>
                 Description
               </TableCell>
-              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '10%', py: 0.65, px: 0.8 }}>
+              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: fontSm, width: '10%', py: 0.75, px: 0.8 }}>
                 Qty
               </TableCell>
-              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '13%', py: 0.65, px: 0.8 }}>
+              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: fontSm, width: '13%', py: 0.75, px: 0.8 }}>
                 Unit Price
               </TableCell>
-              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '13%', py: 0.65, px: 0.8 }}>
+              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: fontSm, width: '13%', py: 0.75, px: 0.8 }}>
                 Line Total
               </TableCell>
             </TableRow>
@@ -1396,19 +1414,19 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
           <TableBody>
             {items.map((item, idx) => (
               <TableRow key={`${item.itemNo}-${idx}`} sx={{ backgroundColor: idx % 2 === 0 ? '#fff' : lightGray }}>
-                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.75, px: 0.8 }}>
                   {item.itemNo}
                 </TableCell>
-                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.75, px: 0.8 }}>
                   {item.description}
                 </TableCell>
-                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.75, px: 0.8 }}>
                   {formatAmount(item.qty)}
                 </TableCell>
-                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.75, px: 0.8 }}>
                   {formatAmount(item.unitPrice)}
                 </TableCell>
-                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.75, px: 0.8 }}>
                   {formatAmount(item.lineTotal)}
                 </TableCell>
               </TableRow>
@@ -1418,11 +1436,11 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
               const rowIndex = items.length + idx;
               return (
                 <TableRow key={`empty-${idx}`} sx={{ backgroundColor: rowIndex % 2 === 0 ? '#fff' : lightGray }}>
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }}>&nbsp;</TableCell>
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.75, px: 0.8 }}>&nbsp;</TableCell>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.75, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.75, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.75, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.75, px: 0.8 }} />
                 </TableRow>
               );
             })}
@@ -1432,11 +1450,11 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 1.4 }}>
         <Box sx={{ width: '60%' }}>
-          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.55, fontSize: '0.76rem', fontWeight: 700 }}>
+          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.65, fontSize: fontMd, fontWeight: 700 }}>
             Special Notes and Instructions
           </Box>
           <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', height: '92px', px: 1.2, py: 1 }}>
-            <Typography sx={{ fontSize: '0.72rem', color: '#666' }}> </Typography>
+            <Typography sx={{ fontSize: fontSm, color: '#111' }}> </Typography>
           </Box>
         </Box>
 
@@ -1451,25 +1469,25 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
                 ['Discount', discount]
               ].map(([label, value]) => (
                 <TableRow key={label}>
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.45, px: 0.8 }}>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.6, px: 0.8 }}>
                     {label}
                   </TableCell>
-                  <TableCell sx={{ border: `1px solid ${borderColor}`, width: '12%', fontSize: '0.7rem', py: 0.45, px: 0.4, textAlign: 'center' }}>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, width: '12%', fontSize: fontSm, py: 0.6, px: 0.4, textAlign: 'center' }}>
                     {label === 'Sales Tax Rate %' ? '%' : '$'}
                   </TableCell>
-                  <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.45, px: 0.8 }}>
+                  <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: fontSm, py: 0.6, px: 0.8 }}>
                     {label === 'Sales Tax Rate %' ? Number(value).toFixed(2) : formatAmount(Number(value))}
                   </TableCell>
                 </TableRow>
               ))}
               <TableRow>
-                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.74rem', fontWeight: 700, py: 0.55, px: 0.8 }}>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: fontMd, fontWeight: 700, py: 0.7, px: 0.8 }}>
                   Total
                 </TableCell>
-                <TableCell sx={{ border: `1px solid ${borderColor}`, width: '12%', fontSize: '0.74rem', fontWeight: 700, py: 0.55, px: 0.4, textAlign: 'center' }}>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, width: '12%', fontSize: fontMd, fontWeight: 700, py: 0.7, px: 0.4, textAlign: 'center' }}>
                   $
                 </TableCell>
-                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.74rem', fontWeight: 700, py: 0.55, px: 0.8 }}>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: fontMd, fontWeight: 700, py: 0.7, px: 0.8 }}>
                   {formatAmount(total)}
                 </TableCell>
               </TableRow>
@@ -1479,14 +1497,14 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
       </Box>
 
       <Box sx={{ mt: 'auto' }}>
-        <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', color: '#333', mt: 1.2 }}>
+        <Typography sx={{ textAlign: 'center', fontSize: fontSm, color: '#111', mt: 1.2 }}>
           Make all checks payable to {invoiceData.sellerBusinessName || 'My Company name'}
         </Typography>
-        <Typography sx={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, mt: 0.55 }}>
+        <Typography sx={{ textAlign: 'center', fontSize: fontMd, fontWeight: 700, mt: 0.55 }}>
           Thank you for your business!
         </Typography>
         <Divider sx={{ mt: 1.2, mb: 0.7 }} />
-        <Typography sx={{ textAlign: 'center', fontSize: '0.68rem', color: '#333' }}>
+        <Typography sx={{ textAlign: 'center', fontSize: fontSm, color: '#111' }}>
           {sellerLines.join('   ')}
         </Typography>
       </Box>
