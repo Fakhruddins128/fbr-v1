@@ -1271,6 +1271,8 @@ const Invoices: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
+            backgroundColor: '#fff',
+            overflow: 'hidden',
             '@media print': {
               boxShadow: 'none',
               margin: 0,
@@ -1305,8 +1307,14 @@ const Invoices: React.FC = () => {
         </DialogTitle>
         <DialogContent sx={{ 
           p: 0,
+          backgroundColor: '#fff',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          overflow: 'auto',
           '@media print': {
-            padding: 0
+            padding: 0,
+            overflow: 'visible'
           }
         }}>
           {printInvoice && (
