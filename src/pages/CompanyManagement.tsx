@@ -62,7 +62,7 @@ const CompanyManagement: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     businessNameForSalesInvoice: '',
-    salesInvoiceTemplate: 'template1' as 'template1' | 'template2' | 'template3',
+    salesInvoiceTemplate: 'template1' as 'template1' | 'template2' | 'template3' | 'template4',
     ntnNumber: '',
     cnic: '',
     address: '',
@@ -419,13 +419,14 @@ const CompanyManagement: React.FC = () => {
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      salesInvoiceTemplate: e.target.value as 'template1' | 'template2' | 'template3'
+                      salesInvoiceTemplate: e.target.value as 'template1' | 'template2' | 'template3' | 'template4'
                     }))
                   }
                 >
                   <MenuItem value="template1">Template 1</MenuItem>
                   <MenuItem value="template2">Template 2</MenuItem>
                   <MenuItem value="template3">Template 3</MenuItem>
+                  <MenuItem value="template4">Template 4</MenuItem>
                 </Select>
               </FormControl>
             </Box>

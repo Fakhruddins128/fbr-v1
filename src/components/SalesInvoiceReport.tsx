@@ -74,7 +74,7 @@ interface SalesInvoiceReportProps {
     items: InvoiceItem[];
   };
   fbrResponse?: FbrResponse;
-  template?: 'template1' | 'template2' | 'template3';
+  template?: 'template1' | 'template2' | 'template3' | 'template4';
 }
 
 const formatAmount = (value: number): string => value.toLocaleString(undefined, {
@@ -152,6 +152,16 @@ const amountToWords = (amount: number): string => {
   const wholeText = numberToWords(whole);
   const paisaText = paisa > 0 ? ` And ${numberToWords(paisa)} Paisa` : '';
   return `${wholeText}${paisaText} Only`;
+};
+
+const parsePercentNumber = (value: string | undefined): number => {
+  if (!value) {
+    return 0;
+  }
+
+  const cleaned = value.replace('%', '').trim();
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
 };
 
 const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
@@ -1168,6 +1178,322 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
   );
 };
 
+const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
+  const totals = calculateTotals(invoiceData.items);
+  const invoiceDate = format(new Date(invoiceData.invoiceDate), 'MMMM d, yyyy');
+  const invoiceNo = invoiceData.invoiceRefNo || 'N/A';
+  const customerId = invoiceData.buyerNTNCNIC || 'N/A';
+  const poNumber = invoiceData.poNumber || 'N/A';
+  const dueDate = invoiceDate;
+
+  const headerBlue = '#0b4d73';
+  const lightGray = '#f1f1f1';
+  const borderColor = '#d2d2d2';
+
+  const salesTaxRate = invoiceData.items.length ? parsePercentNumber(invoiceData.items[0].rate) : 0;
+  const items = invoiceData.items.map((item) => {
+    const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
+    return {
+      itemNo: item.hsCode,
+      description: item.productDescription,
+      qty: item.quantity,
+      unitPrice,
+      lineTotal: item.totalValues
+    };
+  });
+
+  const desiredRows = 12;
+  const emptyRows = Math.max(0, desiredRows - items.length);
+
+  const subtotal = totals.subtotal;
+  const salesTax = totals.totalSalesTax;
+  const shippingHandling = 0;
+  const discount = totals.totalDiscount;
+  const total = subtotal + salesTax + shippingHandling - discount;
+
+  const billToLines = [
+    invoiceData.buyerBusinessName,
+    invoiceData.buyerAddress,
+    invoiceData.buyerProvince
+  ].filter(Boolean);
+
+  const sellerLines = [
+    invoiceData.sellerAddress,
+    invoiceData.sellerProvince
+  ].filter(Boolean);
+
+  return (
+    <Box
+      sx={{
+        backgroundColor: '#fff',
+        color: '#111',
+        margin: '0 auto',
+        width: '210mm',
+        minHeight: '297mm',
+        boxSizing: 'border-box',
+        px: '12mm',
+        py: '10mm',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        '@media print': {
+          width: '210mm',
+          minHeight: '297mm',
+          boxSizing: 'border-box',
+          px: '12mm',
+          py: '10mm',
+          boxShadow: 'none'
+        }
+      }}
+    >
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box sx={{ width: '55%' }}>
+          <Typography sx={{ fontSize: '1.4rem', fontWeight: 700, lineHeight: 1.1 }}>
+            {invoiceData.sellerBusinessName || 'My Company name'}
+          </Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: '#666', mt: 0.35 }}>
+            {sellerLines.join('  ')}
+          </Typography>
+
+          <Box
+            sx={{
+              mt: 1.1,
+              width: '70%',
+              height: '40px',
+              borderRadius: '8px',
+              backgroundColor: '#e6e6e6',
+              border: `1px solid ${borderColor}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#8d8d8d',
+              fontSize: '0.95rem'
+            }}
+          >
+            Insert Your Logo
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '42%', textAlign: 'right' }}>
+          <Typography sx={{ fontSize: '1.55rem', fontWeight: 700, color: headerBlue, mb: 0.4 }}>
+            Invoice
+          </Typography>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 1.2, rowGap: 0.45 }}>
+            {[
+              ['Date:', invoiceDate],
+              ['Invoice #:', invoiceNo],
+              ['Customer ID:', customerId],
+              ['Purchase Order #', poNumber],
+              ['Payment Due by:', dueDate]
+            ].map(([label, value]) => (
+              <React.Fragment key={label}>
+                <Typography sx={{ fontSize: '0.72rem', color: '#333', textAlign: 'left' }}>{label}</Typography>
+                <Box
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    backgroundColor: '#fff',
+                    padding: '4px 6px',
+                    fontSize: '0.72rem',
+                    textAlign: 'left'
+                  }}
+                >
+                  {value}
+                </Box>
+              </React.Fragment>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 2 }}>
+        <Box sx={{ width: '50%' }}>
+          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.55, fontSize: '0.78rem', fontWeight: 700 }}>
+            Bill To:
+          </Box>
+          <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
+            {billToLines.map((line) => (
+              <Typography key={line} sx={{ fontSize: '0.74rem', color: '#222', mb: 0.2 }}>
+                {line}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '50%' }}>
+          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.55, fontSize: '0.78rem', fontWeight: 700 }}>
+            Ship To (If Different):
+          </Box>
+          <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', px: 1.2, py: 1.1, minHeight: '92px' }}>
+            <Typography sx={{ fontSize: '0.74rem', color: '#666' }}> </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      <TableContainer sx={{ mt: 1.4 }}>
+        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
+          <TableHead>
+            <TableRow>
+              {['Salesperson', 'Shipping Method', 'Shipping Terms', 'Payment Terms', 'Due Date', 'Delivery Date'].map((label) => (
+                <TableCell
+                  key={label}
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    backgroundColor: headerBlue,
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '0.68rem',
+                    py: 0.65,
+                    px: 0.7
+                  }}
+                >
+                  {label}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              {['N/A', 'N/A', 'N/A', 'N/A', invoiceDate, 'N/A'].map((value, idx) => (
+                <TableCell
+                  key={idx}
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    fontSize: '0.68rem',
+                    py: 0.55,
+                    px: 0.7
+                  }}
+                >
+                  {value}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <TableContainer sx={{ mt: 1.2, flexGrow: 1 }}>
+        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '12%', py: 0.65, px: 0.8 }}>
+                Item #
+              </TableCell>
+              <TableCell sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '52%', py: 0.65, px: 0.8 }}>
+                Description
+              </TableCell>
+              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '10%', py: 0.65, px: 0.8 }}>
+                Qty
+              </TableCell>
+              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '13%', py: 0.65, px: 0.8 }}>
+                Unit Price
+              </TableCell>
+              <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, backgroundColor: headerBlue, color: '#fff', fontWeight: 700, fontSize: '0.7rem', width: '13%', py: 0.65, px: 0.8 }}>
+                Line Total
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((item, idx) => (
+              <TableRow key={`${item.itemNo}-${idx}`} sx={{ backgroundColor: idx % 2 === 0 ? '#fff' : lightGray }}>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                  {item.itemNo}
+                </TableCell>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                  {item.description}
+                </TableCell>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                  {formatAmount(item.qty)}
+                </TableCell>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                  {formatAmount(item.unitPrice)}
+                </TableCell>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.55, px: 0.8 }}>
+                  {formatAmount(item.lineTotal)}
+                </TableCell>
+              </TableRow>
+            ))}
+
+            {Array.from({ length: emptyRows }).map((_, idx) => {
+              const rowIndex = items.length + idx;
+              return (
+                <TableRow key={`empty-${idx}`} sx={{ backgroundColor: rowIndex % 2 === 0 ? '#fff' : lightGray }}>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }}>&nbsp;</TableCell>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, py: 0.55, px: 0.8 }} />
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 1.4 }}>
+        <Box sx={{ width: '60%' }}>
+          <Box sx={{ backgroundColor: headerBlue, color: '#fff', px: 1.2, py: 0.55, fontSize: '0.76rem', fontWeight: 700 }}>
+            Special Notes and Instructions
+          </Box>
+          <Box sx={{ border: `1px solid ${borderColor}`, borderTop: 'none', height: '92px', px: 1.2, py: 1 }}>
+            <Typography sx={{ fontSize: '0.72rem', color: '#666' }}> </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '36%' }}>
+          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
+            <TableBody>
+              {[
+                ['Subtotal', subtotal],
+                ['Sales Tax Rate %', salesTaxRate],
+                ['Sales Tax', salesTax],
+                ['S&H', shippingHandling],
+                ['Discount', discount]
+              ].map(([label, value]) => (
+                <TableRow key={label}>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.45, px: 0.8 }}>
+                    {label}
+                  </TableCell>
+                  <TableCell sx={{ border: `1px solid ${borderColor}`, width: '12%', fontSize: '0.7rem', py: 0.45, px: 0.4, textAlign: 'center' }}>
+                    {label === 'Sales Tax Rate %' ? '%' : '$'}
+                  </TableCell>
+                  <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.7rem', py: 0.45, px: 0.8 }}>
+                    {label === 'Sales Tax Rate %' ? Number(value).toFixed(2) : formatAmount(Number(value))}
+                  </TableCell>
+                </TableRow>
+              ))}
+              <TableRow>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, fontSize: '0.74rem', fontWeight: 700, py: 0.55, px: 0.8 }}>
+                  Total
+                </TableCell>
+                <TableCell sx={{ border: `1px solid ${borderColor}`, width: '12%', fontSize: '0.74rem', fontWeight: 700, py: 0.55, px: 0.4, textAlign: 'center' }}>
+                  $
+                </TableCell>
+                <TableCell align="right" sx={{ border: `1px solid ${borderColor}`, fontSize: '0.74rem', fontWeight: 700, py: 0.55, px: 0.8 }}>
+                  {formatAmount(total)}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+      </Box>
+
+      <Box sx={{ mt: 'auto' }}>
+        <Typography sx={{ textAlign: 'center', fontSize: '0.72rem', color: '#333', mt: 1.2 }}>
+          Make all checks payable to {invoiceData.sellerBusinessName || 'My Company name'}
+        </Typography>
+        <Typography sx={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: 700, mt: 0.55 }}>
+          Thank you for your business!
+        </Typography>
+        <Divider sx={{ mt: 1.2, mb: 0.7 }} />
+        <Typography sx={{ textAlign: 'center', fontSize: '0.68rem', color: '#333' }}>
+          {sellerLines.join('   ')}
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
 const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
   if (props.template === 'template2') {
     return <TemplateTwo {...props} />;
@@ -1175,6 +1501,10 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
 
   if (props.template === 'template3') {
     return <TemplateThree {...props} />;
+  }
+
+  if (props.template === 'template4') {
+    return <TemplateFour {...props} />;
   }
 
   return <TemplateOne {...props} />;
