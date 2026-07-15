@@ -644,7 +644,7 @@ const Items: React.FC = () => {
                 placeholder="e.g., PCS, KG, LTR, MTR"
               /> */}
               <FormControl fullWidth>
-                <InputLabel>uoms</InputLabel>
+                <InputLabel>Unit of Measurement</InputLabel>
                 <Select
                   value={formData.uom}
                   label="Unit of Measurement"
