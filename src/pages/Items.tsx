@@ -21,6 +21,10 @@ import {
   CardContent,
   Alert,
   Snackbar,
+  FormControl,
+  MenuItem,
+  InputLabel,
+  Select,
   CircularProgress,
   Tooltip,
 } from '@mui/material';
@@ -61,7 +65,7 @@ const Items: React.FC = () => {
     unitPrice: 0,
     purchaseTaxValue: 0,
     salesTaxValue: 0,
-    uom: 'Numbers, pieces, units',
+    uom: '',
     initialStock: 0,
   });
   const [snackbar, setSnackbar] = useState({
@@ -71,6 +75,8 @@ const Items: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const uoms = ['1000 kWh', '40KG', 'Bag', 'Barrels', 'Bill of lading', 'Carat', 'Cubic Metre', 'Dozen', 'Foot', 'Gallon', 'Gram', 'KG', 'Kilogram', 'KWH', 'Liter', 'Mega Watt', 'Meter', 'MMBTU', 'MT', 'NO', 'Numbers, pieces, units', 'Others', 'Packs', 'Pair', 'Pcs', 'Pound', 'SET', 'Square Foot', 'Square Metre', 'SqY', 'Thousand Unit', 'Timber Logs'];
 
   const showSnackbar = useCallback((message: string, severity: 'success' | 'error') => {
     setSnackbar({ open: true, message, severity });
@@ -106,7 +112,7 @@ const Items: React.FC = () => {
         unitPrice: item.unitPrice,
         purchaseTaxValue: item.purchaseTaxValue,
         salesTaxValue: item.salesTaxValue,
-        uom: item.uom || 'Numbers, pieces, units',
+        uom: item.uom ,
         initialStock: item.initialStock || 0,
       });
     } else {
@@ -117,7 +123,7 @@ const Items: React.FC = () => {
         unitPrice: 0,
         purchaseTaxValue: 0,
         salesTaxValue: 0,
-        uom: 'Numbers, pieces, units',
+        uom: '',
         initialStock: 0,
       });
     }
@@ -133,7 +139,7 @@ const Items: React.FC = () => {
       unitPrice: 0,
       purchaseTaxValue: 0,
       salesTaxValue: 0,
-      uom: 'Numbers, pieces, units',
+      uom: '',
       initialStock: 0,
     });
   };
@@ -238,7 +244,7 @@ const Items: React.FC = () => {
           unitPrice: parseFloat(values[headers.indexOf('unitprice')]) || 0,
           purchaseTaxValue: parseFloat(values[headers.indexOf('purchasetaxvalue')]) || 0,
           salesTaxValue: parseFloat(values[headers.indexOf('salestaxvalue')]) || 0,
-          uom: values[headers.indexOf('uom')] || 'Numbers, pieces, units',
+          uom: values[headers.indexOf('uom')] || '',
           initialStock: headers.indexOf('initialstock') !== -1 ? parseFloat(values[headers.indexOf('initialstock')]) || 0 : 0,
         };
 
@@ -629,14 +635,28 @@ const Items: React.FC = () => {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
+              {/* <TextField
                 fullWidth
                 label="Unit of Measurement"
                 value={formData.uom}
                 onChange={(e) => setFormData({ ...formData, uom: e.target.value })}
                 required
                 placeholder="e.g., PCS, KG, LTR, MTR"
-              />
+              /> */}
+              <FormControl fullWidth>
+                <InputLabel>uoms</InputLabel>
+                <Select
+                  value={formData.uom}
+                  label="Unit of Measurement"
+                  onChange={(e) => setFormData({ ...formData, uom: e.target.value })}
+                >
+                  {uoms.map((uoms1) => (
+                    <MenuItem key={uoms1} value={uoms1}>
+                      {uoms1}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </DialogContent>
