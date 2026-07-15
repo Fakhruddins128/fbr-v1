@@ -3016,7 +3016,7 @@ app.post("/api/items", authenticateToken, async (req, res) => {
         .input("unitPrice", sql.Decimal(18, 2), unitPrice)
         .input("purchaseTaxValue", sql.Decimal(5, 2), purchaseTaxValue || 0)
         .input("salesTaxValue", sql.Decimal(5, 2), salesTaxValue || 0)
-        .input("uom", sql.VarChar(20), uom)
+        .input("uom", sql.NVarChar(50), uom)
         .input("initialStock", sql.Decimal(18, 2), initialStock || 0)
         .input("companyId", sql.UniqueIdentifier, companyId)
         .input("createdBy", sql.UniqueIdentifier, req.user.userId).query(`
@@ -3099,7 +3099,7 @@ app.put("/api/items/:id", authenticateToken, async (req, res) => {
         .input("unitPrice", sql.Decimal(18, 2), unitPrice)
         .input("purchaseTaxValue", sql.Decimal(5, 2), purchaseTaxValue || 0)
         .input("salesTaxValue", sql.Decimal(5, 2), salesTaxValue || 0)
-        .input("uom", sql.VarChar(20), uom)
+        .input("uom", sql.NVarChar(50), uom)
         .input("initialStock", sql.Decimal(18, 2), initialStock || 0)
         .input("companyId", sql.UniqueIdentifier, companyId).query(`
           UPDATE Items 
