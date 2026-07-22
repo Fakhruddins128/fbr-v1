@@ -673,6 +673,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         sx={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           borderBottom: `1.5px solid ${borderColor}`,
           ml: '-1.0in',
           mr: '-0.5in',
@@ -680,8 +681,16 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           pb: '0.02in'
         }}
       >
-        <Typography sx={{ fontSize: '0.9rem',  minWidth: '0.72in' }}>TERM :</Typography>
-        <Typography sx={{ fontSize: '0.9rem',fontWeight: 700 }}>{paymentTerm}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ fontSize: '0.9rem', minWidth: '0.72in' }}>TERM :</Typography>
+          <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{paymentTerm}</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography sx={{ fontSize: '0.9rem' }}>PO No. :</Typography>
+          <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+            {invoiceData.poNumber || 'N/A'}
+          </Typography>
+        </Box>
       </Box>
 
       <TableContainer
