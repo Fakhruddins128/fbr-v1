@@ -1767,11 +1767,11 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>NET TOTAL :</Typography>
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in', marginTop:'0.70in' }}>
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>
               FBR INVOICE :
             </Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, textAlign:'Right'  }}>
               {qrValue}
             </Typography>
           </Box>
