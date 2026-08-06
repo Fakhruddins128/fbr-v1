@@ -1735,7 +1735,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           </Box> */}
         </Box>
 
-        <Box sx={{ width: '42%', mr: '-0.5in' }}>
+        <Box sx={{ width: '47%', mr: '-0.5in' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
@@ -1775,7 +1775,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
               {qrValue}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.16in' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '1.16in' }}>
             <Box
               component="img"
               src="/fbr-digital-logo.png"
