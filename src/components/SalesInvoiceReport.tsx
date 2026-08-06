@@ -2134,7 +2134,7 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
   }
 
   if (props.template === 'template3') {
-    return <TemplateThree {...props} />;
+    return <TemplateTwo {...props} />;
   }
 
   if (props.template === 'template4') {
