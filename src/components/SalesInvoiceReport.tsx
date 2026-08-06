@@ -1174,7 +1174,7 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
   const qrValue = (fbrResponse?.invoiceNumber || invoiceData.invoiceRefNo || 'N/A').trim();
-  const blankRows = Math.max(0, 12 - invoiceData.items.length);   // to ensure 12 rows are used
+  const blankRows = Math.max(0, 8 - invoiceData.items.length);   // to ensure 12 rows are used
   const printCss = `
     @page {
       size: A4;
