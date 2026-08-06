@@ -1635,9 +1635,9 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', ml:'-1.0in' }}>
         <Box sx={{ width: '48%', pl: '0.02in' }}>
-          <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, mb: '0.08in' }}>
+          {/* <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, mb: '0.08in' }}>
             Comments:
-          </Typography>
+          </Typography> */}
 <Box
           sx={{
             ...printColorExactSx,
@@ -1768,10 +1768,10 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>
               FBR INVOICE :
             </Typography>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>
               {qrValue}
             </Typography>
           </Box>
