@@ -861,18 +861,75 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
         </Box>
       </Box>
 
-      <Typography
-        sx={{
-          textAlign: 'center',
-          fontSize: '0.85rem',
-          mt: 'auto',
-          pt: '0.42in',
-          fontFamily: '"Times New Roman", serif',
-           fontWeight: 700
-        }}
-      >
-        NOTE : THIS IS A SYSTEM GENERATED DOCUMENT DOES NOT REQUIRED ANY SIGNATURE AND STAMP
-      </Typography>
+      <Box sx={{ mt: 'auto', pt: '0.28in' }}>
+        <Box
+          sx={{
+            ...printColorExactSx,
+            width: '4.1in',
+            mx: 'auto',
+            border: `2px solid ${borderColor}`,
+            backgroundColor: '#fff'
+          }}
+        >
+          <Box
+            sx={{
+              ...printColorExactSx,
+              borderBottom: `2px solid ${borderColor}`,
+              backgroundColor: '#d9d9d9',
+              textAlign: 'center',
+              py: 0.55,
+              px: 0.6
+            }}
+          >
+            <Typography sx={{ fontSize: '0.92rem', fontWeight: 700, lineHeight: 1.15 }}>
+              All Items Received
+              <br />
+              Invoice Verified in all respect
+            </Typography>
+          </Box>
+
+          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', borderCollapse: 'collapse' }}>
+            <colgroup>
+              <col style={{ width: '42%' }} />
+              <col style={{ width: '6%' }} />
+              <col style={{ width: '52%' }} />
+            </colgroup>
+            <TableBody>
+              {['Name', 'Grade', 'Employee #', 'Branch', 'Contact #'].map((label) => (
+                <TableRow key={label}>
+                  <TableCell sx={{ border: `2px solid ${borderColor}`, fontSize: '0.9rem', py: 0.75, px: 0.85, fontWeight: 600 }}>
+                    {label}
+                  </TableCell>
+                  <TableCell sx={{ border: `2px solid ${borderColor}`, fontSize: '0.9rem', py: 0.75, px: 0.4, textAlign: 'center', fontWeight: 700 }}>
+                    :
+                  </TableCell>
+                  <TableCell sx={{ border: `2px solid ${borderColor}`, fontSize: '0.9rem', py: 0.75, px: 0.85 }} />
+                </TableRow>
+              ))}
+
+              <TableRow>
+                <TableCell colSpan={3} sx={{ border: `2px solid ${borderColor}`, height: '1.35in', p: 0 }}>
+                  <Box sx={{ height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', pb: 1.1 }}>
+                    <Typography sx={{ fontSize: '1.05rem', fontWeight: 700 }}>Branch Stamp</Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+
+        <Typography
+          sx={{
+            textAlign: 'center',
+            fontSize: '0.85rem',
+            mt: 1.0,
+            fontFamily: '"Times New Roman", serif',
+            fontWeight: 700
+          }}
+        >
+          NOTE : THIS IS A SYSTEM GENERATED DOCUMENT DOES NOT REQUIRED ANY SIGNATURE AND STAMP
+        </Typography>
+      </Box>
     </Box>
   );
 };
