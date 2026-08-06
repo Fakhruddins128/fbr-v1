@@ -92,68 +92,6 @@ const calculateTotals = (items: InvoiceItem[]) => {
   return { subtotal, totalSalesTax, totalFED, totalDiscount, grandTotal };
 };
 
-const SMALL_NUMBER_WORDS = [
-  'Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-  'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-  'Seventeen', 'Eighteen', 'Nineteen'
-];
-
-const TENS_WORDS = [
-  '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
-];
-
-const numberToWords = (value: number): string => {
-  const whole = Math.floor(Math.abs(value));
-
-  if (whole < 20) {
-    return SMALL_NUMBER_WORDS[whole];
-  }
-
-  if (whole < 100) {
-    const tens = Math.floor(whole / 10);
-    const remainder = whole % 10;
-    return remainder ? `${TENS_WORDS[tens]}-${SMALL_NUMBER_WORDS[remainder]}` : TENS_WORDS[tens];
-  }
-
-  if (whole < 1000) {
-    const hundreds = Math.floor(whole / 100);
-    const remainder = whole % 100;
-    return remainder
-      ? `${SMALL_NUMBER_WORDS[hundreds]} Hundred ${numberToWords(remainder)}`
-      : `${SMALL_NUMBER_WORDS[hundreds]} Hundred`;
-  }
-
-  if (whole < 1000000) {
-    const thousands = Math.floor(whole / 1000);
-    const remainder = whole % 1000;
-    return remainder
-      ? `${numberToWords(thousands)} Thousand ${numberToWords(remainder)}`
-      : `${numberToWords(thousands)} Thousand`;
-  }
-
-  if (whole < 1000000000) {
-    const millions = Math.floor(whole / 1000000);
-    const remainder = whole % 1000000;
-    return remainder
-      ? `${numberToWords(millions)} Million ${numberToWords(remainder)}`
-      : `${numberToWords(millions)} Million`;
-  }
-
-  const billions = Math.floor(whole / 1000000000);
-  const remainder = whole % 1000000000;
-  return remainder
-    ? `${numberToWords(billions)} Billion ${numberToWords(remainder)}`
-    : `${numberToWords(billions)} Billion`;
-};
-
-const amountToWords = (amount: number): string => {
-  const whole = Math.floor(amount);
-  const paisa = Math.round((amount - whole) * 100);
-  const wholeText = numberToWords(whole);
-  const paisaText = paisa > 0 ? ` And ${numberToWords(paisa)} Paisa` : '';
-  return `${wholeText}${paisaText} Only`;
-};
-
 const parsePercentNumber = (value: string | undefined): number => {
   if (!value) {
     return 0;
@@ -2134,7 +2072,7 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
   }
 
   if (props.template === 'template3') {
-    return <TemplateTwo {...props} />;
+    return <TemplateThree {...props} />;
   }
 
   if (props.template === 'template4') {
