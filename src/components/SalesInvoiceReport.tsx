@@ -1638,6 +1638,78 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, mb: '0.08in' }}>
             Comments:
           </Typography>
+          {/* <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              FBR INVOICE :
+            </Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              {qrValue}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.16in' }}>
+            <Box
+              component="img"
+              src="/fbr-digital-logo.png"
+              alt="FBR Digital"
+              sx={{ width: '1.25in', height: '1.25in', objectFit: 'contain', display: 'block' }}
+            />
+            <Box
+              sx={{
+                width: '1.25in',
+                height: '1.25in',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fff',
+                '& canvas': {
+                  width: '1.25in !important',
+                  height: '1.25in !important',
+                  display: 'block'
+                }
+              }}
+            >
+              <QRCodeCanvas
+                value={qrValue}
+                size={68}
+                level="H"
+                includeMargin={false}
+              />
+            </Box>
+          </Box> */}
+        </Box>
+
+        <Box sx={{ width: '36%', mr: '-0.5in' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>FURTHER TAX :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+              {furtherTaxRate ? `@ ${furtherTaxRate}` : ''}
+            </Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalFurtherTax)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>ADVANCE TAX :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+              {advanceTaxRate ? `@ ${advanceTaxRate}` : ''}
+            </Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalAdvanceTax)}</Typography>
+          </Box>
+          {totalExtraTax > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>EXTRA TAX :</Typography>
+              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+                &nbsp;
+              </Typography>
+              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalExtraTax)}</Typography>
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>NET TOTAL :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
+          </Box>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
             <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
               FBR INVOICE :
@@ -1675,40 +1747,6 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
                 includeMargin={false}
               />
             </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ width: '36%', mr: '-0.5in' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>FURTHER TAX :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
-              {furtherTaxRate ? `@ ${furtherTaxRate}` : ''}
-            </Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalFurtherTax)}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>ADVANCE TAX :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
-              {advanceTaxRate ? `@ ${advanceTaxRate}` : ''}
-            </Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalAdvanceTax)}</Typography>
-          </Box>
-          {totalExtraTax > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
-              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>EXTRA TAX :</Typography>
-              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
-                &nbsp;
-              </Typography>
-              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalExtraTax)}</Typography>
-            </Box>
-          )}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>NET TOTAL :</Typography>
-            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
           </Box>
         </Box>
       </Box>
