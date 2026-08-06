@@ -1735,7 +1735,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
           </Box> */}
         </Box>
 
-        <Box sx={{ width: '36%', mr: '-0.5in' }}>
+        <Box sx={{ width: '42%', mr: '-0.5in' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
             <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
