@@ -679,13 +679,13 @@ const Invoices: React.FC = () => {
         <Typography variant="h4" component="h1">
           Invoices
         </Typography>
-        <Button
+        {/* <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
         >
           Add Invoice
-        </Button>
+        </Button> */}
       </Box>
 
       {error && (
