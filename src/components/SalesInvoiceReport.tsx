@@ -641,10 +641,10 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
       >
         <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%' , border: `2.0px solid ${borderColor}`,}}>
           <colgroup>
-            <col style={{ width: '6.3%' }} />
+            <col style={{ width: '8.3%' }} />
             <col style={{ width: '5.3%' }} />
             <col style={{ width: '9.5%' }} />
-            <col style={{ width: '26.4%' }} />
+            <col style={{ width: '24.4%' }} />
             <col style={{ width: '9.9%' }} />
             <col style={{ width: '12.8%' }} />
             <col style={{ width: '7.4%' }} />
