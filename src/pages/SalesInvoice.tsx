@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
+  Autocomplete,
   Box,
   Paper,
   Typography,
@@ -2419,24 +2420,36 @@ const SalesInvoice: React.FC = () => {
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
+            <Autocomplete
               fullWidth
-              select
-              label="HSCode Description"
-              value={currentItem.hsCodeDescription}
-              onChange={(e) => handleItemChange('hsCodeDescription', e.target.value)}
               size="small"
               disabled={isInvoiceSentToFBR()}
-            >
-              <MenuItem value="Select">
-                Select
-              </MenuItem>
-              {items.map((item) => (
-                <MenuItem key={item.itemId} value={`${item.hsCode} - ${item.description}`}>
-                  {item.hsCode} - {item.description}
-                </MenuItem>
-              ))}
-            </TextField>
+              disableClearable
+              options={['Select', ...items.map(item => `${item.hsCode} - ${item.description}`)]}
+              value={currentItem.hsCodeDescription || 'Select'}
+              filterOptions={(options, params) => {
+                const inputValue = params.inputValue.trim().toLowerCase();
+                if (!inputValue) return options;
+                return options.filter(option =>
+                  option.toLowerCase().includes(inputValue)
+                );
+              }}
+              onChange={(event, newValue) => {
+                handleItemChange('hsCodeDescription', newValue || 'Select');
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="HSCode Description"
+                  required
+                  inputProps={{
+                    ...params.inputProps,
+                    autoComplete: 'off'
+                  }}
+                />
+              )}
+              noOptionsText="No matching items"
+            />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
