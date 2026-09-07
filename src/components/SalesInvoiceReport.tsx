@@ -71,6 +71,7 @@ interface SalesInvoiceReportProps {
     poNumber?: string;
     buyerRegistrationType: string;
     scenarioId: string;
+    advanceTaxPercent?: number;
     items: InvoiceItem[];
   };
   fbrResponse?: FbrResponse;
@@ -317,7 +318,12 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const invoiceDate = format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy');
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
-  const totalAdvanceTax = invoiceData.items.reduce((sum, item) => sum + (item.salesTaxWithheldAtSource || 0), 0);
+  const itemBasedAdvanceTax = invoiceData.items.reduce((sum, item) => sum + (item.salesTaxWithheldAtSource || 0), 0);
+  const invoiceBasedAdvanceTaxPercent = Number.isFinite(invoiceData.advanceTaxPercent as number)
+    ? (invoiceData.advanceTaxPercent as number)
+    : 0;
+  const computedAdvanceTax = (inclusiveAmount * invoiceBasedAdvanceTaxPercent) / 100;
+  const totalAdvanceTax = invoiceBasedAdvanceTaxPercent > 0 ? computedAdvanceTax : itemBasedAdvanceTax;
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
@@ -352,7 +358,11 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   };
 const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
   const furtherTaxRate = formatPercentage(totals.subtotal ? (totalFurtherTax / totals.subtotal) * 100 : 0);
-  const advanceTaxRate = formatPercentage(inclusiveAmount ? (totalAdvanceTax / inclusiveAmount) * 100 : 0);
+  const advanceTaxRate = formatPercentage(
+    invoiceBasedAdvanceTaxPercent > 0
+      ? invoiceBasedAdvanceTaxPercent
+      : (inclusiveAmount ? (totalAdvanceTax / inclusiveAmount) * 100 : 0)
+  );
   const borderColor = '#222';
   const headerCellSx = {
     ...printColorExactSx,
