@@ -161,6 +161,8 @@ const Invoices: React.FC = () => {
       salesTaxApplicable: 0,
       salesTaxWithheldAtSource: 0,
       extraTax: 0,
+      advanceTaxRate: 0,
+      AdvanceTaxValue: 0,
       furtherTax: 0,
       sroScheduleNo: '',
       fedPayable: 0,

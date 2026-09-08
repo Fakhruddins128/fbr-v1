@@ -148,6 +148,21 @@ const requireCompanyAccess = (req, res, next) => {
 app.get("/api/invoices", authenticateToken, async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
+    // const invoiceItemsColumnsResult = await pool.request().query(`
+    //   SELECT name
+    //   FROM sys.columns
+    //   WHERE object_id = OBJECT_ID('InvoiceItems')
+    //     AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+    // `);
+    // const invoiceItemsColumns = new Set(
+    //   invoiceItemsColumnsResult.recordset.map((r) => r.name)
+    // );
+    // const advanceTaxRateSelect = invoiceItemsColumns.has("AdvanceTaxRate")
+    //   ? "AdvanceTaxRate"
+    //   : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
+    // const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
+    //   ? "AdvanceTaxValue"
+    //   : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
     const result = await pool
       .request()
       .input("companyId", sql.UniqueIdentifier, req.user.companyId).query(`
@@ -170,12 +185,11 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             SalesTaxApplicable,
             SalesTaxWithheldAtSource,
             AdvanceTaxValue,
-            AdvanceTaxRate,
-            AdvanceTaxRate,
             ExtraTax,
             FurtherTax,
             SROScheduleNo,
             FEDPayable,
+            Discount,
             SaleType,
             SROItemSerialNo
           FROM InvoiceItems ii
@@ -259,6 +273,9 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
       data: invoices,
     });
   } catch (error) {
+    // #region debug-point A:invoices-list-500
+    (() => { try { const fs = require("fs"); let u = "http://127.0.0.1:7777/event", s = "invoices-http-500"; try { const e = fs.readFileSync(".dbg/invoices-http-500.env", "utf8"); u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u; s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s; } catch { } require("axios").post(u, { sessionId: s, runId: "pre-fix", hypothesisId: "A", location: "backend/server.js:/api/invoices", msg: "[DEBUG] /api/invoices failed", data: { message: error?.message, code: error?.code, name: error?.name, number: error?.number, state: error?.state, class: error?.class, originalMessage: error?.originalError?.message, originalInfo: error?.originalError?.info }, ts: Date.now() }).catch(() => { }); } catch { } })();
+    // #endregion
     console.error("Error fetching invoices:", error);
     res.status(500).json({
       success: false,
@@ -273,6 +290,21 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const pool = await sql.connect(dbConfig);
+    const invoiceItemsColumnsResult = await pool.request().query(`
+      SELECT name
+      FROM sys.columns
+      WHERE object_id = OBJECT_ID('InvoiceItems')
+        AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+    `);
+    const invoiceItemsColumns = new Set(
+      invoiceItemsColumnsResult.recordset.map((r) => r.name)
+    );
+    const advanceTaxRateSelect = invoiceItemsColumns.has("AdvanceTaxRate")
+      ? "AdvanceTaxRate"
+      : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
+    const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
+      ? "AdvanceTaxValue"
+      : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
     const result = await pool
       .request()
       .input("invoiceId", sql.UniqueIdentifier, id)
@@ -295,8 +327,8 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
             FixedNotifiedValueOrRetailPrice,
             SalesTaxApplicable,
             SalesTaxWithheldAtSource,
-            AdvanceTaxValue,
-            AdvanceTaxRate,
+            ${advanceTaxValueSelect},
+            ${advanceTaxRateSelect},
             ExtraTax,
             FurtherTax,
             SROScheduleNo,
@@ -387,6 +419,9 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       data: invoiceData,
     });
   } catch (error) {
+    // #region debug-point B:invoice-single-500
+    (() => { try { const fs = require("fs"); let u = "http://127.0.0.1:7777/event", s = "invoices-http-500"; try { const e = fs.readFileSync(".dbg/invoices-http-500.env", "utf8"); u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u; s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s; } catch { } require("axios").post(u, { sessionId: s, runId: "pre-fix", hypothesisId: "B", location: "backend/server.js:/api/invoices/:id", msg: "[DEBUG] /api/invoices/:id failed", data: { message: error?.message, code: error?.code, name: error?.name, number: error?.number, state: error?.state, class: error?.class, originalMessage: error?.originalError?.message, originalInfo: error?.originalError?.info }, ts: Date.now() }).catch(() => { }); } catch { } })();
+    // #endregion
     console.error("Error fetching invoice:", error);
     res.status(500).json({
       success: false,
