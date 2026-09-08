@@ -321,7 +321,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
   const totalAdvanceTax = invoiceData.items.reduce(
-    (sum, item) => sum + ((item.AdvanceTaxValue ?? item.salesTaxWithheldAtSource) || 0),
+    (sum, item) => sum + (item.AdvanceTaxValue || 0),
     0
   );
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
@@ -1176,7 +1176,7 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
   const totalAdvanceTax = invoiceData.items.reduce(
-    (sum, item) => sum + ((item.AdvanceTaxValue ?? item.salesTaxWithheldAtSource) || 0),
+    (sum, item) => sum + (item.AdvanceTaxValue || 0),
     0
   );
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);

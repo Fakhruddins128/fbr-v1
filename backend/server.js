@@ -149,6 +149,8 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             FixedNotifiedValueOrRetailPrice,
             SalesTaxApplicable,
             SalesTaxWithheldAtSource,
+            AdvanceTaxValue,
+            AdvanceTaxRate,
             ExtraTax,
             FurtherTax,
             SROScheduleNo,
@@ -182,6 +184,8 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
               item.FixedNotifiedValueOrRetailPrice,
             salesTaxApplicable: item.SalesTaxApplicable,
             salesTaxWithheldAtSource: item.SalesTaxWithheldAtSource,
+            advanceTaxValue: item.AdvanceTaxValue,
+            advanceTaxRate: item.AdvanceTaxRate,
             extraTax: item.ExtraTax,
             furtherTax: item.FurtherTax,
             sroScheduleNo: item.SROScheduleNo,
@@ -271,6 +275,8 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
             FixedNotifiedValueOrRetailPrice,
             SalesTaxApplicable,
             SalesTaxWithheldAtSource,
+            AdvanceTaxValue,
+            AdvanceTaxRate,
             ExtraTax,
             FurtherTax,
             SROScheduleNo,
@@ -310,6 +316,8 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
           fixedNotifiedValueOrRetailPrice: item.FixedNotifiedValueOrRetailPrice,
           salesTaxApplicable: item.SalesTaxApplicable,
           salesTaxWithheldAtSource: item.SalesTaxWithheldAtSource,
+          advanceTaxValue: item.AdvanceTaxValue,
+          advanceTaxRate: item.AdvanceTaxRate,
           extraTax: item.ExtraTax,
           furtherTax: item.FurtherTax,
           sroScheduleNo: item.SROScheduleNo,
@@ -513,6 +521,16 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
             sql.Decimal(18, 2),
             item.salesTaxWithheldAtSource || 0
           )
+          .input(
+            "advanceTaxValue",
+            sql.Decimal(18, 2),
+            item.advanceTaxValue || 0
+          )
+          .input(
+            "advanceTaxRate",
+            sql.Decimal(18, 4),
+            item.advanceTaxRate || 0
+          )
           .input("extraTax", sql.Decimal(18, 2), item.extraTax || 0)
           .input("furtherTax", sql.Decimal(18, 2), item.furtherTax || 0)
           .input("sroScheduleNo", sql.NVarChar, item.sroScheduleNo || "")
@@ -524,13 +542,16 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
             INSERT INTO InvoiceItems (
               InvoiceID, MasterItemID, HSCode, ProductDescription, Rate, UoM, Quantity,
               TotalValues, ValueSalesExcludingST, FixedNotifiedValueOrRetailPrice,
-              SalesTaxApplicable, SalesTaxWithheldAtSource, ExtraTax, FurtherTax,
+              SalesTaxApplicable, SalesTaxWithheldAtSource, AdvanceTaxValue, AdvanceTaxRate,
+              ExtraTax, FurtherTax,
               SROScheduleNo, FEDPayable, Discount, SaleType, SROItemSerialNo
             )
             VALUES (
               @invoiceId, @masterItemId, @hsCode, @productDescription, @rate, @uoM, @quantity,
               @totalValues, @valueSalesExcludingST, @fixedNotifiedValueOrRetailPrice,
-              @salesTaxApplicable, @salesTaxWithheldAtSource, @extraTax, @furtherTax,
+              @salesTaxApplicable, @salesTaxWithheldAtSource, @advanceTaxValue, @advanceTaxRate,
+              @extraTax, @furtherTax,
+           
               @sroScheduleNo, @fedPayable, @discount, @saleType, @sroItemSerialNo
             )
           `);
@@ -559,6 +580,8 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
               FixedNotifiedValueOrRetailPrice,
               SalesTaxApplicable,
               SalesTaxWithheldAtSource,
+              AdvanceTaxValue,
+              AdvanceTaxRate,
               ExtraTax,
               FurtherTax,
               SROScheduleNo,
@@ -852,6 +875,16 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
             sql.Decimal(18, 2),
             item.salesTaxWithheldAtSource || 0
           )
+          .input(
+            "advanceTaxValue",
+            sql.Decimal(18, 2),
+            item.advanceTaxValue || 0
+          )
+          .input(
+            "advanceTaxRate",
+            sql.Decimal(18, 4),
+            item.advanceTaxRate || 0
+          )
           .input("extraTax", sql.Decimal(18, 2), item.extraTax || 0)
           .input("furtherTax", sql.Decimal(18, 2), item.furtherTax || 0)
           .input("sroScheduleNo", sql.NVarChar, item.sroScheduleNo || "")
@@ -863,13 +896,15 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
             INSERT INTO InvoiceItems (
               InvoiceID, MasterItemID, HSCode, ProductDescription, Rate, UoM, Quantity,
               TotalValues, ValueSalesExcludingST, FixedNotifiedValueOrRetailPrice,
-              SalesTaxApplicable, SalesTaxWithheldAtSource, ExtraTax, FurtherTax,
+              SalesTaxApplicable, SalesTaxWithheldAtSource, AdvanceTaxValue, AdvanceTaxRate,
+              ExtraTax, FurtherTax,
               SROScheduleNo, FEDPayable, Discount, SaleType, SROItemSerialNo
             )
             VALUES (
               @invoiceId, @masterItemId, @hsCode, @productDescription, @rate, @uoM, @quantity,
               @totalValues, @valueSalesExcludingST, @fixedNotifiedValueOrRetailPrice,
-              @salesTaxApplicable, @salesTaxWithheldAtSource, @extraTax, @furtherTax,
+              @salesTaxApplicable, @salesTaxWithheldAtSource, @advanceTaxValue, @advanceTaxRate,
+              @extraTax, @furtherTax,
               @sroScheduleNo, @fedPayable, @discount, @saleType, @sroItemSerialNo
             )
           `);
@@ -898,6 +933,8 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
               FixedNotifiedValueOrRetailPrice,
               SalesTaxApplicable,
               SalesTaxWithheldAtSource,
+              AdvanceTaxValue,
+              AdvanceTaxRate,
               ExtraTax,
               FurtherTax,
               SROScheduleNo,

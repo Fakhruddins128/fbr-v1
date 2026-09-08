@@ -147,6 +147,10 @@ export interface InvoiceItem {
   fixedNotifiedValueOrRetailPrice: number;
   salesTaxApplicable: number;
   salesTaxWithheldAtSource: number;
+  advanceTaxRate?: number;
+  advanceTaxValue?: number;
+  AdvanceTaxRate?: number;
+  AdvanceTaxValue?: number;
   extraTax: number;
   furtherTax: number;
   sroScheduleNo: string;
