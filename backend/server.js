@@ -148,21 +148,21 @@ const requireCompanyAccess = (req, res, next) => {
 app.get("/api/invoices", authenticateToken, async (req, res) => {
   try {
     const pool = await sql.connect(dbConfig);
-    // const invoiceItemsColumnsResult = await pool.request().query(`
-    //   SELECT name
-    //   FROM sys.columns
-    //   WHERE object_id = OBJECT_ID('InvoiceItems')
-    //     AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
-    // `);
-    // const invoiceItemsColumns = new Set(
-    //   invoiceItemsColumnsResult.recordset.map((r) => r.name)
-    // );
-    // const advanceTaxRateSelect = invoiceItemsColumns.has("AdvanceTaxRate")
-    //   ? "AdvanceTaxRate"
-    //   : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
-    // const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
-    //   ? "AdvanceTaxValue"
-    //   : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+    const invoiceItemsColumnsResult = await pool.request().query(`
+      SELECT name
+      FROM sys.columns
+      WHERE object_id = OBJECT_ID('InvoiceItems')
+        AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+    `);
+    const invoiceItemsColumns = new Set(
+      invoiceItemsColumnsResult.recordset.map((r) => r.name)
+    );
+    const advanceTaxRateSelect = invoiceItemsColumns.has("AdvanceTaxRate")
+      ? "AdvanceTaxRate"
+      : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
+    const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
+      ? "AdvanceTaxValue"
+      : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
     const result = await pool
       .request()
       .input("companyId", sql.UniqueIdentifier, req.user.companyId).query(`
@@ -184,7 +184,8 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             FixedNotifiedValueOrRetailPrice,
             SalesTaxApplicable,
             SalesTaxWithheldAtSource,
-            AdvanceTaxValue,
+            ${advanceTaxValueSelect},
+            ${advanceTaxRateSelect},
             ExtraTax,
             FurtherTax,
             SROScheduleNo,
@@ -477,6 +478,74 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
     await transaction.begin();
 
     try {
+      const invoiceItemsColumnsResult = await transaction.request().query(`
+        SELECT name
+        FROM sys.columns
+        WHERE object_id = OBJECT_ID('InvoiceItems')
+          AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+      `);
+      const invoiceItemsColumns = new Set(
+        invoiceItemsColumnsResult.recordset.map((r) => r.name)
+      );
+      const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
+      const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
+      const advanceTaxRateSelect = hasAdvanceTaxRate
+        ? "AdvanceTaxRate"
+        : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
+      const advanceTaxValueSelect = hasAdvanceTaxValue
+        ? "AdvanceTaxValue"
+        : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+      const invoiceItemColumnNames = [
+        "InvoiceID",
+        "MasterItemID",
+        "HSCode",
+        "ProductDescription",
+        "Rate",
+        "UoM",
+        "Quantity",
+        "TotalValues",
+        "ValueSalesExcludingST",
+        "FixedNotifiedValueOrRetailPrice",
+        "SalesTaxApplicable",
+        "SalesTaxWithheldAtSource",
+        ...(hasAdvanceTaxValue ? ["AdvanceTaxValue"] : []),
+        ...(hasAdvanceTaxRate ? ["AdvanceTaxRate"] : []),
+        "ExtraTax",
+        "FurtherTax",
+        "SROScheduleNo",
+        "FEDPayable",
+        "Discount",
+        "SaleType",
+        "SROItemSerialNo",
+      ];
+      const invoiceItemParamNames = [
+        "@invoiceId",
+        "@masterItemId",
+        "@hsCode",
+        "@productDescription",
+        "@rate",
+        "@uoM",
+        "@quantity",
+        "@totalValues",
+        "@valueSalesExcludingST",
+        "@fixedNotifiedValueOrRetailPrice",
+        "@salesTaxApplicable",
+        "@salesTaxWithheldAtSource",
+        ...(hasAdvanceTaxValue ? ["@advanceTaxValue"] : []),
+        ...(hasAdvanceTaxRate ? ["@advanceTaxRate"] : []),
+        "@extraTax",
+        "@furtherTax",
+        "@sroScheduleNo",
+        "@fedPayable",
+        "@discount",
+        "@saleType",
+        "@sroItemSerialNo",
+      ];
+      const insertInvoiceItemQuery = `
+        INSERT INTO InvoiceItems (${invoiceItemColumnNames.join(", ")})
+        VALUES (${invoiceItemParamNames.join(", ")})
+      `;
+
       // Calculate totals
       const totalAmount = items.reduce(
         (sum, item) => sum + parseFloat(item.totalValues || 0),
@@ -593,23 +662,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           .input("discount", sql.Decimal(18, 2), item.discount || 0)
           .input("saleType", sql.NVarChar, item.saleType || "")
           .input("sroItemSerialNo", sql.NVarChar, item.sroItemSerialNo || "")
-          .query(`
-            INSERT INTO InvoiceItems (
-              InvoiceID, MasterItemID, HSCode, ProductDescription, Rate, UoM, Quantity,
-              TotalValues, ValueSalesExcludingST, FixedNotifiedValueOrRetailPrice,
-              SalesTaxApplicable, SalesTaxWithheldAtSource, AdvanceTaxValue, AdvanceTaxRate,
-              ExtraTax, FurtherTax,
-              SROScheduleNo, FEDPayable, Discount, SaleType, SROItemSerialNo
-            )
-            VALUES (
-              @invoiceId, @masterItemId, @hsCode, @productDescription, @rate, @uoM, @quantity,
-              @totalValues, @valueSalesExcludingST, @fixedNotifiedValueOrRetailPrice,
-              @salesTaxApplicable, @salesTaxWithheldAtSource, @advanceTaxValue, @advanceTaxRate,
-              @extraTax, @furtherTax,
-           
-              @sroScheduleNo, @fedPayable, @discount, @saleType, @sroItemSerialNo
-            )
-          `);
+          .query(insertInvoiceItemQuery);
       }
 
       await transaction.commit();
@@ -635,8 +688,8 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
               FixedNotifiedValueOrRetailPrice,
               SalesTaxApplicable,
               SalesTaxWithheldAtSource,
-              AdvanceTaxValue,
-              AdvanceTaxRate,
+            ${advanceTaxValueSelect},
+            ${advanceTaxRateSelect},
               ExtraTax,
               FurtherTax,
               SROScheduleNo,
@@ -818,6 +871,74 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
     await transaction.begin();
 
     try {
+      const invoiceItemsColumnsResult = await transaction.request().query(`
+        SELECT name
+        FROM sys.columns
+        WHERE object_id = OBJECT_ID('InvoiceItems')
+          AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+      `);
+      const invoiceItemsColumns = new Set(
+        invoiceItemsColumnsResult.recordset.map((r) => r.name)
+      );
+      const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
+      const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
+      const advanceTaxRateSelect = hasAdvanceTaxRate
+        ? "AdvanceTaxRate"
+        : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
+      const advanceTaxValueSelect = hasAdvanceTaxValue
+        ? "AdvanceTaxValue"
+        : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+      const invoiceItemColumnNames = [
+        "InvoiceID",
+        "MasterItemID",
+        "HSCode",
+        "ProductDescription",
+        "Rate",
+        "UoM",
+        "Quantity",
+        "TotalValues",
+        "ValueSalesExcludingST",
+        "FixedNotifiedValueOrRetailPrice",
+        "SalesTaxApplicable",
+        "SalesTaxWithheldAtSource",
+        ...(hasAdvanceTaxValue ? ["AdvanceTaxValue"] : []),
+        ...(hasAdvanceTaxRate ? ["AdvanceTaxRate"] : []),
+        "ExtraTax",
+        "FurtherTax",
+        "SROScheduleNo",
+        "FEDPayable",
+        "Discount",
+        "SaleType",
+        "SROItemSerialNo",
+      ];
+      const invoiceItemParamNames = [
+        "@invoiceId",
+        "@masterItemId",
+        "@hsCode",
+        "@productDescription",
+        "@rate",
+        "@uoM",
+        "@quantity",
+        "@totalValues",
+        "@valueSalesExcludingST",
+        "@fixedNotifiedValueOrRetailPrice",
+        "@salesTaxApplicable",
+        "@salesTaxWithheldAtSource",
+        ...(hasAdvanceTaxValue ? ["@advanceTaxValue"] : []),
+        ...(hasAdvanceTaxRate ? ["@advanceTaxRate"] : []),
+        "@extraTax",
+        "@furtherTax",
+        "@sroScheduleNo",
+        "@fedPayable",
+        "@discount",
+        "@saleType",
+        "@sroItemSerialNo",
+      ];
+      const insertInvoiceItemQuery = `
+        INSERT INTO InvoiceItems (${invoiceItemColumnNames.join(", ")})
+        VALUES (${invoiceItemParamNames.join(", ")})
+      `;
+
       // Calculate totals
       const totalAmount = items.reduce(
         (sum, item) => sum + parseFloat(item.totalValues || 0),
@@ -947,22 +1068,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           .input("discount", sql.Decimal(18, 2), item.discount || 0)
           .input("saleType", sql.NVarChar, item.saleType)
           .input("sroItemSerialNo", sql.NVarChar, item.sroItemSerialNo || "")
-          .query(`
-            INSERT INTO InvoiceItems (
-              InvoiceID, MasterItemID, HSCode, ProductDescription, Rate, UoM, Quantity,
-              TotalValues, ValueSalesExcludingST, FixedNotifiedValueOrRetailPrice,
-              SalesTaxApplicable, SalesTaxWithheldAtSource, AdvanceTaxValue, AdvanceTaxRate,
-              ExtraTax, FurtherTax,
-              SROScheduleNo, FEDPayable, Discount, SaleType, SROItemSerialNo
-            )
-            VALUES (
-              @invoiceId, @masterItemId, @hsCode, @productDescription, @rate, @uoM, @quantity,
-              @totalValues, @valueSalesExcludingST, @fixedNotifiedValueOrRetailPrice,
-              @salesTaxApplicable, @salesTaxWithheldAtSource, @advanceTaxValue, @advanceTaxRate,
-              @extraTax, @furtherTax,
-              @sroScheduleNo, @fedPayable, @discount, @saleType, @sroItemSerialNo
-            )
-          `);
+          .query(insertInvoiceItemQuery);
       }
 
       await transaction.commit();
@@ -988,8 +1094,8 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
               FixedNotifiedValueOrRetailPrice,
               SalesTaxApplicable,
               SalesTaxWithheldAtSource,
-              AdvanceTaxValue,
-              AdvanceTaxRate,
+              ${advanceTaxValueSelect},
+              ${advanceTaxRateSelect},
               ExtraTax,
               FurtherTax,
               SROScheduleNo,

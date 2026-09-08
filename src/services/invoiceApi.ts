@@ -24,6 +24,24 @@ class InvoiceApi {
     return headers;
   }
 
+  private async getErrorMessage(response: Response): Promise<string> {
+    const fallback = `HTTP error! status: ${response.status}`;
+    try {
+      const text = await response.text();
+      if (!text) {
+        return fallback;
+      }
+      try {
+        const parsed = JSON.parse(text) as { message?: string; error?: string };
+        return parsed.error || parsed.message || fallback;
+      } catch {
+        return text;
+      }
+    } catch {
+      return fallback;
+    }
+  }
+
   private getUserData() {
     const userData = localStorage.getItem('user');
     return userData ? JSON.parse(userData) : null;
@@ -37,7 +55,7 @@ class InvoiceApi {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await this.getErrorMessage(response));
       }
 
       const result = await response.json();
@@ -59,7 +77,7 @@ class InvoiceApi {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await this.getErrorMessage(response));
       }
 
       const result = await response.json();
@@ -82,7 +100,7 @@ class InvoiceApi {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await this.getErrorMessage(response));
       }
 
       const result = await response.json();
@@ -105,7 +123,7 @@ class InvoiceApi {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await this.getErrorMessage(response));
       }
 
       const result = await response.json();
@@ -136,7 +154,7 @@ class InvoiceApi {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await this.getErrorMessage(response));
       }
 
       const result = await response.json();
@@ -158,7 +176,7 @@ class InvoiceApi {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(await this.getErrorMessage(response));
       }
 
       const result = await response.json();
