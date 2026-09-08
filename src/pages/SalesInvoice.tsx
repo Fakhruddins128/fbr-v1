@@ -62,6 +62,7 @@ interface InvoiceItem {
   quantity: number;
   valueSalesExclST: number;
   salesTax: number;
+  advanceTaxPercent: number;
   stWithheldAtSource: number;
   totalValueSales: number;
   extraTax: number;
@@ -87,8 +88,6 @@ interface InvoiceFormData {
   destinationOfSupply: string;
   saleType: string;
   items: InvoiceItem[];
-  // New Advance Tax fields
-  advanceTaxPercent: number;
  // transactionType: string;
 }
 
@@ -1051,8 +1050,7 @@ const SalesInvoice: React.FC = () => {
     saleOriginationProvince: 'Select',
     destinationOfSupply: 'Select',
     saleType: 'Select',
-    items: [],
-    advanceTaxPercent: 0
+    items: []
   });
 
   // Fetch items and customers from API
@@ -1127,7 +1125,6 @@ const SalesInvoice: React.FC = () => {
               saleOriginationProvince: invoice.sellerProvince || 'Select',
               destinationOfSupply: invoice.buyerProvince || 'Select',
               saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select',
-              advanceTaxPercent: invoice.advanceTaxPercent || invoice.AdvanceTaxPercent || 0,
 
               items: invoice.items.map((item: any) => {
                 // Try to find the matching master item by ID first, then by code/desc
@@ -1152,6 +1149,12 @@ const SalesInvoice: React.FC = () => {
                   quantity: item.quantity || 0,
                   valueSalesExclST: item.valueSalesExcludingST || 0,
                   salesTax: item.salesTaxApplicable || 0,
+                  advanceTaxPercent: (() => {
+                    const incl = (item.valueSalesExcludingST || 0) + (item.salesTaxApplicable || 0);
+                    const amt = item.salesTaxWithheldAtSource || 0;
+                    const pct = incl ? (amt / incl) * 100 : 0;
+                    return Number.isFinite(pct) ? pct : 0;
+                  })(),
                   stWithheldAtSource: item.salesTaxWithheldAtSource || 0,
                   totalValueSales: item.totalValues || 0,
                   extraTax: item.extraTax || 0,
@@ -1189,6 +1192,7 @@ const SalesInvoice: React.FC = () => {
     quantity: 0,
     valueSalesExclST: 0,
     salesTax: 0,
+    advanceTaxPercent: 0,
     stWithheldAtSource: 0,
     totalValueSales: 0,
     extraTax: 0,
@@ -1361,6 +1365,14 @@ const SalesInvoice: React.FC = () => {
         }
       }
 
+      if (field === 'advanceTaxPercent' || field === 'valueSalesExclST' || field === 'rate' || field === 'salesTax') {
+        const valueExcl = updatedItem.valueSalesExclST || 0;
+        const salesTax = updatedItem.salesTax || 0;
+        const inclusive = valueExcl + salesTax;
+        const percent = updatedItem.advanceTaxPercent || 0;
+        updatedItem.stWithheldAtSource = percent > 0 ? (inclusive * percent) / 100 : 0;
+      }
+
       return updatedItem;
     });
   };
@@ -1400,6 +1412,7 @@ const SalesInvoice: React.FC = () => {
         quantity: 0,
         valueSalesExclST: 0,
         salesTax: 0,
+        advanceTaxPercent: 0,
         stWithheldAtSource: 0,
         totalValueSales: 0,
         extraTax: 0,
@@ -1434,6 +1447,7 @@ const SalesInvoice: React.FC = () => {
       quantity: item.quantity,
       valueSalesExclST: item.valueSalesExclST,
       salesTax: item.salesTax,
+      advanceTaxPercent: item.advanceTaxPercent,
       stWithheldAtSource: item.stWithheldAtSource,
       totalValueSales: item.totalValueSales,
       extraTax: item.extraTax,
@@ -1460,8 +1474,7 @@ const SalesInvoice: React.FC = () => {
       saleOriginationProvince: 'Select',
       destinationOfSupply: 'Select',
       saleType: 'Select',
-      items: [],
-      advanceTaxPercent: 0
+      items: []
     });
     setCurrentItem({
       id: '',
@@ -1473,6 +1486,7 @@ const SalesInvoice: React.FC = () => {
       quantity: 0,
       valueSalesExclST: 0,
       salesTax: 0,
+      advanceTaxPercent: 0,
       stWithheldAtSource: 0,
       totalValueSales: 0,
       extraTax: 0,
@@ -1998,7 +2012,6 @@ const SalesInvoice: React.FC = () => {
       poNumber: formData.poNumber,
       buyerRegistrationType: formData.buyerType,
       scenarioId: determineFbrScenario(),
-      advanceTaxPercent: formData.advanceTaxPercent || 0,
       items: formData.items.map(item => ({
         hsCode: item.hsCodeDescription.split(' - ')[0] || '',
         productDescription: item.productDescription,
@@ -2050,10 +2063,9 @@ const SalesInvoice: React.FC = () => {
       const totalFurtherTax = formData.items.reduce((sum, item) => sum + item.furtherTax, 0);
       const totalDiscount = formData.items.reduce((sum, item) => sum + 0, 0); // No discount field in current form
 
-      // Calculate Advance Tax based on Sales Incl. S.Tax
       const salesInclST = formData.items.reduce((sum, item) => sum + (item.valueSalesExclST + item.salesTax), 0);
-      const advanceTaxPercent = formData.advanceTaxPercent || 0;
-      const advanceTaxValue = (salesInclST * advanceTaxPercent) / 100;
+      const advanceTaxValue = formData.items.reduce((sum, item) => sum + (item.stWithheldAtSource || 0), 0);
+      const advanceTaxPercent = salesInclST ? (advanceTaxValue / salesInclST) * 100 : 0;
 
       // Final Invoice Total including Advance Tax
       const finalInvoiceTotal = salesInclST + advanceTaxValue;
@@ -2417,21 +2429,6 @@ const SalesInvoice: React.FC = () => {
             </TextField>
           </Grid>
 
-          {/* Advance Tax % Field */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              label="Advance Tax %"
-              type="number"
-              value={formData.advanceTaxPercent}
-              onChange={(e) => handleInputChange('advanceTaxPercent', parseFloat(e.target.value) || 0)}
-              size="small"
-              inputProps={{ min: 0, step: 0.01 }}
-              helperText="Calculated on Sales Incl. S.Tax"
-              disabled={isInvoiceSentToFBR()}
-            />
-          </Grid>
-
         </Grid>
       </Paper>
 
@@ -2566,12 +2563,22 @@ const SalesInvoice: React.FC = () => {
           <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
-              label="ST withheld at Source"
+              label="Advance Tax %"
               type="number"
-              value={currentItem.stWithheldAtSource}
-              onChange={(e) => handleItemChange('stWithheldAtSource', parseFloat(e.target.value) || 0)}
+              value={currentItem.advanceTaxPercent}
+              onChange={(e) => handleItemChange('advanceTaxPercent', Math.max(0, parseFloat(e.target.value) || 0))}
               size="small"
               disabled={isInvoiceSentToFBR()}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <TextField
+              fullWidth
+              label="Advance Tax Value"
+              type="number"
+              value={currentItem.stWithheldAtSource}
+              size="small"
+              disabled
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
@@ -2838,13 +2845,15 @@ const SalesInvoice: React.FC = () => {
           <Grid size={{ xs: 12, md: 6 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
               <Typography variant="body2" color="text.secondary">
-                Advance Tax ({formData.advanceTaxPercent}%):
-              </Typography>
-              <Typography variant="body2" fontWeight="medium">
                 {(() => {
                   const salesInclST = formData.items.reduce((sum, item) => sum + (item.valueSalesExclST + item.salesTax), 0);
-                  return ((salesInclST * (formData.advanceTaxPercent || 0)) / 100).toFixed(2);
+                  const advanceTaxValue = formData.items.reduce((sum, item) => sum + (item.stWithheldAtSource || 0), 0);
+                  const pct = salesInclST ? (advanceTaxValue / salesInclST) * 100 : 0;
+                  return `Advance Tax${pct ? ` (@ ${pct.toFixed(2)}%)` : ''}:`;
                 })()}
+              </Typography>
+              <Typography variant="body2" fontWeight="medium">
+                {formData.items.reduce((sum, item) => sum + (item.stWithheldAtSource || 0), 0).toFixed(2)}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5, borderTop: '1px solid #e0e0e0', pt: 1, mt: 0.5 }}>
@@ -2854,8 +2863,8 @@ const SalesInvoice: React.FC = () => {
               <Typography variant="body1" fontWeight="bold" color="primary">
                 {(() => {
                   const salesInclST = formData.items.reduce((sum, item) => sum + (item.valueSalesExclST + item.salesTax), 0);
-                  const advanceTax = (salesInclST * (formData.advanceTaxPercent || 0)) / 100;
-                  return (salesInclST + advanceTax).toFixed(2);
+                  const advanceTaxValue = formData.items.reduce((sum, item) => sum + (item.stWithheldAtSource || 0), 0);
+                  return (salesInclST + advanceTaxValue).toFixed(2);
                 })()}
               </Typography>
             </Box>
