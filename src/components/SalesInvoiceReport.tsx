@@ -25,6 +25,8 @@ interface InvoiceItem {
   fixedNotifiedValueOrRetailPrice: number;
   salesTaxApplicable: number;
   salesTaxWithheldAtSource: number;
+  AdvanceTaxValue?: number;
+  AdvanceTaxRate?: number;
   extraTax: number;
   furtherTax: number;
   sroScheduleNo: string;
@@ -318,7 +320,10 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const invoiceDate = format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy');
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
-  const totalAdvanceTax = invoiceData.items.reduce((sum, item) => sum + (item.salesTaxWithheldAtSource || 0), 0);
+  const totalAdvanceTax = invoiceData.items.reduce(
+    (sum, item) => sum + ((item.AdvanceTaxValue ?? item.salesTaxWithheldAtSource) || 0),
+    0
+  );
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
@@ -1170,7 +1175,10 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
   const invoiceDate = format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy');
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
-  const totalAdvanceTax = invoiceData.items.reduce((sum, item) => sum + (item.salesTaxWithheldAtSource || 0), 0);
+  const totalAdvanceTax = invoiceData.items.reduce(
+    (sum, item) => sum + ((item.AdvanceTaxValue ?? item.salesTaxWithheldAtSource) || 0),
+    0
+  );
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
   const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
