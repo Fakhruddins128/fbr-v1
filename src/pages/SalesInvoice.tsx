@@ -1127,6 +1127,7 @@ const SalesInvoice: React.FC = () => {
               saleOriginationProvince: invoice.sellerProvince || 'Select',
               destinationOfSupply: invoice.buyerProvince || 'Select',
               saleType: invoice.items && invoice.items.length > 0 ? invoice.items[0].saleType || 'Select' : 'Select',
+              advanceTaxPercent: invoice.advanceTaxPercent || invoice.AdvanceTaxPercent || 0,
 
               items: invoice.items.map((item: any) => {
                 // Try to find the matching master item by ID first, then by code/desc
@@ -1157,8 +1158,7 @@ const SalesInvoice: React.FC = () => {
                   fixedNotifiedValue: item.fixedNotifiedValueOrRetailPrice || 0,
                   furtherTax: item.furtherTax || 0,
                   sroScheduleNo: item.sroScheduleNo || 'Select',
-                  itemSrNo: item.sroItemSerialNo || 'Select',
-                  saleType: item.saleType || 'Select'
+                  itemSrNo: item.sroItemSerialNo || 'Select'
                 };
               })
             });
@@ -1198,7 +1198,10 @@ const SalesInvoice: React.FC = () => {
     itemSrNo: 'Select'
   });
 
-  const handleInputChange = (field: keyof InvoiceFormData, value: string | string[]) => {
+  const handleInputChange = (
+    field: keyof InvoiceFormData,
+    value: InvoiceFormData[keyof InvoiceFormData]
+  ) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -1457,7 +1460,8 @@ const SalesInvoice: React.FC = () => {
       saleOriginationProvince: 'Select',
       destinationOfSupply: 'Select',
       saleType: 'Select',
-      items: []
+      items: [],
+      advanceTaxPercent: 0
     });
     setCurrentItem({
       id: '',

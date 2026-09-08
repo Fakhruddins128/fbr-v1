@@ -124,6 +124,10 @@ export interface Invoice {
   totalSalesTax: number;
   totalFurtherTax: number;
   totalDiscount: number;
+  advanceTaxPercent?: number;
+  advanceTaxValue?: number;
+  AdvanceTaxPercent?: number;
+  AdvanceTaxValue?: number;
   scenarioID: string;
   createdAt: string;
   updatedAt: string;
