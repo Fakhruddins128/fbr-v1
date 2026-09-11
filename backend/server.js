@@ -152,17 +152,29 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
       SELECT name
       FROM sys.columns
       WHERE object_id = OBJECT_ID('InvoiceItems')
-        AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
     `);
     const invoiceItemsColumns = new Set(
       invoiceItemsColumnsResult.recordset.map((r) => r.name)
     );
+    const masterItemIdSelect = invoiceItemsColumns.has("MasterItemID")
+      ? "MasterItemID"
+      : "CAST(NULL AS UNIQUEIDENTIFIER) AS MasterItemID";
     const advanceTaxRateSelect = invoiceItemsColumns.has("AdvanceTaxRate")
       ? "AdvanceTaxRate"
       : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
     const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
       ? "AdvanceTaxValue"
       : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+    const discountSelect = invoiceItemsColumns.has("Discount")
+      ? "Discount"
+      : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
+    const saleTypeSelect = invoiceItemsColumns.has("SaleType")
+      ? "SaleType"
+      : "CAST('' AS NVARCHAR(50)) AS SaleType";
+    const sroItemSerialNoSelect = invoiceItemsColumns.has("SROItemSerialNo")
+      ? "SROItemSerialNo"
+      : "CAST(NULL AS NVARCHAR(50)) AS SROItemSerialNo";
     const result = await pool
       .request()
       .input("companyId", sql.UniqueIdentifier, req.user.companyId).query(`
@@ -173,7 +185,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
         OUTER APPLY (
           SELECT 
             ItemID,
-            MasterItemID,
+            ${masterItemIdSelect},
             HSCode,
             ProductDescription,
             Rate,
@@ -190,9 +202,9 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             FurtherTax,
             SROScheduleNo,
             FEDPayable,
-            Discount,
-            SaleType,
-            SROItemSerialNo
+            ${discountSelect},
+            ${saleTypeSelect},
+            ${sroItemSerialNoSelect}
           FROM InvoiceItems ii
           WHERE ii.InvoiceID = i.InvoiceID
           FOR JSON PATH
@@ -274,9 +286,6 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
       data: invoices,
     });
   } catch (error) {
-    // #region debug-point A:invoices-list-500
-    (() => { try { const fs = require("fs"); let u = "http://127.0.0.1:7777/event", s = "invoices-http-500"; try { const e = fs.readFileSync(".dbg/invoices-http-500.env", "utf8"); u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u; s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s; } catch { } require("axios").post(u, { sessionId: s, runId: "pre-fix", hypothesisId: "A", location: "backend/server.js:/api/invoices", msg: "[DEBUG] /api/invoices failed", data: { message: error?.message, code: error?.code, name: error?.name, number: error?.number, state: error?.state, class: error?.class, originalMessage: error?.originalError?.message, originalInfo: error?.originalError?.info }, ts: Date.now() }).catch(() => { }); } catch { } })();
-    // #endregion
     console.error("Error fetching invoices:", error);
     res.status(500).json({
       success: false,
@@ -295,17 +304,29 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       SELECT name
       FROM sys.columns
       WHERE object_id = OBJECT_ID('InvoiceItems')
-        AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
     `);
     const invoiceItemsColumns = new Set(
       invoiceItemsColumnsResult.recordset.map((r) => r.name)
     );
+    const masterItemIdSelect = invoiceItemsColumns.has("MasterItemID")
+      ? "MasterItemID"
+      : "CAST(NULL AS UNIQUEIDENTIFIER) AS MasterItemID";
     const advanceTaxRateSelect = invoiceItemsColumns.has("AdvanceTaxRate")
       ? "AdvanceTaxRate"
       : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
     const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
       ? "AdvanceTaxValue"
       : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+    const discountSelect = invoiceItemsColumns.has("Discount")
+      ? "Discount"
+      : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
+    const saleTypeSelect = invoiceItemsColumns.has("SaleType")
+      ? "SaleType"
+      : "CAST('' AS NVARCHAR(50)) AS SaleType";
+    const sroItemSerialNoSelect = invoiceItemsColumns.has("SROItemSerialNo")
+      ? "SROItemSerialNo"
+      : "CAST(NULL AS NVARCHAR(50)) AS SROItemSerialNo";
     const result = await pool
       .request()
       .input("invoiceId", sql.UniqueIdentifier, id)
@@ -317,7 +338,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
         OUTER APPLY (
           SELECT 
             ItemID,
-            MasterItemID,
+            ${masterItemIdSelect},
             HSCode,
             ProductDescription,
             Rate,
@@ -334,9 +355,9 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
             FurtherTax,
             SROScheduleNo,
             FEDPayable,
-            Discount,
-            SaleType,
-            SROItemSerialNo
+            ${discountSelect},
+            ${saleTypeSelect},
+            ${sroItemSerialNoSelect}
           FROM InvoiceItems ii
           WHERE ii.InvoiceID = i.InvoiceID
           FOR JSON PATH
@@ -420,9 +441,6 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       data: invoiceData,
     });
   } catch (error) {
-    // #region debug-point B:invoice-single-500
-    (() => { try { const fs = require("fs"); let u = "http://127.0.0.1:7777/event", s = "invoices-http-500"; try { const e = fs.readFileSync(".dbg/invoices-http-500.env", "utf8"); u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u; s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s; } catch { } require("axios").post(u, { sessionId: s, runId: "pre-fix", hypothesisId: "B", location: "backend/server.js:/api/invoices/:id", msg: "[DEBUG] /api/invoices/:id failed", data: { message: error?.message, code: error?.code, name: error?.name, number: error?.number, state: error?.state, class: error?.class, originalMessage: error?.originalError?.message, originalInfo: error?.originalError?.info }, ts: Date.now() }).catch(() => { }); } catch { } })();
-    // #endregion
     console.error("Error fetching invoice:", error);
     res.status(500).json({
       success: false,
@@ -482,22 +500,38 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         SELECT name
         FROM sys.columns
         WHERE object_id = OBJECT_ID('InvoiceItems')
-          AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
       `);
       const invoiceItemsColumns = new Set(
         invoiceItemsColumnsResult.recordset.map((r) => r.name)
       );
+      const hasMasterItemId = invoiceItemsColumns.has("MasterItemID");
       const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
       const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
+      const hasDiscount = invoiceItemsColumns.has("Discount");
+      const hasSaleType = invoiceItemsColumns.has("SaleType");
+      const hasSroItemSerialNo = invoiceItemsColumns.has("SROItemSerialNo");
+      const masterItemIdSelect = hasMasterItemId
+        ? "MasterItemID"
+        : "CAST(NULL AS UNIQUEIDENTIFIER) AS MasterItemID";
       const advanceTaxRateSelect = hasAdvanceTaxRate
         ? "AdvanceTaxRate"
         : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
       const advanceTaxValueSelect = hasAdvanceTaxValue
         ? "AdvanceTaxValue"
         : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+      const discountSelect = hasDiscount
+        ? "Discount"
+        : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
+      const saleTypeSelect = hasSaleType
+        ? "SaleType"
+        : "CAST('' AS NVARCHAR(50)) AS SaleType";
+      const sroItemSerialNoSelect = hasSroItemSerialNo
+        ? "SROItemSerialNo"
+        : "CAST(NULL AS NVARCHAR(50)) AS SROItemSerialNo";
       const invoiceItemColumnNames = [
         "InvoiceID",
-        "MasterItemID",
+        ...(hasMasterItemId ? ["MasterItemID"] : []),
         "HSCode",
         "ProductDescription",
         "Rate",
@@ -514,13 +548,13 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         "FurtherTax",
         "SROScheduleNo",
         "FEDPayable",
-        "Discount",
-        "SaleType",
-        "SROItemSerialNo",
+        ...(hasDiscount ? ["Discount"] : []),
+        ...(hasSaleType ? ["SaleType"] : []),
+        ...(hasSroItemSerialNo ? ["SROItemSerialNo"] : []),
       ];
       const invoiceItemParamNames = [
         "@invoiceId",
-        "@masterItemId",
+        ...(hasMasterItemId ? ["@masterItemId"] : []),
         "@hsCode",
         "@productDescription",
         "@rate",
@@ -537,9 +571,9 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         "@furtherTax",
         "@sroScheduleNo",
         "@fedPayable",
-        "@discount",
-        "@saleType",
-        "@sroItemSerialNo",
+        ...(hasDiscount ? ["@discount"] : []),
+        ...(hasSaleType ? ["@saleType"] : []),
+        ...(hasSroItemSerialNo ? ["@sroItemSerialNo"] : []),
       ];
       const insertInvoiceItemQuery = `
         INSERT INTO InvoiceItems (${invoiceItemColumnNames.join(", ")})
@@ -678,6 +712,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           OUTER APPLY (
             SELECT 
               ItemID,
+              ${masterItemIdSelect},
               HSCode,
               ProductDescription,
               Rate,
@@ -694,9 +729,9 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
               FurtherTax,
               SROScheduleNo,
               FEDPayable,
-              Discount,
-              SaleType,
-              SROItemSerialNo
+              ${discountSelect},
+              ${saleTypeSelect},
+              ${sroItemSerialNoSelect}
             FROM InvoiceItems ii
             WHERE ii.InvoiceID = i.InvoiceID
             FOR JSON PATH
@@ -875,22 +910,38 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         SELECT name
         FROM sys.columns
         WHERE object_id = OBJECT_ID('InvoiceItems')
-          AND name IN ('AdvanceTaxRate', 'AdvanceTaxValue')
+          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
       `);
       const invoiceItemsColumns = new Set(
         invoiceItemsColumnsResult.recordset.map((r) => r.name)
       );
+      const hasMasterItemId = invoiceItemsColumns.has("MasterItemID");
       const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
       const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
+      const hasDiscount = invoiceItemsColumns.has("Discount");
+      const hasSaleType = invoiceItemsColumns.has("SaleType");
+      const hasSroItemSerialNo = invoiceItemsColumns.has("SROItemSerialNo");
+      const masterItemIdSelect = hasMasterItemId
+        ? "MasterItemID"
+        : "CAST(NULL AS UNIQUEIDENTIFIER) AS MasterItemID";
       const advanceTaxRateSelect = hasAdvanceTaxRate
         ? "AdvanceTaxRate"
         : "CAST(0 AS DECIMAL(18, 4)) AS AdvanceTaxRate";
       const advanceTaxValueSelect = hasAdvanceTaxValue
         ? "AdvanceTaxValue"
         : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+      const discountSelect = hasDiscount
+        ? "Discount"
+        : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
+      const saleTypeSelect = hasSaleType
+        ? "SaleType"
+        : "CAST('' AS NVARCHAR(50)) AS SaleType";
+      const sroItemSerialNoSelect = hasSroItemSerialNo
+        ? "SROItemSerialNo"
+        : "CAST(NULL AS NVARCHAR(50)) AS SROItemSerialNo";
       const invoiceItemColumnNames = [
         "InvoiceID",
-        "MasterItemID",
+        ...(hasMasterItemId ? ["MasterItemID"] : []),
         "HSCode",
         "ProductDescription",
         "Rate",
@@ -907,13 +958,13 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         "FurtherTax",
         "SROScheduleNo",
         "FEDPayable",
-        "Discount",
-        "SaleType",
-        "SROItemSerialNo",
+        ...(hasDiscount ? ["Discount"] : []),
+        ...(hasSaleType ? ["SaleType"] : []),
+        ...(hasSroItemSerialNo ? ["SROItemSerialNo"] : []),
       ];
       const invoiceItemParamNames = [
         "@invoiceId",
-        "@masterItemId",
+        ...(hasMasterItemId ? ["@masterItemId"] : []),
         "@hsCode",
         "@productDescription",
         "@rate",
@@ -930,9 +981,9 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         "@furtherTax",
         "@sroScheduleNo",
         "@fedPayable",
-        "@discount",
-        "@saleType",
-        "@sroItemSerialNo",
+        ...(hasDiscount ? ["@discount"] : []),
+        ...(hasSaleType ? ["@saleType"] : []),
+        ...(hasSroItemSerialNo ? ["@sroItemSerialNo"] : []),
       ];
       const insertInvoiceItemQuery = `
         INSERT INTO InvoiceItems (${invoiceItemColumnNames.join(", ")})
@@ -1084,6 +1135,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           OUTER APPLY (
             SELECT 
               ItemID,
+              ${masterItemIdSelect},
               HSCode,
               ProductDescription,
               Rate,
@@ -1100,9 +1152,9 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
               FurtherTax,
               SROScheduleNo,
               FEDPayable,
-              Discount,
-              SaleType,
-              SROItemSerialNo
+              ${discountSelect},
+              ${saleTypeSelect},
+              ${sroItemSerialNoSelect}
             FROM InvoiceItems ii
             WHERE ii.InvoiceID = i.InvoiceID
             FOR JSON PATH

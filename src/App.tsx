@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider, useSelector } from 'react-redux';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
@@ -66,6 +66,97 @@ const theme = createTheme({
 });
 
 function App() {
+  useEffect(() => {
+    const isEditable = (target: EventTarget | null) => {
+      if (!target || !(target instanceof HTMLElement)) {
+        return false;
+      }
+      if (target.isContentEditable) {
+        return true;
+      }
+      if (target instanceof HTMLTextAreaElement) {
+        return true;
+      }
+      if (target instanceof HTMLInputElement) {
+        const blockedTypes = new Set([
+          'button',
+          'checkbox',
+          'color',
+          'file',
+          'hidden',
+          'image',
+          'radio',
+          'range',
+          'reset',
+          'submit',
+        ]);
+        return !blockedTypes.has((target.type || '').toLowerCase());
+      }
+      return false;
+    };
+
+    const hasBlockedChars = (value: string) => /['"\\/\r\n]/.test(value);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isEditable(event.target)) {
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        return;
+      }
+      if (event.key.length === 1 && hasBlockedChars(event.key)) {
+        event.preventDefault();
+      }
+    };
+
+    const onBeforeInput = (event: InputEvent) => {
+      if (!isEditable(event.target)) {
+        return;
+      }
+      if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') {
+        event.preventDefault();
+        return;
+      }
+      const data = typeof event.data === 'string' ? event.data : '';
+      if (data && hasBlockedChars(data)) {
+        event.preventDefault();
+      }
+    };
+
+    const onPaste = (event: ClipboardEvent) => {
+      if (!isEditable(event.target)) {
+        return;
+      }
+      const text = event.clipboardData?.getData('text') || '';
+      if (text && hasBlockedChars(text)) {
+        event.preventDefault();
+      }
+    };
+
+    const onDrop = (event: DragEvent) => {
+      if (!isEditable(event.target)) {
+        return;
+      }
+      const text = event.dataTransfer?.getData('text') || '';
+      if (text && hasBlockedChars(text)) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('beforeinput', onBeforeInput as EventListener, true);
+    document.addEventListener('paste', onPaste as EventListener, true);
+    document.addEventListener('drop', onDrop as EventListener, true);
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('beforeinput', onBeforeInput as EventListener, true);
+      document.removeEventListener('paste', onPaste as EventListener, true);
+      document.removeEventListener('drop', onDrop as EventListener, true);
+    };
+  }, []);
+
   return (
     <Provider store={store}>
       <ThemeProvider theme={theme}>
