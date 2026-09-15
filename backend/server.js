@@ -5,9 +5,37 @@ const sql = require("mssql");
 const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 // Load environment variables
 dotenv.config();
+
+// Authentication secret. A hardcoded fallback would let anyone who has read
+// this file forge a valid token, so when JWT_SECRET is absent the process
+// falls back to a random secret instead: the application keeps serving, but
+// sessions do not survive a restart until JWT_SECRET is configured.
+const jwtSecret =
+  process.env.JWT_SECRET || crypto.randomBytes(48).toString("hex");
+if (!process.env.JWT_SECRET) {
+  console.error(
+    "SECURITY WARNING: JWT_SECRET is not set. Using a random per-process " +
+      "secret; every restart will invalidate all sessions. Set JWT_SECRET " +
+      "in the environment."
+  );
+}
+
+// The mock login issues a SUPER_ADMIN session without consulting the
+// database, so it must never be reachable in production. It is opt-in even
+// outside production, and the database falling over is not enough to enable it.
+const ALLOW_MOCK_LOGIN =
+  process.env.ALLOW_MOCK_LOGIN === "true" &&
+  process.env.NODE_ENV !== "production";
+if (ALLOW_MOCK_LOGIN) {
+  console.warn(
+    "WARNING: ALLOW_MOCK_LOGIN is enabled. A mock administrator login is " +
+      "active whenever the database is unreachable. Never enable this in production."
+  );
+}
 
 // Create Express app
 const app = express();
@@ -92,7 +120,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    process.env.JWT_SECRET || "your_jwt_secret",
+    jwtSecret,
     (err, user) => {
       if (err)
         return res.status(403).json({ message: "Invalid or expired token" });
@@ -1500,7 +1528,7 @@ app.get("/api/health", (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
 
-  console.log("Login attempt:", { username, passwordLength: password?.length, isDbConnected });
+  console.log("Login attempt:", { username, isDbConnected });
 
   if (!username || !password) {
     return res
@@ -1508,8 +1536,17 @@ app.post("/api/auth/login", async (req, res) => {
       .json({ message: "Username and password are required" });
   }
 
-  // Mock login if database is not connected
+  // Mock login if database is not connected. Gated on ALLOW_MOCK_LOGIN so an
+  // outage cannot silently turn into an unauthenticated administrator session.
   if (!isDbConnected) {
+    if (!ALLOW_MOCK_LOGIN) {
+      console.error(
+        "Login rejected: the database is unreachable and mock login is disabled."
+      );
+      return res.status(503).json({
+        message: "Service temporarily unavailable. Please try again later.",
+      });
+    }
     console.log("Database not connected. Attempting mock login.");
     if (username === "admin" && password === "admin123") {
        const mockUser = {
@@ -1531,7 +1568,7 @@ app.post("/api/auth/login", async (req, res) => {
           role: mockUser.Role,
           companyId: mockUser.CompanyID,
         },
-        process.env.JWT_SECRET || "your_jwt_secret",
+        jwtSecret,
         { expiresIn: "24h" }
       );
 
@@ -1551,7 +1588,7 @@ app.post("/api/auth/login", async (req, res) => {
         token,
       });
     } else {
-       return res.status(401).json({ message: "Invalid username or password (mock mode: use admin/admin123)" });
+       return res.status(401).json({ message: "Invalid username or password" });
     }
   }
 
@@ -1601,7 +1638,7 @@ app.post("/api/auth/login", async (req, res) => {
         role: user.Role,
         companyId: user.CompanyID,
       },
-      process.env.JWT_SECRET || "your_jwt_secret",
+      jwtSecret,
       { expiresIn: "24h" }
     );
 
@@ -2104,7 +2141,7 @@ app.post(
           companyId: companyId,
           switchedContext: true,
         },
-        process.env.JWT_SECRET || "your_jwt_secret",
+        jwtSecret,
         { expiresIn: "24h" }
       );
 
@@ -4603,27 +4640,29 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
     } = req.query;
     const companyId = req.user.companyId;
 
+    // Date range. Values are bound as parameters, never interpolated into the
+    // statement. Validated up front so bad input is rejected the same way
+    // whether or not the database happens to be reachable.
+    let rangeStart = null;
+    let rangeEnd = null;
+
+    if (dateRange === "custom" && startDate && endDate) {
+      rangeStart = new Date(startDate);
+      rangeEnd = new Date(endDate);
+      if (isNaN(rangeStart.getTime()) || isNaN(rangeEnd.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid startDate or endDate",
+        });
+      }
+      // Exclusive upper bound so invoices timestamped later on the end date count
+      rangeEnd.setDate(rangeEnd.getDate() + 1);
+    }
+
     if (isDbConnected) {
       const pool = await sql.connect(dbConfig);
 
-      // Date range. Values are bound as parameters, never interpolated into
-      // the statement. The alias is supplied by this code, not by the request.
-      let rangeStart = null;
-      let rangeEnd = null;
-
-      if (dateRange === "custom" && startDate && endDate) {
-        rangeStart = new Date(startDate);
-        rangeEnd = new Date(endDate);
-        if (isNaN(rangeStart.getTime()) || isNaN(rangeEnd.getTime())) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid startDate or endDate",
-          });
-        }
-        // Exclusive upper bound so invoices timestamped later on the end date count
-        rangeEnd.setDate(rangeEnd.getDate() + 1);
-      }
-
+      // The alias is supplied by this code, never by the request.
       const dateFilterFor = (alias) =>
         rangeStart
           ? ` AND ${alias}.InvoiceDate >= @startDate AND ${alias}.InvoiceDate < @endDate`

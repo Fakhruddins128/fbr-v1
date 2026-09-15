@@ -24,6 +24,19 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-09-15 — Security: mock login backdoor (R3) and hardcoded JWT fallback
+
+`POST /api/auth/login` granted a `SUPER_ADMIN` session to `admin` / `admin123` whenever `isDbConnected` was false. `connectToDatabase()` swallows its error and lets the server boot anyway, so any database outage in production silently opened an unauthenticated administrator login.
+
+- `backend/server.js` — the mock login is now gated on `ALLOW_MOCK_LOGIN === "true"` and is ignored entirely when `NODE_ENV=production`. With it disabled, a login attempt during an outage returns 503 instead of a session. The response no longer names the mock credentials.
+- `backend/server.js` — replaced all four `process.env.JWT_SECRET || "your_jwt_secret"` fallbacks with a single `jwtSecret`. When `JWT_SECRET` is absent the process now generates a random secret and logs a warning, rather than signing and verifying tokens with a value published in the source. Behaviour is unchanged when `JWT_SECRET` is set.
+- `backend/server.js` — the login handler no longer logs the submitted password length.
+- `backend/.env.example` — documents `ALLOW_MOCK_LOGIN`.
+
+### 2026-09-15 — Security: SQL injection in sales reports (R4)
+
+The `dateRange=custom` branch of `GET /api/reports/sales` interpolated the request's `startDate` and `endDate` directly into the statement. Both are now bound as parameters; this was corrected as part of the sales report fix above. Validation was additionally moved ahead of the database-availability check so an invalid or hostile value is rejected with 400 whether or not the database is reachable.
+
 ### 2026-09-15 — Fix: FBR compliance reports returned HTML instead of JSON
 
 The FBR Compliance Summary, FBR Scenario Usage and FBR Compliance Trends tabs failed with `Unexpected token '<', "<!doctype "... is not valid JSON`.
