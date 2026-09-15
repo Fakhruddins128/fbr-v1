@@ -24,6 +24,18 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-09-15 — Fix: Reports & Analytics returned HTTP 500
+
+"Generate" on the Reports page failed for every date range. `GET /api/reports/sales` referenced four columns that do not exist in the schema, so SQL Server rejected the top-products and top-customers queries and the handler returned 500.
+
+- `backend/server.js` — `GET /api/reports/sales`:
+  - `InvoiceItems.ProductName` -> `ProductDescription`, and `InvoiceItems.TotalAmount` -> `TotalValues` (the per-item column that sums to `Invoices.TotalAmount`).
+  - Removed `INNER JOIN Customers c ON i.CustomerID = c.CustomerID`. `Invoices` has no `CustomerID` column, so the buyer name is read from `Invoices.BuyerBusinessName` instead.
+  - Wrapped both percentage denominators in `NULLIF(..., 0)` so a company with no invoices in the period no longer triggers a divide-by-zero error.
+  - The custom date range is now bound as SQL parameters instead of being interpolated into the statement, and an invalid date returns 400.
+
+Note: the percentage denominator is now scoped to the reported period, so shares sum to 100% within the selected range. It was previously written against the all-time company total, but that query never executed successfully.
+
 ### 2026-09-15 — Sales Register report
 
 Added a Sales Register report (detail of sales, one row per invoice line item) with Excel and PDF export.

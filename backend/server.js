@@ -4606,14 +4606,38 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
     if (isDbConnected) {
       const pool = await sql.connect(dbConfig);
 
-      // Get sales data based on date range
-      let dateFilter = "";
+      // Date range. Values are bound as parameters, never interpolated into
+      // the statement. The alias is supplied by this code, not by the request.
+      let rangeStart = null;
+      let rangeEnd = null;
+
       if (dateRange === "custom" && startDate && endDate) {
-        dateFilter = `AND i.InvoiceDate BETWEEN '${startDate}' AND '${endDate}'`;
-      } else {
-        // Default to last 12 months
-        dateFilter = `AND i.InvoiceDate >= DATEADD(month, -12, GETDATE())`;
+        rangeStart = new Date(startDate);
+        rangeEnd = new Date(endDate);
+        if (isNaN(rangeStart.getTime()) || isNaN(rangeEnd.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid startDate or endDate",
+          });
+        }
+        // Exclusive upper bound so invoices timestamped later on the end date count
+        rangeEnd.setDate(rangeEnd.getDate() + 1);
       }
+
+      const dateFilterFor = (alias) =>
+        rangeStart
+          ? ` AND ${alias}.InvoiceDate >= @startDate AND ${alias}.InvoiceDate < @endDate`
+          : ` AND ${alias}.InvoiceDate >= DATEADD(month, -12, GETDATE())`;
+
+      const reportRequest = () => {
+        const request = pool.request();
+        request.input("companyId", sql.UniqueIdentifier, companyId);
+        if (rangeStart) {
+          request.input("startDate", sql.DateTime, rangeStart);
+          request.input("endDate", sql.DateTime, rangeEnd);
+        }
+        return request;
+      };
 
       const salesQuery = `
         SELECT 
@@ -4622,53 +4646,60 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
           COUNT(*) as orders,
           SUM(i.TotalAmount * 0.1) as profit
         FROM Invoices i
-        WHERE i.CompanyID = @companyId ${dateFilter}
+        WHERE i.CompanyID = @companyId${dateFilterFor("i")}
         GROUP BY FORMAT(i.InvoiceDate, 'yyyy-MM')
         ORDER BY period DESC
       `;
 
-      const salesResult = await pool
-        .request()
-        .input("companyId", sql.UniqueIdentifier, companyId)
-        .query(salesQuery);
+      const salesResult = await reportRequest().query(salesQuery);
 
-      // Get top products
+      // Get top products. InvoiceItems stores the line description in
+      // ProductDescription and the line total in TotalValues; the percentage
+      // denominator is scoped to the same period as the report.
       const topProductsQuery = `
         SELECT TOP 5
-          ii.ProductName as name,
+          ii.ProductDescription as name,
           SUM(ii.Quantity) as quantity,
-          SUM(ii.TotalAmount) as sales,
-          CAST(SUM(ii.TotalAmount) * 100.0 / (SELECT SUM(TotalAmount) FROM InvoiceItems WHERE InvoiceID IN (SELECT InvoiceID FROM Invoices WHERE CompanyID = @companyId)) AS DECIMAL(5,2)) as percentage
+          SUM(ii.TotalValues) as sales,
+          CAST(SUM(ii.TotalValues) * 100.0 / NULLIF((
+            SELECT SUM(ii2.TotalValues)
+            FROM InvoiceItems ii2
+            INNER JOIN Invoices i2 ON ii2.InvoiceID = i2.InvoiceID
+            WHERE i2.CompanyID = @companyId${dateFilterFor("i2")}
+          ), 0) AS DECIMAL(5,2)) as percentage
         FROM InvoiceItems ii
         INNER JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
-        WHERE i.CompanyID = @companyId ${dateFilter}
-        GROUP BY ii.ProductName
+        WHERE i.CompanyID = @companyId${dateFilterFor("i")}
+        GROUP BY ii.ProductDescription
         ORDER BY sales DESC
       `;
 
-      const topProductsResult = await pool
-        .request()
-        .input("companyId", sql.UniqueIdentifier, companyId)
-        .query(topProductsQuery);
+      const topProductsResult = await reportRequest().query(topProductsQuery);
 
-      // Get top customers
+      // Get top customers. Invoices carries the buyer name directly; there is
+      // no CustomerID column on Invoices to join Customers on.
       const topCustomersQuery = `
         SELECT TOP 5
-          c.BuyerBusinessName as name,
+          i.BuyerBusinessName as name,
           SUM(i.TotalAmount) as amount,
           COUNT(*) as orders,
-          CAST(SUM(i.TotalAmount) * 100.0 / (SELECT SUM(TotalAmount) FROM Invoices WHERE CompanyID = @companyId) AS DECIMAL(5,2)) as percentage
+          CAST(SUM(i.TotalAmount) * 100.0 / NULLIF((
+            SELECT SUM(i2.TotalAmount)
+            FROM Invoices i2
+            WHERE i2.CompanyID = @companyId${dateFilterFor("i2")}
+          ), 0) AS DECIMAL(5,2)) as percentage
         FROM Invoices i
-        INNER JOIN Customers c ON i.CustomerID = c.CustomerID
-        WHERE i.CompanyID = @companyId ${dateFilter}
-        GROUP BY c.BuyerBusinessName
+        WHERE i.CompanyID = @companyId${dateFilterFor("i")}
+        GROUP BY i.BuyerBusinessName
         ORDER BY amount DESC
       `;
 
-      const topCustomersResult = await pool
-        .request()
-        .input("companyId", sql.UniqueIdentifier, companyId)
-        .query(topCustomersQuery);
+      const topCustomersResult = await reportRequest().query(topCustomersQuery);
+
+      const num = (v) => {
+        const n = parseFloat(v);
+        return isFinite(n) ? n : 0;
+      };
 
       res.json({
         success: true,
@@ -4680,8 +4711,18 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
             profit: parseFloat(row.profit) || 0,
             orders: row.orders || 0,
           })),
-          topProducts: topProductsResult.recordset,
-          topCustomers: topCustomersResult.recordset,
+          topProducts: topProductsResult.recordset.map((row) => ({
+            name: row.name || "",
+            quantity: num(row.quantity),
+            sales: num(row.sales),
+            percentage: num(row.percentage),
+          })),
+          topCustomers: topCustomersResult.recordset.map((row) => ({
+            name: row.name || "",
+            amount: num(row.amount),
+            orders: row.orders || 0,
+            percentage: num(row.percentage),
+          })),
         },
       });
     } else {
