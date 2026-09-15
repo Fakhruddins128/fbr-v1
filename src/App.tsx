@@ -25,6 +25,7 @@ import Customers from './pages/Customers';
 import Vendors from './pages/Vendors';
 
 import Reports from './pages/Reports';
+import SalesRegister from './pages/SalesRegister';
 import UserManagement from './pages/UserManagement';
 import ScenarioManagement from './pages/ScenarioManagement';
 
@@ -186,6 +187,7 @@ function App() {
               <Route path="vendors" element={<Vendors />} />
 
               <Route path="reports" element={<Reports />} />
+              <Route path="reports/sales-register" element={<SalesRegister />} />
               <Route path="scenario-management" element={<ScenarioManagement />} />
             </Route>
             

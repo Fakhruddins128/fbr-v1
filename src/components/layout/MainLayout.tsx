@@ -7,12 +7,13 @@ import {
   Divider, 
   Drawer, 
   IconButton, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Toolbar, 
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
+  Toolbar,
   Typography, 
   Avatar,
   Menu,
@@ -34,6 +35,9 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import SettingsIcon from '@mui/icons-material/Settings';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../hooks/useAppDispatch';
 import { logout } from '../../store/slices/authSlice';
@@ -46,6 +50,8 @@ interface NavItem {
   icon: React.ReactNode;
   path: string;
   roles: UserRole[];
+  /** Optional sub-menu rendered as a collapsible group under this item. */
+  children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -110,11 +116,19 @@ const navItems: NavItem[] = [
     roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
   },
 
-  { 
-    text: 'Reports', 
-    icon: <BarChartIcon />, 
+  {
+    text: 'Reports',
+    icon: <BarChartIcon />,
     path: '/reports',
-    roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
+    roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT],
+    children: [
+      {
+        text: 'Sales Register',
+        icon: <DescriptionIcon />,
+        path: '/reports/sales-register',
+        roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
+      }
+    ]
   },
   { 
     text: 'Scenario Management', 
@@ -160,11 +174,29 @@ const MainLayout: React.FC = () => {
     navigate('/profile');
   };
   
-  // Filter nav items based on user role
-  const filteredNavItems = navItems.filter(item => {
-    if (!user) return false;
-    return item.roles.includes(user.role);
-  });
+  // Filter nav items based on user role, including any sub-menu children
+  const filteredNavItems = navItems
+    .filter(item => {
+      if (!user) return false;
+      return item.roles.includes(user.role);
+    })
+    .map(item => ({
+      ...item,
+      children: item.children?.filter(child => user && child.roles.includes(user.role))
+    }));
+
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  const toggleMenu = (text: string) => {
+    setOpenMenus(prev => ({ ...prev, [text]: !prev[text] }));
+  };
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      setMobileOpen(false);
+    }
+  };
   
   const drawer = (
     <div>
@@ -186,42 +218,96 @@ const MainLayout: React.FC = () => {
       <Divider />
       <List>
         {filteredNavItems.map((item) => {
-          const isActive = location.pathname === item.path || 
-                          (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
-          
+          const hasChildren = Boolean(item.children && item.children.length > 0);
+          const activeChild = item.children?.some(child => location.pathname === child.path) ?? false;
+
+          // A parent with a sub-menu highlights only on its own page; the child
+          // row carries the highlight when a sub-menu page is open.
+          const isActive = hasChildren
+            ? location.pathname === item.path
+            : location.pathname === item.path ||
+              (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+
+          const isExpanded = openMenus[item.text] ?? activeChild;
+
           return (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton 
-                onClick={() => {
-                  navigate(item.path);
-                  if (isMobile) {
-                    setMobileOpen(false);
-                  }
-                }}
-                selected={isActive}
-                sx={{
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.light',
-                    '&:hover': {
-                      backgroundColor: 'primary.light',
-                    },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ 
-                  color: isActive ? 'primary.main' : 'inherit'
-                }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.text} 
-                  primaryTypographyProps={{
-                    fontWeight: isActive ? 'bold' : 'regular',
-                    color: isActive ? 'primary.main' : 'inherit'
+            <React.Fragment key={item.text}>
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    if (hasChildren) {
+                      toggleMenu(item.text);
+                    }
+                    handleNavigate(item.path);
                   }}
-                />
-              </ListItemButton>
-            </ListItem>
+                  selected={isActive}
+                  sx={{
+                    '&.Mui-selected': {
+                      backgroundColor: 'primary.light',
+                      '&:hover': {
+                        backgroundColor: 'primary.light',
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{
+                    color: isActive || activeChild ? 'primary.main' : 'inherit'
+                  }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.text}
+                    primaryTypographyProps={{
+                      fontWeight: isActive || activeChild ? 'bold' : 'regular',
+                      color: isActive || activeChild ? 'primary.main' : 'inherit'
+                    }}
+                  />
+                  {hasChildren && (isExpanded ? <ExpandLess /> : <ExpandMore />)}
+                </ListItemButton>
+              </ListItem>
+
+              {hasChildren && (
+                <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.children!.map((child) => {
+                      const isChildActive = location.pathname === child.path;
+
+                      return (
+                        <ListItemButton
+                          key={child.text}
+                          onClick={() => handleNavigate(child.path)}
+                          selected={isChildActive}
+                          sx={{
+                            pl: 4,
+                            '&.Mui-selected': {
+                              backgroundColor: 'primary.light',
+                              '&:hover': {
+                                backgroundColor: 'primary.light',
+                              },
+                            },
+                          }}
+                        >
+                          <ListItemIcon sx={{
+                            minWidth: 36,
+                            color: isChildActive ? 'primary.main' : 'inherit'
+                          }}>
+                            {child.icon}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={child.text}
+                            primaryTypographyProps={{
+                              fontSize: '0.9rem',
+                              fontWeight: isChildActive ? 'bold' : 'regular',
+                              color: isChildActive ? 'primary.main' : 'inherit'
+                            }}
+                          />
+                        </ListItemButton>
+                      );
+                    })}
+                  </List>
+                </Collapse>
+              )}
+            </React.Fragment>
           );
         })}
       </List>

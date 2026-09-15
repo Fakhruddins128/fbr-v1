@@ -4782,6 +4782,187 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
 });
 
 // Dashboard API Endpoints
+// Sales Register - one row per invoice line item, in the layout of the
+// statutory "Detail of Sales" register.
+app.get("/api/reports/sales-register", authenticateToken, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Super Admin may target another company via header, as elsewhere in this API
+    let companyId = req.user.companyId;
+    if (req.user.role === "SUPER_ADMIN" && req.headers["x-company-id"]) {
+      companyId = req.headers["x-company-id"];
+    }
+
+    if (!companyId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Company ID is required" });
+    }
+
+    // Validate input before anything else, so bad input is rejected the same way
+    // whether or not the database happens to be reachable.
+    let start = null;
+    if (startDate) {
+      start = new Date(startDate);
+      if (isNaN(start.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid startDate" });
+      }
+    }
+
+    let end = null;
+    if (endDate) {
+      end = new Date(endDate);
+      if (isNaN(end.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid endDate" });
+      }
+      // Exclusive upper bound so invoices timestamped later on the end date are included
+      end.setDate(end.getDate() + 1);
+    }
+
+    if (!isDbConnected) {
+      return res
+        .status(503)
+        .json({ success: false, message: "Database not connected" });
+    }
+
+    const pool = await sql.connect(dbConfig);
+
+    // Buyer_NTN / Buyer_NIC arrived via migration, so fall back to BuyerNTNCNIC
+    // on databases that predate them (same approach as the invoice endpoints).
+    const invoiceColumnsResult = await pool.request().query(`
+      SELECT name
+      FROM sys.columns
+      WHERE object_id = OBJECT_ID('Invoices')
+        AND name IN ('Buyer_NTN', 'Buyer_NIC')
+    `);
+    const invoiceColumns = new Set(
+      invoiceColumnsResult.recordset.map((r) => r.name)
+    );
+    const buyerNtnSelect = invoiceColumns.has("Buyer_NTN")
+      ? "COALESCE(NULLIF(i.Buyer_NTN, ''), i.BuyerNTNCNIC)"
+      : "i.BuyerNTNCNIC";
+    const buyerGstSelect = invoiceColumns.has("Buyer_NIC")
+      ? "COALESCE(NULLIF(i.Buyer_NIC, ''), i.BuyerNTNCNIC)"
+      : "i.BuyerNTNCNIC";
+
+    const request = pool.request();
+    request.input("companyId", sql.UniqueIdentifier, companyId);
+
+    // Dates are bound as parameters, never interpolated into the statement.
+    let dateFilter = "";
+    if (start) {
+      request.input("startDate", sql.DateTime, start);
+      dateFilter += " AND i.InvoiceDate >= @startDate";
+    }
+    if (end) {
+      request.input("endDate", sql.DateTime, end);
+      dateFilter += " AND i.InvoiceDate < @endDate";
+    }
+
+    const result = await request.query(`
+      SELECT
+        i.InvoiceDate,
+        COALESCE(NULLIF(i.InvoiceRefNo, ''), i.InvoiceNumber) AS InvoiceNo,
+        i.BuyerBusinessName,
+        i.BuyerAddress,
+        ${buyerNtnSelect} AS BuyerNTNNo,
+        ${buyerGstSelect} AS BuyerGSTNo,
+        ii.ProductDescription,
+        ii.HSCode,
+        ii.UoM,
+        ii.Quantity,
+        ii.ValueSalesExcludingST,
+        ii.SalesTaxApplicable,
+        ii.FurtherTax,
+        ii.ExtraTax
+      FROM Invoices i
+      INNER JOIN InvoiceItems ii ON ii.InvoiceID = i.InvoiceID
+      WHERE i.CompanyID = @companyId${dateFilter}
+      ORDER BY i.InvoiceDate ASC, i.CreatedAt ASC
+    `);
+
+    const companyResult = await pool
+      .request()
+      .input("companyId", sql.UniqueIdentifier, companyId).query(`
+        SELECT Name, BusinessNameForSalesInvoice, NTNNumber
+        FROM Companies
+        WHERE CompanyID = @companyId
+      `);
+    const companyRow = companyResult.recordset[0] || {};
+
+    const num = (v) => {
+      const n = parseFloat(v);
+      return isFinite(n) ? n : 0;
+    };
+
+    const rows = result.recordset.map((r) => {
+      const quantity = num(r.Quantity);
+      const excludingST = num(r.ValueSalesExcludingST);
+      const salesTax = num(r.SalesTaxApplicable);
+      const furtherTax = num(r.FurtherTax);
+      const extraTax = num(r.ExtraTax);
+
+      return {
+        invoiceDate: r.InvoiceDate,
+        invoiceNo: r.InvoiceNo || "",
+        // Term and party code have no column in the current schema
+        term: "",
+        partyCode: "",
+        partyName: r.BuyerBusinessName || "",
+        address: r.BuyerAddress || "",
+        ntnNo: r.BuyerNTNNo || "",
+        gstNo: r.BuyerGSTNo || "",
+        description: r.ProductDescription || "",
+        hsCode: r.HSCode || "",
+        unit: r.UoM || "",
+        quantity,
+        // Unit price. NOT InvoiceItems.Rate, which stores the tax rate as text.
+        rate: quantity ? excludingST / quantity : excludingST,
+        valueExcludingST: excludingST,
+        salesTax,
+        furtherTax,
+        extraTax,
+        valueIncludingST: excludingST + salesTax + furtherTax + extraTax,
+      };
+    });
+
+    const sumOf = (key) => rows.reduce((sum, row) => sum + row[key], 0);
+
+    res.json({
+      success: true,
+      data: {
+        company: {
+          name:
+            companyRow.BusinessNameForSalesInvoice || companyRow.Name || "",
+          ntnNumber: companyRow.NTNNumber || "",
+        },
+        period: { startDate: startDate || null, endDate: endDate || null },
+        rows,
+        totals: {
+          quantity: sumOf("quantity"),
+          valueExcludingST: sumOf("valueExcludingST"),
+          salesTax: sumOf("salesTax"),
+          furtherTax: sumOf("furtherTax"),
+          extraTax: sumOf("extraTax"),
+          valueIncludingST: sumOf("valueIncludingST"),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching sales register:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch sales register",
+      error: error.message,
+    });
+  }
+});
+
 app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
   try {
     // For super admin, use the company ID from header if provided, otherwise use user's company
