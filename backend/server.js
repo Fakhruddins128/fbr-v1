@@ -119,6 +119,41 @@ const requireRole = (roles) => {
   };
 };
 
+// Resolve the company a request is targeting, for routes scoped to a company.
+// Company-scoped routes are declared as "/api/companies/:id/...", so ":id" must be
+// checked as well as ":companyId" - reading only ":companyId" leaves the guard inert.
+const getRequestedCompanyId = (req) =>
+  req.params?.companyId ||
+  req.params?.id ||
+  req.body?.companyId ||
+  req.query?.companyId ||
+  null;
+
+// SQL Server returns UNIQUEIDENTIFIER uppercase while clients may echo either case,
+// so company IDs are compared case-insensitively to avoid locking out valid users.
+const isSameCompany = (a, b) =>
+  typeof a === "string" &&
+  typeof b === "string" &&
+  a.toLowerCase() === b.toLowerCase();
+
+// Second layer of defense for company-scoped routes that expose a live FBR
+// credential. Ownership is re-checked inside the handler so a future change to the
+// middleware chain cannot silently reopen cross-tenant access.
+// Returns true when the request was denied (and the response already sent).
+const denyIfNotOwnCompany = (req, res, companyId) => {
+  if (req.user && req.user.role === "SUPER_ADMIN") {
+    return false;
+  }
+  if (req.user && isSameCompany(companyId, req.user.companyId)) {
+    return false;
+  }
+  res.status(403).json({
+    success: false,
+    message: "Access denied. Cannot access other company data.",
+  });
+  return true;
+};
+
 // Company access control middleware
 const requireCompanyAccess = (req, res, next) => {
   if (!req.user) {
@@ -130,10 +165,10 @@ const requireCompanyAccess = (req, res, next) => {
     return next();
   }
 
-  // Other users can only access their own company
-  const requestedCompanyId =
-    req.params.companyId || req.body.companyId || req.query.companyId;
-  if (requestedCompanyId && requestedCompanyId !== req.user.companyId) {
+  // Other users can only access their own company. Fail closed: if the target
+  // company cannot be resolved there is nothing to authorize against.
+  const requestedCompanyId = getRequestedCompanyId(req);
+  if (!isSameCompany(requestedCompanyId, req.user.companyId)) {
     return res
       .status(403)
       .json({ message: "Access denied. Cannot access other company data." });
@@ -2560,6 +2595,8 @@ app.get(
   async (req, res) => {
     const { id } = req.params;
 
+    if (denyIfNotOwnCompany(req, res, id)) return;
+
     try {
       // Query the database for the company's FBR token
       const request = new sql.Request();
@@ -2601,6 +2638,8 @@ app.put(
   async (req, res) => {
     const { id } = req.params;
     const { fbrToken } = req.body;
+
+    if (denyIfNotOwnCompany(req, res, id)) return;
 
     // Validate token
     if (
@@ -2659,6 +2698,8 @@ app.delete(
   requireCompanyAccess,
   async (req, res) => {
     const { id } = req.params;
+
+    if (denyIfNotOwnCompany(req, res, id)) return;
 
     try {
       // Clear the company's FBR token
