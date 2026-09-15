@@ -24,6 +24,14 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-09-15 — Fix: FBR compliance reports returned HTML instead of JSON
+
+The FBR Compliance Summary, FBR Scenario Usage and FBR Compliance Trends tabs failed with `Unexpected token '<', "<!doctype "... is not valid JSON`.
+
+- `src/pages/Reports.tsx` — the three FBR report calls used relative URLs (`/api/reports/...`) while the rest of the app goes through `API_BASE_URL`. With no `proxy` set in `package.json` the requests were served by the static host, which returned `index.html` for the unknown path. They now use `API_BASE_URL` like every other call.
+- `backend/server.js` — the three FBR report handlers bound `companyId` as `sql.Int`, but `CompanyID` is a `UNIQUEIDENTIFIER`. Every query would have failed conversion once the requests actually reached the API. Changed to `sql.UniqueIdentifier` (5 bindings).
+- `backend/server.js` — the same three handlers use the global connection without checking it exists, returning an opaque 500 when the database is down. They now return 503 with a clear message, matching the other report endpoints.
+
 ### 2026-09-15 — Fix: Reports & Analytics returned HTTP 500
 
 "Generate" on the Reports page failed for every date range. `GET /api/reports/sales` referenced four columns that do not exist in the schema, so SQL Server rejected the top-products and top-customers queries and the handler returned 500.

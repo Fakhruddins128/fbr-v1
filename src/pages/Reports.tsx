@@ -37,6 +37,7 @@ import { CircularProgress } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import reportsApi, { ReportsData } from '../services/reportsApi';
+import { API_BASE_URL } from '../services/api';
 import { formatCurrency } from '../utils/formatUtils';
 
 interface SnackbarState {
@@ -166,7 +167,7 @@ const Reports: React.FC = () => {
       setLoading(true);
       
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/reports/fbr-compliance-summary', {
+      const response = await fetch(`${API_BASE_URL}/api/reports/fbr-compliance-summary`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -197,7 +198,7 @@ const Reports: React.FC = () => {
         endDate: fbrDateRange.endDate
       });
       
-      const response = await fetch(`/api/reports/fbr-scenario-usage?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/reports/fbr-scenario-usage?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -223,7 +224,7 @@ const Reports: React.FC = () => {
       setLoading(true);
       
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/reports/fbr-compliance-trends', {
+      const response = await fetch(`${API_BASE_URL}/api/reports/fbr-compliance-trends`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

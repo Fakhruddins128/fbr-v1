@@ -5191,8 +5191,16 @@ app.get(
         return res.status(400).json({ message: "Company ID is required" });
       }
 
+      // These handlers use the global connection, which only exists once the
+      // database is reachable; report that plainly instead of a generic 500.
+      if (!isDbConnected) {
+        return res
+          .status(503)
+          .json({ message: "Database not connected" });
+      }
+
       const request = new sql.Request();
-      request.input("companyId", sql.Int, companyId);
+      request.input("companyId", sql.UniqueIdentifier, companyId);
 
       // Get company info with business activity and sector
       const companyResult = await request.query(`
@@ -5240,7 +5248,7 @@ app.get(
 
       // Get sales data for compliance calculations
       const salesRequest = new sql.Request();
-      salesRequest.input("companyId", sql.Int, companyId);
+      salesRequest.input("companyId", sql.UniqueIdentifier, companyId);
 
       const salesResult = await salesRequest.query(`
       SELECT 
@@ -5302,8 +5310,16 @@ app.get(
         return res.status(400).json({ message: "Company ID is required" });
       }
 
+      // These handlers use the global connection, which only exists once the
+      // database is reachable; report that plainly instead of a generic 500.
+      if (!isDbConnected) {
+        return res
+          .status(503)
+          .json({ message: "Database not connected" });
+      }
+
       const request = new sql.Request();
-      request.input("companyId", sql.Int, companyId);
+      request.input("companyId", sql.UniqueIdentifier, companyId);
 
       let dateFilter = "";
       if (startDate && endDate) {
@@ -5328,7 +5344,7 @@ app.get(
 
       // Get applicable scenarios for the company
       const companyRequest = new sql.Request();
-      companyRequest.input("companyId", sql.Int, companyId);
+      companyRequest.input("companyId", sql.UniqueIdentifier, companyId);
 
       const companyResult = await companyRequest.query(`
       SELECT BusinessActivity, Sector FROM Companies WHERE CompanyID = @companyId
@@ -5410,8 +5426,16 @@ app.get(
         return res.status(400).json({ message: "Company ID is required" });
       }
 
+      // These handlers use the global connection, which only exists once the
+      // database is reachable; report that plainly instead of a generic 500.
+      if (!isDbConnected) {
+        return res
+          .status(503)
+          .json({ message: "Database not connected" });
+      }
+
       const request = new sql.Request();
-      request.input("companyId", sql.Int, companyId);
+      request.input("companyId", sql.UniqueIdentifier, companyId);
 
       // Get monthly compliance trends for the last 12 months
       const trendsResult = await request.query(`
