@@ -127,6 +127,12 @@ const navItems: NavItem[] = [
         icon: <DescriptionIcon />,
         path: '/reports/sales-register',
         roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
+      },
+      {
+        text: 'Purchase Register',
+        icon: <DescriptionIcon />,
+        path: '/reports/purchase-register',
+        roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
       }
     ]
   },

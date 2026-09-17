@@ -5043,6 +5043,173 @@ app.get("/api/reports/sales-register", authenticateToken, async (req, res) => {
   }
 });
 
+app.get("/api/reports/purchase-register", authenticateToken, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Super Admin may target another company via header, as elsewhere in this API
+    let companyId = req.user.companyId;
+    if (req.user.role === "SUPER_ADMIN" && req.headers["x-company-id"]) {
+      companyId = req.headers["x-company-id"];
+    }
+
+    if (!companyId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Company ID is required" });
+    }
+
+    // Validate input before anything else, so bad input is rejected the same way
+    // whether or not the database happens to be reachable.
+    let start = null;
+    if (startDate) {
+      start = new Date(startDate);
+      if (isNaN(start.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid startDate" });
+      }
+    }
+
+    let end = null;
+    if (endDate) {
+      end = new Date(endDate);
+      if (isNaN(end.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid endDate" });
+      }
+      // Exclusive upper bound so purchases timestamped later on the end date are included
+      end.setDate(end.getDate() + 1);
+    }
+
+    if (!isDbConnected) {
+      return res
+        .status(503)
+        .json({ success: false, message: "Database not connected" });
+    }
+
+    const pool = await sql.connect(dbConfig);
+
+    const request = pool.request();
+    request.input("companyId", sql.UniqueIdentifier, companyId);
+
+    // Date is the vendor invoice date; PODate and CreatedAt cover rows created
+    // before Date was added to Purchases.
+    const purchaseDate = "COALESCE(p.Date, p.PODate, p.CreatedAt)";
+
+    // Dates are bound as parameters, never interpolated into the statement.
+    let dateFilter = "";
+    if (start) {
+      request.input("startDate", sql.DateTime, start);
+      dateFilter += ` AND ${purchaseDate} >= @startDate`;
+    }
+    if (end) {
+      request.input("endDate", sql.DateTime, end);
+      dateFilter += ` AND ${purchaseDate} < @endDate`;
+    }
+
+    // PurchaseItems.ItemID is NVARCHAR on databases created by the original
+    // purchases script and UNIQUEIDENTIFIER on newer ones, so both sides are
+    // cast. Items and Vendors are joined on CompanyID as well, so a stray ID
+    // can never pull another tenant's master data into the register.
+    const result = await request.query(`
+      SELECT
+        ${purchaseDate} AS PurchaseDate,
+        COALESCE(NULLIF(p.CRNumber, ''), p.PONumber) AS InvoiceNo,
+        p.VendorName,
+        COALESCE(NULLIF(v.VendorNTN, ''), NULLIF(v.VendorCNIC, '')) AS VendorRegNo,
+        it.HSCode,
+        COALESCE(NULLIF(CAST(it.Description AS NVARCHAR(500)), ''), pi.ItemName) AS ProductName,
+        it.UoM,
+        pi.PurchaseQty,
+        pi.TotalAmount AS ValueExcludingST,
+        it.PurchaseTaxValue
+      FROM Purchases p
+      INNER JOIN PurchaseItems pi ON pi.PurchaseID = p.PurchaseID
+      LEFT JOIN Items it
+        ON CAST(pi.ItemID AS NVARCHAR(50)) = CAST(it.ItemID AS NVARCHAR(50))
+        AND it.CompanyID = @companyId
+      LEFT JOIN Vendors v
+        ON v.VendorID = p.VendorID
+        AND v.CompanyID = @companyId
+      WHERE p.CompanyID = @companyId AND p.IsActive = 1${dateFilter}
+      ORDER BY ${purchaseDate} ASC, p.CreatedAt ASC
+    `);
+
+    const companyResult = await pool
+      .request()
+      .input("companyId", sql.UniqueIdentifier, companyId).query(`
+        SELECT Name, BusinessNameForSalesInvoice, NTNNumber
+        FROM Companies
+        WHERE CompanyID = @companyId
+      `);
+    const companyRow = companyResult.recordset[0] || {};
+
+    const num = (v) => {
+      const n = parseFloat(v);
+      return isFinite(n) ? n : 0;
+    };
+    const round2 = (v) => Math.round(v * 100) / 100;
+
+    const rows = result.recordset.map((r) => {
+      const excludingST = num(r.ValueExcludingST);
+      // PurchaseItems carries no tax of its own, so the rate comes from the
+      // item master's PurchaseTaxValue.
+      const taxRate = num(r.PurchaseTaxValue);
+      const salesTax = round2((excludingST * taxRate) / 100);
+
+      return {
+        purchaseDate: r.PurchaseDate,
+        invoiceNo: r.InvoiceNo || "",
+        vendorName: r.VendorName || "",
+        regNo: r.VendorRegNo || "",
+        hsCode: r.HSCode || "",
+        productName: r.ProductName || "",
+        unit: r.UoM || "",
+        quantity: num(r.PurchaseQty),
+        valueExcludingST: excludingST,
+        taxRate,
+        salesTax,
+        valueIncludingST: round2(excludingST + salesTax),
+      };
+    });
+
+    const sumOf = (key) => round2(rows.reduce((sum, row) => sum + row[key], 0));
+    const totalExcludingST = sumOf("valueExcludingST");
+    const totalSalesTax = sumOf("salesTax");
+
+    res.json({
+      success: true,
+      data: {
+        company: {
+          name:
+            companyRow.BusinessNameForSalesInvoice || companyRow.Name || "",
+          ntnNumber: companyRow.NTNNumber || "",
+        },
+        period: { startDate: startDate || null, endDate: endDate || null },
+        rows,
+        totals: {
+          valueExcludingST: totalExcludingST,
+          // Effective rate across the period, not a sum of the rate column
+          taxRate: totalExcludingST
+            ? round2((totalSalesTax / totalExcludingST) * 100)
+            : 0,
+          salesTax: totalSalesTax,
+          valueIncludingST: sumOf("valueIncludingST"),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching purchase register:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch purchase register",
+      error: error.message,
+    });
+  }
+});
+
 app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
   try {
     // For super admin, use the company ID from header if provided, otherwise use user's company

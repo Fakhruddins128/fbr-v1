@@ -81,6 +81,47 @@ export interface SalesRegisterData {
   totals: SalesRegisterTotals;
 }
 
+/** One line item of a purchase, as shown in the Purchase Register. */
+export interface PurchaseRegisterRow {
+  purchaseDate: string;
+  /** Vendor invoice number: Purchases.CRNumber, falling back to PONumber. */
+  invoiceNo: string;
+  vendorName: string;
+  /** Vendor NTN, falling back to CNIC. */
+  regNo: string;
+  hsCode: string;
+  productName: string;
+  unit: string;
+  quantity: number;
+  valueExcludingST: number;
+  /** Purchase tax rate as a percentage, from the item master. */
+  taxRate: number;
+  salesTax: number;
+  valueIncludingST: number;
+}
+
+export interface PurchaseRegisterTotals {
+  valueExcludingST: number;
+  /** Effective rate over the period, not a sum of the rate column. */
+  taxRate: number;
+  salesTax: number;
+  valueIncludingST: number;
+}
+
+export interface PurchaseRegisterData {
+  company: { name: string; ntnNumber: string };
+  period: { startDate: string | null; endDate: string | null };
+  rows: PurchaseRegisterRow[];
+  totals: PurchaseRegisterTotals;
+}
+
+export interface PurchaseRegisterResponse {
+  success: boolean;
+  data?: PurchaseRegisterData;
+  message?: string;
+  error?: string;
+}
+
 export interface SalesRegisterResponse {
   success: boolean;
   data?: SalesRegisterData;
@@ -167,6 +208,42 @@ class ReportsApiService {
       return {
         success: false,
         message: error.message || 'Failed to fetch sales register',
+        error: error.message
+      };
+    }
+  }
+
+  async getPurchaseRegister(
+    params: { startDate?: string; endDate?: string } = {},
+    companyId?: string
+  ): Promise<PurchaseRegisterResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
+
+      const query = queryParams.toString();
+      const url = `${API_BASE_URL}/api/reports/purchase-register${query ? `?${query}` : ''}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getAuthHeaders(companyId),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || result?.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Error fetching purchase register:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch purchase register',
         error: error.message
       };
     }

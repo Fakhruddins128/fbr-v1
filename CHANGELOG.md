@@ -24,6 +24,24 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-09-17 — Purchase Register report
+
+Added a Purchase Register report (detail of purchases, one row per purchase line item) with Excel and PDF export, modelled on the Sales Register.
+
+- `backend/server.js` — new `GET /api/reports/purchase-register`. Tenant-scoped by the authenticated user's `CompanyID`, with the usual `X-Company-ID` override for Super Admin. Date range is bound as SQL parameters. `Items` and `Vendors` are joined on `CompanyID` as well as their IDs, so a stray ID cannot pull another tenant's master data into the register.
+- `src/pages/PurchaseRegister.tsx` — new page. One shared column definition drives the on-screen table, the Excel export and the PDF export. Defaults to the current July–June fiscal year.
+- `src/services/reportsApi.ts` — added `getPurchaseRegister` plus its types.
+- `src/components/layout/MainLayout.tsx` — "Purchase Register" added to the Reports sub-menu.
+- `src/App.tsx` — new route `/reports/purchase-register`.
+
+Notes on where the figures come from, since `PurchaseItems` stores no tax of its own (only `PurchasePrice`, `PurchaseQty` and `TotalAmount`):
+
+- Exc Value is `PurchaseItems.TotalAmount` (price × qty).
+- Rate is `Items.PurchaseTaxValue`, the per-item purchase tax percentage from the item master. This is its first use in a calculation; it was previously only displayed on the Items page. If a vendor invoice was taxed at a rate other than the item master's, the register shows the master rate.
+- S.Tax and Inc Value are derived from those two, rounded to 2 decimals per line.
+- The grand total's Rate is the effective rate over the period (total S.Tax / total Exc Value), not a sum of the column. Quantity is not totalled because units differ line to line.
+- Date is `COALESCE(Purchases.Date, PODate, CreatedAt)` and Invoice # is `CRNumber` falling back to `PONumber`, matching what the Purchases page displays. All `IsActive = 1` purchases are included regardless of `Status`.
+
 ### 2026-09-15 — Security: mock login backdoor (R3) and hardcoded JWT fallback
 
 `POST /api/auth/login` granted a `SUPER_ADMIN` session to `admin` / `admin123` whenever `isDbConnected` was false. `connectToDatabase()` swallows its error and lets the server boot anyway, so any database outage in production silently opened an unauthenticated administrator login.
