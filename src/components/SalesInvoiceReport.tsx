@@ -27,6 +27,8 @@ interface InvoiceItem {
   salesTaxWithheldAtSource: number;
   AdvanceTaxValue?: number;
   AdvanceTaxRate?: number;
+  advanceTaxValue?: number;
+  advanceTaxRate?: number;
   extraTax: number;
   furtherTax: number;
   sroScheduleNo: string;
@@ -84,6 +86,13 @@ const formatAmount = (value: number): string => value.toLocaleString(undefined, 
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 });
+
+/**
+ * Advance tax reaches this component under either casing: the Sales Invoice page
+ * builds its preview items as PascalCase, while the invoice API returns camelCase.
+ */
+const advanceTaxOf = (item: InvoiceItem) =>
+  item.AdvanceTaxValue ?? item.advanceTaxValue ?? 0;
 
 const calculateTotals = (items: InvoiceItem[]) => {
   const subtotal = items.reduce((sum, item) => sum + item.valueSalesExcludingST, 0);
@@ -321,7 +330,7 @@ const TemplateTwo: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
   const totalAdvanceTax = invoiceData.items.reduce(
-    (sum, item) => sum + (item.AdvanceTaxValue || 0),
+    (sum, item) => sum + advanceTaxOf(item),
     0
   );
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
@@ -1176,7 +1185,7 @@ const TemplateThree: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResp
   const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
   const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
   const totalAdvanceTax = invoiceData.items.reduce(
-    (sum, item) => sum + (item.AdvanceTaxValue || 0),
+    (sum, item) => sum + advanceTaxOf(item),
     0
   );
   const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
