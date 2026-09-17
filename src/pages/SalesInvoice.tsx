@@ -1292,6 +1292,22 @@ const SalesInvoice: React.FC = () => {
      return formData.saleType === 'Exempt goods';
   };
 
+  // The server-side currentStock already has this invoice's saved quantities
+  // deducted, so in edit mode they must be added back to get the stock that is
+  // actually available to this invoice.
+  const getAvailableStock = (masterItem: Item): number => {
+    const qtyHeldByThisInvoice = ((editingInvoice?.items || []) as any[]).reduce(
+      (sum, savedItem) =>
+        savedItem.hsCode === masterItem.hsCode &&
+        savedItem.productDescription === masterItem.description
+          ? sum + (savedItem.quantity || 0)
+          : sum,
+      0
+    );
+
+    return (masterItem.currentStock || 0) + qtyHeldByThisInvoice;
+  };
+
   const handleItemChange = (field: keyof InvoiceItem, value: string | number) => {
     // Prevent changes to SRO fields when sale type is SRO.297 (both I and | versions) or Goods at Reduced Rate
     if (isSroFieldsDisabled() && (field === 'sroScheduleNo' || field === 'itemSrNo')) {
@@ -1323,12 +1339,15 @@ const SalesInvoice: React.FC = () => {
           updatedItem.productDescription = selectedItem.description;
           
           // Check stock availability
-          if (selectedItem.currentStock !== undefined && selectedItem.currentStock <= 0) {
-            setNotification({
-              open: true,
-              message: `Warning: ${selectedItem.description} is out of stock (Current: ${selectedItem.currentStock})`,
-              severity: 'warning'
-            });
+          if (selectedItem.currentStock !== undefined) {
+            const availableStock = getAvailableStock(selectedItem);
+            if (availableStock <= 0) {
+              setNotification({
+                open: true,
+                message: `Warning: ${selectedItem.description} is out of stock (Current: ${availableStock})`,
+                severity: 'warning'
+              });
+            }
           }
         }
       }
@@ -1339,12 +1358,15 @@ const SalesInvoice: React.FC = () => {
           `${item.hsCode} - ${item.description}` === updatedItem.hsCodeDescription
         );
         
-        if (selectedItem && selectedItem.currentStock !== undefined && value > selectedItem.currentStock) {
-          setNotification({
-            open: true,
-            message: `Warning: Quantity (${value}) exceeds available stock (${selectedItem.currentStock}) for ${selectedItem.description}`,
-            severity: 'warning'
-          });
+        if (selectedItem && selectedItem.currentStock !== undefined) {
+          const availableStock = getAvailableStock(selectedItem);
+          if (value > availableStock) {
+            setNotification({
+              open: true,
+              message: `Warning: Quantity (${value}) exceeds available stock (${availableStock}) for ${selectedItem.description}`,
+              severity: 'warning'
+            });
+          }
         }
       }
 
@@ -1382,13 +1404,16 @@ const SalesInvoice: React.FC = () => {
         `${item.hsCode} - ${item.description}` === currentItem.hsCodeDescription
       );
       
-      if (selectedItem && selectedItem.currentStock !== undefined && currentItem.quantity > selectedItem.currentStock) {
-        setNotification({
-          open: true,
-          message: `Cannot add item: Quantity (${currentItem.quantity}) exceeds available stock (${selectedItem.currentStock})`,
-          severity: 'error'
-        });
-        return;
+      if (selectedItem && selectedItem.currentStock !== undefined) {
+        const availableStock = getAvailableStock(selectedItem);
+        if (currentItem.quantity > availableStock) {
+          setNotification({
+            open: true,
+            message: `Cannot add item: Quantity (${currentItem.quantity}) exceeds available stock (${availableStock})`,
+            severity: 'error'
+          });
+          return;
+        }
       }
 
       const newItem = {
