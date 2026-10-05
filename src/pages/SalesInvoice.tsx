@@ -2327,6 +2327,7 @@ const SalesInvoice: React.FC = () => {
               disabled={isInvoiceSentToFBR()}
               multiline
               minRows={2}
+              inputProps={{ 'data-allow-slash': 'true' }}
             />
           </Grid>
 

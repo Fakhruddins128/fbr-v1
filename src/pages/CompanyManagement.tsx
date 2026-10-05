@@ -463,6 +463,7 @@ const CompanyManagement: React.FC = () => {
                 onChange={handleInputChange}
                 error={!!formErrors.address}
                 helperText={formErrors.address}
+                inputProps={{ 'data-allow-slash': 'true' }}
               />
             </Box>
             <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>

@@ -364,6 +364,7 @@ const FBRInvoiceSubmission: React.FC = () => {
                   value={invoiceData.sellerAddress}
                   onChange={handleInputChange}
                   required
+                  inputProps={{ 'data-allow-slash': 'true' }}
                 />
               </Box>
             </div>
@@ -423,6 +424,7 @@ const FBRInvoiceSubmission: React.FC = () => {
                   value={invoiceData.buyerAddress}
                   onChange={handleInputChange}
                   required
+                  inputProps={{ 'data-allow-slash': 'true' }}
                 />
               </Box>
             </div>

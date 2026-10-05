@@ -716,6 +716,7 @@ const Vendors: React.FC = () => {
                 required
                 multiline
                 rows={2}
+                inputProps={{ 'data-allow-slash': 'true' }}
                 InputProps={{
                   startAdornment: <LocationIcon sx={{ mr: 1, color: 'action.active', alignSelf: 'flex-start', mt: 1 }} />,
                 }}

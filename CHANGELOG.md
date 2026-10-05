@@ -24,6 +24,15 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-05 — Allow "/" in address fields
+
+Addresses such as "House #12, Flat 4/B" could not be typed or pasted: the global input restriction in `src/App.tsx` blocks `/` in every editable field. ("#" was never blocked — only `/` was actually rejected.)
+
+- `src/App.tsx` — `hasBlockedChars` now takes the event target. An input marked `data-allow-slash="true"` is tested against a regex that omits `/`; everything else keeps the original rule. Quotes, backslash, carriage return and newline stay blocked everywhere, addresses included, and the Enter-key block is unchanged. Applied consistently across keydown, beforeinput, paste and drop.
+- Address fields opted in via `inputProps={{ 'data-allow-slash': 'true' }}`: `src/pages/Customers.tsx`, `src/pages/Vendors.tsx`, `src/pages/CompanyManagement.tsx`, `src/pages/Invoices.tsx` (seller + buyer), `src/pages/SalesInvoice.tsx` (buyer), `src/components/sales/FBRInvoiceSubmission.tsx` (seller + buyer).
+
+The vendor "Email Address" field was deliberately left alone — it is an email, not a postal address.
+
 ### 2026-09-17 — Purchase Register report
 
 Added a Purchase Register report (detail of purchases, one row per purchase line item) with Excel and PDF export, modelled on the Sales Register.

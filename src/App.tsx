@@ -97,7 +97,17 @@ function App() {
       return false;
     };
 
-    const hasBlockedChars = (value: string) => /['"\\/\r\n]/.test(value);
+    // Address lines legitimately contain slashes ("Flat 4/B", "Plot 12/A"), so
+    // those inputs opt out via data-allow-slash. Quotes, backslashes and line
+    // breaks stay blocked everywhere, addresses included.
+    const BLOCKED_CHARS = /['"\\/\r\n]/;
+    const BLOCKED_CHARS_IN_ADDRESS = /['"\\\r\n]/;
+
+    const hasBlockedChars = (value: string, target: EventTarget | null) => {
+      const allowsSlash =
+        target instanceof HTMLElement && target.dataset.allowSlash === 'true';
+      return (allowsSlash ? BLOCKED_CHARS_IN_ADDRESS : BLOCKED_CHARS).test(value);
+    };
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!isEditable(event.target)) {
@@ -107,7 +117,7 @@ function App() {
         event.preventDefault();
         return;
       }
-      if (event.key.length === 1 && hasBlockedChars(event.key)) {
+      if (event.key.length === 1 && hasBlockedChars(event.key, event.target)) {
         event.preventDefault();
       }
     };
@@ -121,7 +131,7 @@ function App() {
         return;
       }
       const data = typeof event.data === 'string' ? event.data : '';
-      if (data && hasBlockedChars(data)) {
+      if (data && hasBlockedChars(data, event.target)) {
         event.preventDefault();
       }
     };
@@ -131,7 +141,7 @@ function App() {
         return;
       }
       const text = event.clipboardData?.getData('text') || '';
-      if (text && hasBlockedChars(text)) {
+      if (text && hasBlockedChars(text, event.target)) {
         event.preventDefault();
       }
     };
@@ -141,7 +151,7 @@ function App() {
         return;
       }
       const text = event.dataTransfer?.getData('text') || '';
-      if (text && hasBlockedChars(text)) {
+      if (text && hasBlockedChars(text, event.target)) {
         event.preventDefault();
       }
     };

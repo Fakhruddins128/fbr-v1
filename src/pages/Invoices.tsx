@@ -1020,6 +1020,7 @@ const Invoices: React.FC = () => {
                 onChange={(e) => handleInputChange('sellerAddress', e.target.value)}
                 disabled={currentUser?.role !== 'SUPER_ADMIN'}
                 required
+                inputProps={{ 'data-allow-slash': 'true' }}
               />
             </Grid>
 
@@ -1091,6 +1092,7 @@ const Invoices: React.FC = () => {
                 value={invoiceForm.buyerAddress}
                 onChange={(e) => handleInputChange('buyerAddress', e.target.value)}
                 required
+                inputProps={{ 'data-allow-slash': 'true' }}
               />
             </Grid>
             

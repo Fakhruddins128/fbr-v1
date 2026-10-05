@@ -88,6 +88,8 @@ The application currently implements a global editable-input restriction in `src
 - Single quote `'`, double quote `"`, backslash `\\`, slash `/`, carriage return, and newline are blocked during keyboard input.
 - The same restrictions are applied to before-input, paste, and drop operations.
 
+Existing exception: an input carrying `data-allow-slash="true"` permits `/` but still blocks quotes, backslash, and line breaks. It is applied to address fields only (customer, vendor, company, seller/buyer address), because Pakistani addresses routinely contain `/`. Add the attribute via `inputProps={{ 'data-allow-slash': 'true' }}` rather than widening the global rule.
+
 Do not remove or weaken this behavior unless the user explicitly requests it. If a legitimate field requires an exception, implement a narrowly scoped exception rather than removing the global protection.
 
 ## Coding Rules

@@ -728,6 +728,7 @@ const Customers: React.FC = () => {
                 rows={3}
                 value={formData.buyerAddress}
                 onChange={(e) => setFormData({ ...formData, buyerAddress: e.target.value })}
+                inputProps={{ 'data-allow-slash': 'true' }}
               />
             </Grid>
             
