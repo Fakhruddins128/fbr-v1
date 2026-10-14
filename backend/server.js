@@ -5210,6 +5210,167 @@ app.get("/api/reports/purchase-register", authenticateToken, async (req, res) =>
   }
 });
 
+
+// Inventory Report - stock on hand grouped by HS Code.
+// Stock is derived the same way GET /api/items derives it (InitialStock plus
+// purchases received minus quantities invoiced), so this report, the Items
+// page and the dashboard cannot disagree.
+app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
+  try {
+    const { asOf } = req.query;
+
+    // Super Admin may target another company via header, as elsewhere in this API
+    let companyId = req.user.companyId;
+    if (req.user.role === "SUPER_ADMIN" && req.headers["x-company-id"]) {
+      companyId = req.headers["x-company-id"];
+    }
+
+    if (!companyId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Company ID is required" });
+    }
+
+    // Validate input before anything else, so bad input is rejected the same way
+    // whether or not the database happens to be reachable.
+    let asOfDate = null;
+    if (asOf) {
+      asOfDate = new Date(asOf);
+      if (isNaN(asOfDate.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid asOf date" });
+      }
+      // Exclusive upper bound so documents timestamped later on the as-of date count
+      asOfDate.setDate(asOfDate.getDate() + 1);
+    }
+
+    if (!isDbConnected) {
+      return res
+        .status(503)
+        .json({ success: false, message: "Database not connected" });
+    }
+
+    const pool = await sql.connect(dbConfig);
+
+    const request = pool.request();
+    request.input("companyId", sql.UniqueIdentifier, companyId);
+
+    // Dates are bound as parameters, never interpolated into the statement.
+    let purchaseCutoff = "";
+    let invoiceCutoff = "";
+    if (asOfDate) {
+      request.input("asOf", sql.DateTime, asOfDate);
+      purchaseCutoff = " AND COALESCE(p.Date, p.PODate, p.CreatedAt) < @asOf";
+      invoiceCutoff = " AND i.InvoiceDate < @asOf";
+    }
+
+    // Items.Description is NTEXT, which cannot be grouped or aggregated
+    // directly, so it is cast once in the inner query.
+    const result = await request.query(`
+      SELECT
+        item.HSCode,
+        COUNT(*) AS ItemCount,
+        COUNT(DISTINCT item.UoM) AS UnitCount,
+        MIN(item.UoM) AS UoM,
+        MIN(item.Description) AS Description,
+        SUM(item.InitialStock) AS OpeningStock,
+        SUM(item.Purchased) AS Purchased,
+        SUM(item.Sold) AS Sold,
+        SUM(item.InitialStock + item.Purchased - item.Sold) AS Balance,
+        SUM((item.InitialStock + item.Purchased - item.Sold) * item.UnitPrice) AS Value
+      FROM (
+        SELECT
+          it.HSCode,
+          CAST(it.Description AS NVARCHAR(500)) AS Description,
+          it.UoM,
+          ISNULL(it.UnitPrice, 0) AS UnitPrice,
+          ISNULL(it.InitialStock, 0) AS InitialStock,
+          (
+            SELECT ISNULL(SUM(pi.PurchaseQty), 0)
+            FROM PurchaseItems pi
+            JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+            WHERE pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
+              AND p.CompanyID = @companyId
+              AND p.IsActive = 1
+              AND p.Status IN ('received', 'completed')${purchaseCutoff}
+          ) AS Purchased,
+          (
+            SELECT ISNULL(SUM(ii.Quantity), 0)
+            FROM InvoiceItems ii
+            JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+            WHERE ii.HSCode = it.HSCode
+              AND ii.ProductDescription = CAST(it.Description AS NVARCHAR(255))
+              AND i.CompanyID = @companyId${invoiceCutoff}
+          ) AS Sold
+        FROM Items it
+        WHERE it.CompanyID = @companyId
+      ) item
+      GROUP BY item.HSCode
+      ORDER BY item.HSCode ASC
+    `);
+
+    const companyResult = await pool
+      .request()
+      .input("companyId", sql.UniqueIdentifier, companyId).query(`
+        SELECT Name, BusinessNameForSalesInvoice, NTNNumber
+        FROM Companies
+        WHERE CompanyID = @companyId
+      `);
+    const companyRow = companyResult.recordset[0] || {};
+
+    const num = (v) => {
+      const n = parseFloat(v);
+      return isFinite(n) ? n : 0;
+    };
+    const round2 = (v) => Math.round(v * 100) / 100;
+    const round4 = (v) => Math.round(v * 10000) / 10000;
+
+    const rows = result.recordset.map((r) => ({
+      hsCode: r.HSCode || "",
+      description: r.Description || "",
+      itemCount: num(r.ItemCount),
+      // One HS Code can cover several items; only report a unit when they agree.
+      unit: num(r.UnitCount) > 1 ? "Mixed" : r.UoM || "",
+      openingStock: round4(num(r.OpeningStock)),
+      purchased: round4(num(r.Purchased)),
+      sold: round4(num(r.Sold)),
+      balance: round4(num(r.Balance)),
+      value: round2(num(r.Value)),
+    }));
+
+    const sumOf = (key, round) =>
+      round(rows.reduce((sum, row) => sum + row[key], 0));
+
+    res.json({
+      success: true,
+      data: {
+        company: {
+          name: companyRow.BusinessNameForSalesInvoice || companyRow.Name || "",
+          ntnNumber: companyRow.NTNNumber || "",
+        },
+        asOf: asOf || null,
+        rows,
+        totals: {
+          itemCount: sumOf("itemCount", round4),
+          openingStock: sumOf("openingStock", round4),
+          purchased: sumOf("purchased", round4),
+          sold: sumOf("sold", round4),
+          balance: sumOf("balance", round4),
+          value: sumOf("value", round2),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching inventory report:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch inventory report",
+      error: error.message,
+    });
+  }
+});
+
 app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
   try {
     // For super admin, use the company ID from header if provided, otherwise use user's company

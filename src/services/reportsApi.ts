@@ -129,6 +129,46 @@ export interface SalesRegisterResponse {
   error?: string;
 }
 
+/** One HS Code group of the Inventory Report. */
+export interface InventoryRow {
+  hsCode: string;
+  /** Description of one item in the group; groups can span several items. */
+  description: string;
+  itemCount: number;
+  /** "Mixed" when the items under this HS Code do not share a unit. */
+  unit: string;
+  openingStock: number;
+  purchased: number;
+  sold: number;
+  /** openingStock + purchased - sold, the same derivation /api/items uses. */
+  balance: number;
+  /** Balance valued at each item's UnitPrice. */
+  value: number;
+}
+
+export interface InventoryTotals {
+  itemCount: number;
+  openingStock: number;
+  purchased: number;
+  sold: number;
+  balance: number;
+  value: number;
+}
+
+export interface InventoryData {
+  company: { name: string; ntnNumber: string };
+  asOf: string | null;
+  rows: InventoryRow[];
+  totals: InventoryTotals;
+}
+
+export interface InventoryResponse {
+  success: boolean;
+  data?: InventoryData;
+  message?: string;
+  error?: string;
+}
+
 class ReportsApiService {
   private getAuthHeaders(companyId?: string): HeadersInit {
     const token = localStorage.getItem('auth_token');
@@ -244,6 +284,40 @@ class ReportsApiService {
       return {
         success: false,
         message: error.message || 'Failed to fetch purchase register',
+        error: error.message
+      };
+    }
+  }
+  async getInventoryReport(
+    params: { asOf?: string } = {},
+    companyId?: string
+  ): Promise<InventoryResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.asOf) queryParams.append('asOf', params.asOf);
+
+      const query = queryParams.toString();
+      const url = `${API_BASE_URL}/api/reports/inventory${query ? `?${query}` : ''}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getAuthHeaders(companyId),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || result?.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Error fetching inventory report:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch inventory report',
         error: error.message
       };
     }

@@ -27,6 +27,7 @@ import Vendors from './pages/Vendors';
 import Reports from './pages/Reports';
 import SalesRegister from './pages/SalesRegister';
 import PurchaseRegister from './pages/PurchaseRegister';
+import InventoryReport from './pages/InventoryReport';
 import UserManagement from './pages/UserManagement';
 import ScenarioManagement from './pages/ScenarioManagement';
 
@@ -200,6 +201,7 @@ function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="reports/sales-register" element={<SalesRegister />} />
               <Route path="reports/purchase-register" element={<PurchaseRegister />} />
+              <Route path="reports/inventory" element={<InventoryReport />} />
               <Route path="scenario-management" element={<ScenarioManagement />} />
             </Route>
             

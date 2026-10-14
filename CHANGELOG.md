@@ -24,6 +24,18 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-14 — Inventory Report (grouped by HS Code)
+
+Added an Inventory Report to the Reports sub-menu: stock on hand aggregated by HS Code, with Excel and PDF export.
+
+- `backend/server.js` — new `GET /api/reports/inventory`. Tenant-scoped by the authenticated user's `CompanyID` with the usual `X-Company-ID` override for Super Admin. Stock is derived as `InitialStock + purchases received - quantities invoiced`, the same expression `GET /api/items` uses, so the report, the Items page and the dashboard cannot disagree. Per-item figures are then grouped by `HSCode`. An optional `asOf` date is bound as a SQL parameter and applied to both the purchase and invoice legs; omitting it gives current stock.
+- `src/pages/InventoryReport.tsx` — new page. One shared column definition drives the table, the Excel export and the PDF export. Columns: S. No, HS Code, Description, Items, Unit, Opening, Purchased, Sold, Balance, Value. A negative balance (oversold) is shown in red.
+- `src/services/reportsApi.ts` — added `getInventoryReport` plus its types.
+- `src/components/layout/MainLayout.tsx` — "Inventory Report" sub-item under Reports.
+- `src/App.tsx` — new route `/reports/inventory`.
+
+Notes: an HS Code can cover several items, so Description shows one of them, Items gives the count, and Unit reads "Mixed" when those items do not share a unit. Quantity totals are only shown when every group reports the same unit, since adding different units together would be meaningless; the Value total is always shown. Value is Balance at each item's `Items.UnitPrice`, not a purchase-cost basis.
+
 ### 2026-10-14 — Fix: Dashboard showed fabricated and mismatched data
 
 Three of the Dashboard's panels did not reflect the company's real records.

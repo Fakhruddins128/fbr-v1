@@ -27,6 +27,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import PeopleIcon from '@mui/icons-material/People';
 import StoreIcon from '@mui/icons-material/Store';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -132,6 +133,12 @@ const navItems: NavItem[] = [
         text: 'Purchase Register',
         icon: <DescriptionIcon />,
         path: '/reports/purchase-register',
+        roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
+      },
+      {
+        text: 'Inventory Report',
+        icon: <Inventory2Icon />,
+        path: '/reports/inventory',
         roles: [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT]
       }
     ]
