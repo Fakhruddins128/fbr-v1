@@ -5221,13 +5221,16 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
     if (isDbConnected) {
       const pool = await sql.connect(dbConfig);
 
-      // Get dashboard statistics
+      // Stock lives in Items, not in the legacy Inventory table: the Items
+      // page, Sales Invoice and Purchases all read it through /api/items, and
+      // nothing in the UI writes to Inventory. Current stock is derived with
+      // the same formula /api/items uses, so the two cannot disagree.
       const statsQuery = `
         SELECT 
           (SELECT COUNT(*) FROM Invoices WHERE CompanyID = @companyId) as totalInvoices,
           (SELECT ISNULL(SUM(TotalAmount), 0) FROM Invoices WHERE CompanyID = @companyId) as totalAmount,
           (SELECT ISNULL(SUM(TotalSalesTax), 0) FROM Invoices WHERE CompanyID = @companyId) as totalTax,
-          (SELECT COUNT(*) FROM Inventory WHERE CompanyID = @companyId) as totalInventory,
+          (SELECT COUNT(*) FROM Items WHERE CompanyID = @companyId) as totalInventory,
           (SELECT COUNT(*) FROM Customers WHERE CompanyID = @companyId) as totalCustomers
       `;
 
@@ -5236,19 +5239,19 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
         .input("companyId", sql.UniqueIdentifier, companyId)
         .query(statsQuery);
 
-      // Get recent activities (last 10 invoices)
+      // Get recent activities (last 10 invoices). The buyer name is carried on
+      // the invoice itself; Invoices has no CustomerID to join Customers on.
       const activitiesQuery = `
         SELECT TOP 10 
           i.InvoiceID,
           i.InvoiceNumber,
           i.TotalAmount,
           i.InvoiceDate,
-          c.Buyer_Business_Name as CustomerName,
+          i.BuyerBusinessName as CustomerName,
           'sale' as type
         FROM Invoices i
-        LEFT JOIN Customers c ON i.CompanyID = c.CompanyID
         WHERE i.CompanyID = @companyId
-        ORDER BY i.InvoiceDate DESC
+        ORDER BY i.InvoiceDate DESC, i.CreatedAt DESC
       `;
 
       const activitiesResult = await pool
@@ -5256,14 +5259,36 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
         .input("companyId", sql.UniqueIdentifier, companyId)
         .query(activitiesQuery);
 
-      // Get inventory status
+      // Get inventory status from the same derived stock as /api/items.
+      // Oversold items go to outOfStock rather than falling out of every bucket.
       const inventoryQuery = `
-        SELECT 
-          SUM(CASE WHEN CurrentStock > 10 THEN 1 ELSE 0 END) as inStock,
-          SUM(CASE WHEN CurrentStock > 0 AND CurrentStock <= 10 THEN 1 ELSE 0 END) as lowStock,
-          SUM(CASE WHEN CurrentStock = 0 THEN 1 ELSE 0 END) as outOfStock
-        FROM Inventory 
-        WHERE CompanyID = @companyId
+        SELECT
+          SUM(CASE WHEN stock.CurrentStock > 10 THEN 1 ELSE 0 END) as inStock,
+          SUM(CASE WHEN stock.CurrentStock > 0 AND stock.CurrentStock <= 10 THEN 1 ELSE 0 END) as lowStock,
+          SUM(CASE WHEN stock.CurrentStock <= 0 THEN 1 ELSE 0 END) as outOfStock
+        FROM (
+          SELECT
+            ISNULL(it.InitialStock, 0)
+            + (
+              SELECT ISNULL(SUM(pi.PurchaseQty), 0)
+              FROM PurchaseItems pi
+              JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+              WHERE pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
+                AND p.CompanyID = @companyId
+                AND p.IsActive = 1
+                AND p.Status IN ('received', 'completed')
+            )
+            - (
+              SELECT ISNULL(SUM(ii.Quantity), 0)
+              FROM InvoiceItems ii
+              JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+              WHERE ii.HSCode = it.HSCode
+                AND ii.ProductDescription = CAST(it.Description AS NVARCHAR(255))
+                AND i.CompanyID = @companyId
+            ) AS CurrentStock
+          FROM Items it
+          WHERE it.CompanyID = @companyId
+        ) stock
       `;
 
       const inventoryResult = await pool
@@ -5288,6 +5313,31 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
         .input("companyId", sql.UniqueIdentifier, companyId)
         .query(salesChartQuery);
 
+      // Real purchases for the same window. Matches the Purchases page, which
+      // lists every IsActive row regardless of status. Date is nullable, so
+      // fall back to PODate and then CreatedAt.
+      const purchasesChartQuery = `
+        SELECT
+          FORMAT(COALESCE(p.Date, p.PODate, p.CreatedAt), 'yyyy-MM') as month,
+          SUM(p.TotalAmount) as amount
+        FROM Purchases p
+        WHERE p.CompanyID = @companyId
+          AND p.IsActive = 1
+          AND COALESCE(p.Date, p.PODate, p.CreatedAt) >= DATEADD(month, -12, GETDATE())
+        GROUP BY FORMAT(COALESCE(p.Date, p.PODate, p.CreatedAt), 'yyyy-MM')
+        ORDER BY month
+      `;
+
+      const purchasesChartResult = await pool
+        .request()
+        .input("companyId", sql.UniqueIdentifier, companyId)
+        .query(purchasesChartQuery);
+
+      const num = (v) => {
+        const n = parseFloat(v);
+        return isFinite(n) ? n : 0;
+      };
+
       const stats = statsResult.recordset[0];
       const activities = activitiesResult.recordset.map((activity) => ({
         id: activity.InvoiceID,
@@ -5299,7 +5349,7 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
         type: activity.type,
       }));
 
-      const inventoryStatus = inventoryResult.recordset[0];
+      const inventoryStatus = inventoryResult.recordset[0] || {};
       const salesChart = salesChartResult.recordset;
 
       res.json({
@@ -5311,7 +5361,7 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
             totalTax: stats.totalTax || 0,
             totalInventory: stats.totalInventory || 0,
             totalCustomers: stats.totalCustomers || 0,
-            profit: (stats.totalAmount || 0) - (stats.totalTax || 0), // Simple profit calculation
+            profit: (stats.totalAmount || 0) - (stats.totalTax || 0), // Displayed as "Sale Excl. Tax"
           },
           recentActivities: activities,
           inventoryStatus: {
@@ -5321,7 +5371,11 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
           },
           salesChart: salesChart.map((item) => ({
             month: item.month,
-            amount: item.amount,
+            amount: num(item.amount),
+          })),
+          purchasesChart: purchasesChartResult.recordset.map((item) => ({
+            month: item.month,
+            amount: num(item.amount),
           })),
         },
       });
@@ -5366,6 +5420,14 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
             { month: "2024-04", amount: 61000 },
             { month: "2024-05", amount: 58000 },
             { month: "2024-06", amount: 67000 },
+          ],
+          purchasesChart: [
+            { month: "2024-01", amount: 31000 },
+            { month: "2024-02", amount: 36000 },
+            { month: "2024-03", amount: 34000 },
+            { month: "2024-04", amount: 42000 },
+            { month: "2024-05", amount: 40000 },
+            { month: "2024-06", amount: 47000 },
           ],
         },
       });

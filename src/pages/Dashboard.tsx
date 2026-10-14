@@ -123,11 +123,11 @@ const Dashboard: React.FC = () => {
   };
   
   const purchasesData = {
-    labels: dashboardData?.salesChart.map(item => item.month) || [],
+    labels: dashboardData?.purchasesChart?.map(item => item.month) || [],
     datasets: [
       {
         label: 'Purchases',
-        data: dashboardData?.salesChart.map(item => item.amount * 0.7) || [], // Mock purchases as 70% of sales
+        data: dashboardData?.purchasesChart?.map(item => item.amount) || [],
         borderColor: 'rgb(255, 99, 132)',
         backgroundColor: 'rgba(255, 99, 132, 0.5)',
       },

@@ -24,6 +24,19 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-14 — Fix: Dashboard showed fabricated and mismatched data
+
+Three of the Dashboard's panels did not reflect the company's real records.
+
+- `backend/server.js` — `GET /api/dashboard/stats`:
+  - **Recent activities** joined `Customers` on `i.CompanyID = c.CompanyID`. `Invoices` has no `CustomerID`, so this produced a cross join: every invoice paired with every customer in the company, meaning "last 10 invoices" was a handful of invoices repeated under arbitrary buyer names. The join is removed; the buyer now comes from `Invoices.BuyerBusinessName`, which is where the invoice records it.
+  - **Inventory count and stock status** were read from the legacy `Inventory` table, which no screen in the application writes to. Stock actually lives in `Items` and is derived as `InitialStock + purchases received - quantities sold`. Both now use that same derivation, copied from `GET /api/items`, so the Dashboard and the Items page cannot disagree. Oversold items (negative stock) now count as out-of-stock instead of falling out of all three buckets.
+  - Added a real `purchasesChart` series from `Purchases` for the same 12-month window, scoped like the Purchases page (`IsActive = 1`), dated by `COALESCE(Date, PODate, CreatedAt)` because `Date` is nullable.
+- `src/pages/Dashboard.tsx` — the "Purchases" chart plotted `sales * 0.7` with the comment "Mock purchases as 70% of sales". It now plots the real `purchasesChart` series.
+- `src/services/dashboardApi.ts` — added `purchasesChart` to `DashboardData`.
+
+Note: the "Sale Excl. Tax" card is still `TotalAmount - TotalSalesTax`, which ignores further tax, extra tax and discount. `SUM(InvoiceItems.ValueSalesExcludingST)` would be exact. Left unchanged pending a decision, since it is a tax figure.
+
 ### 2026-10-05 — Allow "/" in address fields
 
 Addresses such as "House #12, Flat 4/B" could not be typed or pasted: the global input restriction in `src/App.tsx` blocks `/` in every editable field. ("#" was never blocked — only `/` was actually rejected.)

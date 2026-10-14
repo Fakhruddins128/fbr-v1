@@ -33,6 +33,7 @@ export interface DashboardData {
   recentActivities: RecentActivity[];
   inventoryStatus: InventoryStatus;
   salesChart: SalesChartData[];
+  purchasesChart: SalesChartData[];
 }
 
 export interface DashboardApiResponse {
