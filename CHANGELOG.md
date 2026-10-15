@@ -24,6 +24,18 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-15 - UI restyle: Workday Canvas
+
+Reskinned the application to resemble Workday ERP. The work is concentrated in the MUI theme and the layout chrome, so it reaches all pages without rewriting any of them. No page logic, data flow or business rule was touched.
+
+- `src/App.tsx` - replaced the stock MUI theme with a Workday Canvas palette (`#0875E1` blue for action and selection, `#083A5E` navy chrome, `#FF9800` accent, Canvas greys for surfaces). Base font size 16 -> 14 for ERP density; headings moved to weight 500. Buttons are pill-shaped (`borderRadius: 999`), the Canvas signature. Surfaces are flat and bordered instead of shadowed: only `elevation1` is flattened, so menus and dialogs keep their shadow.
+- `src/components/layout/MainLayout.tsx` - sidebar brand block is left-aligned with a blue app mark; the selected nav item carries a blue left rail plus a tinted row; the app-bar avatar is compact and blue. The app bar picks up the navy from the theme.
+- `src/pages/SalesInvoice.tsx` - replaced four blue gradient washes with a flat navy band and let the save button inherit the theme. Canvas has no gradients, and these hardcoded the previous theme primary.
+
+Known inconsistency, deliberately left alone: the Sales Register, Purchase Register and Inventory Report use a green table header (`#e2f0d9`) inline, which now sits outside the palette. It matches the fill used in those reports' PDF exports, so changing it on screen alone would desync the two.
+
+Not visually verified - the restyle compiles and typechecks, but was not viewed in a browser.
+
 ### 2026-10-15 - Inventory Report: HS Code drill-down
 
 The Inventory Report (by HS Code) is now interactive. Clicking an HS Code row expands it to list the individual items in that group.

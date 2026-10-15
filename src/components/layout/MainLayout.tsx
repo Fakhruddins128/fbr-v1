@@ -213,20 +213,34 @@ const MainLayout: React.FC = () => {
   
   const drawer = (
     <div>
-      <Toolbar sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center',
-        py: 2
-      }}>
-        <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
-          FBR SaaS Platform
-        </Typography>
-        {currentCompany && (
-          <Typography variant="caption" color="text.secondary">
-            {currentCompany.businessNameForSalesInvoice || currentCompany.name}
+      <Toolbar sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 2 }}>
+        <Box
+          sx={{
+            width: 32,
+            height: 32,
+            flexShrink: 0,
+            borderRadius: 1,
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '0.8125rem'
+          }}
+        >
+          FBR
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" noWrap sx={{ lineHeight: 1.2 }}>
+            FBR SaaS Platform
           </Typography>
-        )}
+          {currentCompany && (
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+              {currentCompany.businessNameForSalesInvoice || currentCompany.name}
+            </Typography>
+          )}
+        </Box>
       </Toolbar>
       <Divider />
       <List>
@@ -255,7 +269,10 @@ const MainLayout: React.FC = () => {
                   }}
                   selected={isActive}
                   sx={{
+                    // The open item is marked by a blue rail, not just a tint
+                    borderLeft: '3px solid transparent',
                     '&.Mui-selected': {
+                      borderLeftColor: 'primary.main',
                       backgroundColor: 'primary.light',
                       '&:hover': {
                         backgroundColor: 'primary.light',
@@ -292,7 +309,9 @@ const MainLayout: React.FC = () => {
                           selected={isChildActive}
                           sx={{
                             pl: 4,
+                            borderLeft: '3px solid transparent',
                             '&.Mui-selected': {
+                              borderLeftColor: 'primary.main',
                               backgroundColor: 'primary.light',
                               '&:hover': {
                                 backgroundColor: 'primary.light',
@@ -360,7 +379,16 @@ const MainLayout: React.FC = () => {
             <Box sx={{ flexGrow: 0 }}>
               <Tooltip title="Open settings">
                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                  <Avatar alt={`${user.firstName} ${user.lastName}`}>
+                  <Avatar
+                    alt={`${user.firstName} ${user.lastName}`}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      fontSize: '0.8125rem',
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText'
+                    }}
+                  >
                     {user.firstName.charAt(0)}{user.lastName.charAt(0)}
                   </Avatar>
                 </IconButton>

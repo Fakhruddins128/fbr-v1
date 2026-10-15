@@ -2202,7 +2202,7 @@ const SalesInvoice: React.FC = () => {
       {/* Header */}
       <Paper 
         sx={{ 
-          background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+          backgroundColor: '#083A5E',
           color: 'white',
           p: 2,
           mb: 3,
@@ -2466,7 +2466,7 @@ const SalesInvoice: React.FC = () => {
       {/* Item Detail Section */}
       <Paper 
         sx={{ 
-          background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+          backgroundColor: '#083A5E',
           color: 'white',
           p: 2,
           mb: 2,
@@ -2724,7 +2724,7 @@ const SalesInvoice: React.FC = () => {
       {/* Items List Table */}
       <Paper 
         sx={{ 
-          background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+          backgroundColor: '#083A5E',
           color: 'white',
           p: 2,
           mb: 2,
@@ -2860,7 +2860,7 @@ const SalesInvoice: React.FC = () => {
 
       {/* Invoice Summary */}
       <Paper sx={{ mt: 3, p: 3, bgcolor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#1976d2' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
           Invoice Summary
         </Typography>
         <Grid container spacing={2}>
@@ -2947,10 +2947,6 @@ const SalesInvoice: React.FC = () => {
             py: 1.5,
             fontSize: '1.1rem',
             fontWeight: 'bold',
-            background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)'
-            }
           }}
         >
           {saving ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update Invoice' : 'Save Invoice')}
