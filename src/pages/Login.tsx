@@ -187,7 +187,7 @@ const Login: React.FC = () => {
             mb: 2
           }}
         >
-          Digital invoicing made simple
+          DIGITAL INVOICING MADE SIMPLE
         </Typography>
 
         <Typography
