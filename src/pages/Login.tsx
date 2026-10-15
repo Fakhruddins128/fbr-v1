@@ -36,7 +36,7 @@ const BrandMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
       fontSize: size * 0.36
     }}
   >
-    FBR
+    IMS
   </Box>
 );
 
@@ -174,7 +174,7 @@ const Login: React.FC = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: { xs: 3, md: 5 } }}>
           <BrandMark />
           <Typography variant="h6" sx={{ color: '#FFFFFF' }}>
-            FBR SaaS Platform
+            Invoice Management System
           </Typography>
         </Box>
 
@@ -187,7 +187,7 @@ const Login: React.FC = () => {
             mb: 2
           }}
         >
-          Digital invoicing for Pakistan&apos;s FBR
+          Digital invoicing made simple
         </Typography>
 
         <Typography
@@ -198,8 +198,8 @@ const Login: React.FC = () => {
             mb: { xs: 0, md: 6 }
           }}
         >
-          Raise sales invoices, apply the right tax treatment, and submit them
-          straight to FBR Digital Invoicing.
+          {/* Raise sales invoices, apply the right tax treatment, and submit them
+          straight to FBR Digital Invoicing. */}
         </Typography>
 
         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
