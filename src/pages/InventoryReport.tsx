@@ -4,6 +4,8 @@ import {
   Box,
   Button,
   CircularProgress,
+  Collapse,
+  IconButton,
   Paper,
   Snackbar,
   Stack,
@@ -18,13 +20,19 @@ import {
 } from '@mui/material';
 import {
   Inventory2 as Inventory2Icon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowRight as KeyboardArrowRightIcon,
   PictureAsPdf as PictureAsPdfIcon,
   TableChart as TableChartIcon
 } from '@mui/icons-material';
 import { format as formatDateFns } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
-import reportsApi, { InventoryData, InventoryRow } from '../services/reportsApi';
+import reportsApi, {
+  InventoryData,
+  InventoryItemRow,
+  InventoryRow
+} from '../services/reportsApi';
 import { formatCurrency } from '../utils/formatUtils';
 
 type Align = 'left' | 'right' | 'center';
@@ -61,6 +69,30 @@ const COLUMNS: ColumnDef[] = [
 
 const PDF_TABLE_WIDTH = COLUMNS.reduce((sum, column) => sum + column.pdfWidth, 0);
 
+interface ItemColumnDef {
+  key: keyof InventoryItemRow;
+  label: string;
+  align: Align;
+  numeric?: boolean;
+  quantity?: boolean;
+}
+
+/**
+ * Columns of the expanded per-item table. These mirror the group columns minus
+ * HS Code, which the parent row already states, and Items, which is always 1.
+ * On-screen only: the Excel and PDF exports stay at group level.
+ */
+const ITEM_COLUMNS: ItemColumnDef[] = [
+  { key: 'description', label: 'Description', align: 'left' },
+  { key: 'unit', label: 'Unit', align: 'center' },
+  { key: 'unitPrice', label: 'Unit Price', align: 'right', numeric: true },
+  { key: 'openingStock', label: 'Opening', align: 'right', numeric: true, quantity: true },
+  { key: 'purchased', label: 'Purchased', align: 'right', numeric: true, quantity: true },
+  { key: 'sold', label: 'Sold', align: 'right', numeric: true, quantity: true },
+  { key: 'balance', label: 'Balance', align: 'right', numeric: true, quantity: true },
+  { key: 'value', label: 'Value', align: 'right', numeric: true }
+];
+
 /** Columns always shown on the grand total row. */
 const BASE_TOTAL_KEYS = ['itemCount', 'value'] as const;
 
@@ -87,12 +119,30 @@ const cellText = (row: InventoryRow, column: ColumnDef, serial: number): string 
   return String(row[column.key] ?? '');
 };
 
+/** Display text for one cell of the expanded per-item table. */
+const itemCellText = (item: InventoryItemRow, column: ItemColumnDef): string => {
+  if (column.key === 'unitPrice' || column.key === 'value') {
+    return formatMoney(item[column.key]);
+  }
+  if (column.quantity) return formatQuantity(item[column.key] as number);
+  return String(item[column.key] ?? '');
+};
+
 const InventoryReport: React.FC = () => {
   // Blank means stock as it stands now, which matches the Items page exactly.
   const [asOf, setAsOf] = useState('');
   const [data, setData] = useState<InventoryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCodes, setExpandedCodes] = useState<Set<string>>(new Set());
+
+  const toggleGroup = useCallback((hsCode: string) => {
+    setExpandedCodes((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(hsCode)) next.add(hsCode);
+      return next;
+    });
+  }, []);
 
   const periodLabel = useMemo(() => {
     const on = safeFormatDate(asOf);
@@ -386,8 +436,9 @@ const InventoryReport: React.FC = () => {
         Inventory Report
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Stock on hand grouped by HS Code. Balance is opening stock plus purchases
-        received less quantities invoiced, the same figure the Items page shows.
+        Stock on hand grouped by HS Code. Click an HS Code to see the individual
+        items under it. Balance is opening stock plus purchases received less
+        quantities invoiced, the same figure the Items page shows.
       </Typography>
 
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -462,6 +513,7 @@ const InventoryReport: React.FC = () => {
               <Table size="small" stickyHeader sx={{ minWidth: 1200 }}>
                 <TableHead>
                   <TableRow>
+                    <TableCell sx={{ width: 48, backgroundColor: '#e2f0d9' }} />
                     {COLUMNS.map((column) => (
                       <TableCell
                         key={column.key}
@@ -478,29 +530,119 @@ const InventoryReport: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, index) => (
-                    <TableRow key={`${row.hsCode}-${index}`} hover>
-                      {COLUMNS.map((column) => (
-                        <TableCell
-                          key={column.key}
-                          align={column.align}
-                          sx={{
-                            whiteSpace: column.align === 'left' ? 'normal' : 'nowrap',
-                            fontVariantNumeric: column.numeric ? 'tabular-nums' : undefined,
-                            // Negative balance means the item has been oversold
-                            color:
-                              column.key === 'balance' && row.balance < 0
-                                ? 'error.main'
-                                : undefined
-                          }}
+                  {rows.map((row, index) => {
+                    const isOpen = expandedCodes.has(row.hsCode);
+
+                    return (
+                      <React.Fragment key={row.hsCode}>
+                        <TableRow
+                          hover
+                          onClick={() => toggleGroup(row.hsCode)}
+                          sx={{ cursor: 'pointer' }}
                         >
-                          {cellText(row, column, index + 1)}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
+                          <TableCell sx={{ width: 48 }}>
+                            <IconButton
+                              size="small"
+                              aria-expanded={isOpen}
+                              aria-label={`${isOpen ? 'Collapse' : 'Expand'} HS Code ${row.hsCode}`}
+                              onClick={(event) => {
+                                // The row toggles as well; let it do that once
+                                event.stopPropagation();
+                                toggleGroup(row.hsCode);
+                              }}
+                            >
+                              {isOpen ? (
+                                <KeyboardArrowDownIcon fontSize="small" />
+                              ) : (
+                                <KeyboardArrowRightIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                          </TableCell>
+                          {COLUMNS.map((column) => (
+                            <TableCell
+                              key={column.key}
+                              align={column.align}
+                              sx={{
+                                whiteSpace: column.align === 'left' ? 'normal' : 'nowrap',
+                                fontVariantNumeric: column.numeric ? 'tabular-nums' : undefined,
+                                fontWeight: column.key === 'hsCode' ? 600 : undefined,
+                                // Negative balance means the item has been oversold
+                                color:
+                                  column.key === 'balance' && row.balance < 0
+                                    ? 'error.main'
+                                    : undefined
+                              }}
+                            >
+                              {cellText(row, column, index + 1)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+
+                        <TableRow>
+                          <TableCell
+                            colSpan={COLUMNS.length + 1}
+                            sx={{ py: 0, borderBottom: isOpen ? undefined : 'none' }}
+                          >
+                            <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                              <Box sx={{ my: 1.5, ml: 6 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ display: 'block', mb: 0.5 }}
+                                >
+                                  {row.itemCount} item{row.itemCount === 1 ? '' : 's'} under HS Code{' '}
+                                  {row.hsCode}
+                                </Typography>
+                                <Table size="small" sx={{ backgroundColor: 'grey.50' }}>
+                                  <TableHead>
+                                    <TableRow>
+                                      {ITEM_COLUMNS.map((column) => (
+                                        <TableCell
+                                          key={column.key}
+                                          align={column.align}
+                                          sx={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                                        >
+                                          {column.label}
+                                        </TableCell>
+                                      ))}
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {row.items.map((item) => (
+                                      <TableRow key={item.itemId} hover>
+                                        {ITEM_COLUMNS.map((column) => (
+                                          <TableCell
+                                            key={column.key}
+                                            align={column.align}
+                                            sx={{
+                                              whiteSpace:
+                                                column.align === 'left' ? 'normal' : 'nowrap',
+                                              fontVariantNumeric: column.numeric
+                                                ? 'tabular-nums'
+                                                : undefined,
+                                              color:
+                                                column.key === 'balance' && item.balance < 0
+                                                  ? 'error.main'
+                                                  : undefined
+                                            }}
+                                          >
+                                            {itemCellText(item, column)}
+                                          </TableCell>
+                                        ))}
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </Box>
+                            </Collapse>
+                          </TableCell>
+                        </TableRow>
+                      </React.Fragment>
+                    );
+                  })}
 
                   <TableRow>
+                    <TableCell sx={{ backgroundColor: '#f0f0f0' }} />
                     {COLUMNS.map((column) => (
                       <TableCell
                         key={column.key}

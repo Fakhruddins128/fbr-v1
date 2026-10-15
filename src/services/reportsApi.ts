@@ -129,6 +129,21 @@ export interface SalesRegisterResponse {
   error?: string;
 }
 
+/** One inventory item inside an HS Code group, shown when the group is expanded. */
+export interface InventoryItemRow {
+  itemId: string;
+  description: string;
+  unit: string;
+  unitPrice: number;
+  openingStock: number;
+  purchased: number;
+  sold: number;
+  /** openingStock + purchased - sold, the same derivation /api/items uses. */
+  balance: number;
+  /** balance * unitPrice. */
+  value: number;
+}
+
 /** One HS Code group of the Inventory Report. */
 export interface InventoryRow {
   hsCode: string;
@@ -144,6 +159,8 @@ export interface InventoryRow {
   balance: number;
   /** Balance valued at each item's UnitPrice. */
   value: number;
+  /** The items making up this group. Every group figure is the sum of these. */
+  items: InventoryItemRow[];
 }
 
 export interface InventoryTotals {

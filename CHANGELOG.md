@@ -24,6 +24,18 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-15 - Inventory Report: HS Code drill-down
+
+The Inventory Report (by HS Code) is now interactive. Clicking an HS Code row expands it to list the individual items in that group.
+
+- `backend/server.js` - `GET /api/reports/inventory` now selects one row per item and does the HS Code grouping in JS, instead of a SQL `GROUP BY`. Each group gained an `items[]` array carrying itemId, description, unit, unitPrice, opening, purchased, sold, balance and value. Tenant scoping, the `asOf` cutoffs and the stock formula are unchanged.
+- `src/services/reportsApi.ts` - new `InventoryItemRow`; `InventoryRow` gained `items`.
+- `src/pages/InventoryReport.tsx` - group rows are clickable and carry an expand chevron with `aria-expanded`; the detail table renders inside a `Collapse`. Expansion state is keyed by HS Code, so several groups can be open at once.
+
+Because the group figures are now summed from the per-item rows rather than aggregated separately in SQL, a parent row always equals the sum of the children shown beneath it. This can differ from the previous output by a rounding unit on values.
+
+The Excel and PDF exports are unchanged and still report at group level only.
+
 ### 2026-10-14 — Inventory Report (grouped by HS Code)
 
 Added an Inventory Report to the Reports sub-menu: stock on hand aggregated by HS Code, with Excel and PDF export.

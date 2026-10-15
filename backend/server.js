@@ -5265,49 +5265,39 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
       invoiceCutoff = " AND i.InvoiceDate < @asOf";
     }
 
-    // Items.Description is NTEXT, which cannot be grouped or aggregated
-    // directly, so it is cast once in the inner query.
+    // One row per item. The HS Code grouping is done below in JS so that each
+    // group's figures are exactly the sum of the detail rows the drill-down
+    // shows, rather than a separately rounded aggregate.
+    // Items.Description is NTEXT, which cannot be compared or ordered
+    // directly, so it is cast.
     const result = await request.query(`
       SELECT
-        item.HSCode,
-        COUNT(*) AS ItemCount,
-        COUNT(DISTINCT item.UoM) AS UnitCount,
-        MIN(item.UoM) AS UoM,
-        MIN(item.Description) AS Description,
-        SUM(item.InitialStock) AS OpeningStock,
-        SUM(item.Purchased) AS Purchased,
-        SUM(item.Sold) AS Sold,
-        SUM(item.InitialStock + item.Purchased - item.Sold) AS Balance,
-        SUM((item.InitialStock + item.Purchased - item.Sold) * item.UnitPrice) AS Value
-      FROM (
-        SELECT
-          it.HSCode,
-          CAST(it.Description AS NVARCHAR(500)) AS Description,
-          it.UoM,
-          ISNULL(it.UnitPrice, 0) AS UnitPrice,
-          ISNULL(it.InitialStock, 0) AS InitialStock,
-          (
-            SELECT ISNULL(SUM(pi.PurchaseQty), 0)
-            FROM PurchaseItems pi
-            JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
-            WHERE pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
-              AND p.CompanyID = @companyId
-              AND p.IsActive = 1
-              AND p.Status IN ('received', 'completed')${purchaseCutoff}
-          ) AS Purchased,
-          (
-            SELECT ISNULL(SUM(ii.Quantity), 0)
-            FROM InvoiceItems ii
-            JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
-            WHERE ii.HSCode = it.HSCode
-              AND ii.ProductDescription = CAST(it.Description AS NVARCHAR(255))
-              AND i.CompanyID = @companyId${invoiceCutoff}
-          ) AS Sold
-        FROM Items it
-        WHERE it.CompanyID = @companyId
-      ) item
-      GROUP BY item.HSCode
-      ORDER BY item.HSCode ASC
+        it.ItemID,
+        it.HSCode,
+        CAST(it.Description AS NVARCHAR(500)) AS Description,
+        it.UoM,
+        ISNULL(it.UnitPrice, 0) AS UnitPrice,
+        ISNULL(it.InitialStock, 0) AS InitialStock,
+        (
+          SELECT ISNULL(SUM(pi.PurchaseQty), 0)
+          FROM PurchaseItems pi
+          JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+          WHERE pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
+            AND p.CompanyID = @companyId
+            AND p.IsActive = 1
+            AND p.Status IN ('received', 'completed')${purchaseCutoff}
+        ) AS Purchased,
+        (
+          SELECT ISNULL(SUM(ii.Quantity), 0)
+          FROM InvoiceItems ii
+          JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+          WHERE ii.HSCode = it.HSCode
+            AND ii.ProductDescription = CAST(it.Description AS NVARCHAR(255))
+            AND i.CompanyID = @companyId${invoiceCutoff}
+        ) AS Sold
+      FROM Items it
+      WHERE it.CompanyID = @companyId
+      ORDER BY it.HSCode ASC, CAST(it.Description AS NVARCHAR(500)) ASC
     `);
 
     const companyResult = await pool
@@ -5326,18 +5316,49 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
     const round2 = (v) => Math.round(v * 100) / 100;
     const round4 = (v) => Math.round(v * 10000) / 10000;
 
-    const rows = result.recordset.map((r) => ({
-      hsCode: r.HSCode || "",
-      description: r.Description || "",
-      itemCount: num(r.ItemCount),
-      // One HS Code can cover several items; only report a unit when they agree.
-      unit: num(r.UnitCount) > 1 ? "Mixed" : r.UoM || "",
-      openingStock: round4(num(r.OpeningStock)),
-      purchased: round4(num(r.Purchased)),
-      sold: round4(num(r.Sold)),
-      balance: round4(num(r.Balance)),
-      value: round2(num(r.Value)),
-    }));
+    // Group the item rows by HS Code, preserving the query's ordering.
+    const groups = new Map();
+    for (const r of result.recordset) {
+      const hsCode = r.HSCode || "";
+      const openingStock = num(r.InitialStock);
+      const purchased = num(r.Purchased);
+      const sold = num(r.Sold);
+      const balance = openingStock + purchased - sold;
+      const unitPrice = num(r.UnitPrice);
+
+      if (!groups.has(hsCode)) groups.set(hsCode, []);
+      groups.get(hsCode).push({
+        itemId: r.ItemID,
+        description: r.Description || "",
+        unit: r.UoM || "",
+        unitPrice: round2(unitPrice),
+        openingStock: round4(openingStock),
+        purchased: round4(purchased),
+        sold: round4(sold),
+        balance: round4(balance),
+        value: round2(balance * unitPrice),
+      });
+    }
+
+    const rows = Array.from(groups.entries()).map(([hsCode, items]) => {
+      const sumOfItems = (key) => items.reduce((sum, item) => sum + item[key], 0);
+      const units = new Set(items.map((item) => item.unit));
+
+      return {
+        hsCode,
+        // A group can span several items; label it with the first one.
+        description: items[0].description,
+        itemCount: items.length,
+        // One HS Code can cover several items; only report a unit when they agree.
+        unit: units.size > 1 ? "Mixed" : items[0].unit,
+        openingStock: round4(sumOfItems("openingStock")),
+        purchased: round4(sumOfItems("purchased")),
+        sold: round4(sumOfItems("sold")),
+        balance: round4(sumOfItems("balance")),
+        value: round2(sumOfItems("value")),
+        items,
+      };
+    });
 
     const sumOf = (key, round) =>
       round(rows.reduce((sum, row) => sum + row[key], 0));
