@@ -182,7 +182,7 @@ const Login: React.FC = () => {
           variant="h4"
           sx={{
             color: '#FFFFFF',
-            maxWidth: '18ch',
+            maxWidth: '32ch',
             lineHeight: 1.2,
             mb: 2
           }}
