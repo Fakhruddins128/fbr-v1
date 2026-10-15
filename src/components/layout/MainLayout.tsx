@@ -229,11 +229,11 @@ const MainLayout: React.FC = () => {
             fontSize: '0.8125rem'
           }}
         >
-          FBR
+          IMS
         </Box>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="subtitle1" noWrap sx={{ lineHeight: 1.2 }}>
-            FBR SaaS Platform
+            Invoice Management System
           </Typography>
           {currentCompany && (
             <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
