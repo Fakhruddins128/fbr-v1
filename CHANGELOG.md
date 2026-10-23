@@ -24,6 +24,18 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-23 - Fix: Items CSV import dropped UoM and Initial Stock
+
+Importing items stored a truncated unit of measure and an initial stock of 0. The CSV writer quotes any value containing a comma, but the reader split each line on `,` with no notion of quoting. Exactly one UoM in the list contains commas - `Numbers, pieces, units` - and it is both the default and the value shipped in the import template, so most imports hit it. The row shattered into extra fields, UoM became `Numbers`, and every column after it shifted left, leaving InitialStock reading a non-numeric cell.
+
+- `src/utils/formatUtils.ts` - new `parseCSV`, an RFC 4180 reader handling quoted fields, escaped quotes, CRLF, embedded newlines and a leading BOM. It is the counterpart to `buildCSVContent`, so anything the writer produces the reader now restores unchanged.
+- `src/pages/Items.tsx` - the import uses `parseCSV`. Column lookup went through a `valueOf` helper: previously a missing header gave `indexOf` of -1 and read `values[-1]`, so a file without a UoM column sent an empty string, which the API rejects with 400 and the UI reported only as a generic error. A blank UoM now falls back to `Numbers, pieces, units`, matching the add-item form.
+- `src/pages/Items.tsx` - the CSV export was missing the `UoM` and `InitialStock` columns entirely, so export -> edit -> import silently lost both. Both are now exported, and the column set mirrors the import template so an exported file can be edited and imported straight back.
+
+Note: the export writes `InitialStock`, the opening figure, not current stock. Current stock is derived from purchases and invoices and is not an importable field.
+
+Not fixed, same underlying bug: `src/pages/Customers.tsx` parses its import with the same naive `split(',')`. It can adopt `parseCSV` the same way.
+
 ### 2026-10-15 - UI restyle: Workday Canvas
 
 Reskinned the application to resemble Workday ERP. The work is concentrated in the MUI theme and the layout chrome, so it reaches all pages without rewriting any of them. No page logic, data flow or business rule was touched.

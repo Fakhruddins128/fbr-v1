@@ -41,7 +41,7 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { downloadCSVFile, formatCurrency, formatDate } from '../utils/formatUtils';
+import { downloadCSVFile, formatCurrency, formatDate, parseCSV } from '../utils/formatUtils';
 import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
 
 interface ItemFormData {
@@ -216,16 +216,17 @@ const Items: React.FC = () => {
     setUploading(true);
     try {
       const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
+      // Quoted fields matter here: the default UoM contains commas
+      const rows = parseCSV(text);
+
+      if (rows.length < 2) {
         showSnackbar('CSV file must contain headers and at least one data row', 'error');
         return;
       }
 
-      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      const headers = rows[0].map(h => h.trim().toLowerCase());
       const requiredHeaders = ['hscode', 'description', 'unitprice', 'purchasetaxvalue', 'salestaxvalue'];
-      
+
       const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
       if (missingHeaders.length > 0) {
         showSnackbar(`Missing required headers: ${missingHeaders.join(', ')}`, 'error');
@@ -235,17 +236,22 @@ const Items: React.FC = () => {
       let successCount = 0;
       let errorCount = 0;
 
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        
+      for (let i = 1; i < rows.length; i++) {
+        const values = rows[i].map(v => v.trim());
+        const valueOf = (header: string) => {
+          const index = headers.indexOf(header);
+          return index === -1 ? '' : values[index] ?? '';
+        };
+
         const item: CreateItemRequest = {
-          hsCode: values[headers.indexOf('hscode')] || '',
-          description: values[headers.indexOf('description')] || '',
-          unitPrice: parseFloat(values[headers.indexOf('unitprice')]) || 0,
-          purchaseTaxValue: parseFloat(values[headers.indexOf('purchasetaxvalue')]) || 0,
-          salesTaxValue: parseFloat(values[headers.indexOf('salestaxvalue')]) || 0,
-          uom: values[headers.indexOf('uom')] || '',
-          initialStock: headers.indexOf('initialstock') !== -1 ? parseFloat(values[headers.indexOf('initialstock')]) || 0 : 0,
+          hsCode: valueOf('hscode'),
+          description: valueOf('description'),
+          unitPrice: parseFloat(valueOf('unitprice')) || 0,
+          purchaseTaxValue: parseFloat(valueOf('purchasetaxvalue')) || 0,
+          salesTaxValue: parseFloat(valueOf('salestaxvalue')) || 0,
+          // The API rejects a blank UoM, so fall back to the form's default
+          uom: valueOf('uom') || 'Numbers, pieces, units',
+          initialStock: parseFloat(valueOf('initialstock')) || 0,
         };
 
         if (item.hsCode && item.description && item.unitPrice > 0) {
@@ -289,13 +295,18 @@ const Items: React.FC = () => {
     downloadCSVFile(
       `items_${new Date().toISOString().split('T')[0]}.csv`,
       [
-        ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'ItemCreateDate'],
+        // Mirrors the import template so an exported file can be edited and
+        // imported straight back. InitialStock is the opening figure, not
+        // current stock, which is derived from purchases and invoices.
+        ['HSCode', 'Description', 'UnitPrice', 'PurchaseTaxValue', 'SalesTaxValue', 'UoM', 'InitialStock', 'ItemCreateDate'],
         ...items.map(item => [
           item.hsCode,
           item.description,
           item.unitPrice,
           item.purchaseTaxValue,
           item.salesTaxValue,
+          item.uom,
+          item.initialStock,
           item.itemCreateDate
         ])
       ]
