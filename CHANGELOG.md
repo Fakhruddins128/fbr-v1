@@ -24,6 +24,17 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-24 - Fix: "Payload too Large" when updating an invoice
+
+Saving an invoice failed with a bare HTML page reading `Payload too Large`. The body parser was on its 100kb default; an invoice line item serialises to about 575 bytes, so any invoice past roughly 175 lines was rejected before it reached the route.
+
+- `backend/server.js` - the JSON and urlencoded parsers were registered **twice**: `bodyParser.json()` on one line and `express.json()` a few lines below. `express.json` is body-parser, and the first registration wins because body-parser marks the request as parsed and the second call becomes a no-op. Raising the limit on `express.json()` alone therefore does nothing, which is the trap in this fix. The duplicate registration and the `body-parser` require were removed, leaving one parser configured at 5mb (several thousand line items).
+- `backend/server.js` - body-parser reports failures as HTML, and `getErrorMessage` in the frontend falls back to returning the raw response text when it is not JSON, which is why the HTML reached the screen. A small error handler after the parsers now answers 413 and malformed-JSON 400 in JSON, so the UI shows a real message.
+
+Verified by running both middleware stacks against a 400-line invoice (225kb): the old arrangement returns 413 HTML even with a 5mb limit added to `express.json`, the new one returns 200.
+
+Worth knowing: an invoice large enough to have hit this has 175+ line items. FBR Digital Invoicing may impose its own limits on invoice size, which this change does not affect.
+
 ### 2026-10-24 - Rows-per-page dropdown: investigated, not reproduced
 
 Reported: the rows-per-page dropdown does not hold a selection. Not reproducible from the code. What was checked:

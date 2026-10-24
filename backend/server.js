@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const sql = require("mssql");
 const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
@@ -52,11 +51,31 @@ app.use(
     credentials: true, // if using cookies or auth headers
   })
 );
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// An invoice line item serialises to roughly 575 bytes, so the 100kb default
+// rejected any invoice past about 175 lines with a bare HTML "Payload too
+// Large". This covers several thousand lines while still bounding the request.
+const JSON_BODY_LIMIT = "5mb";
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: JSON_BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: JSON_BODY_LIMIT }));
+
+// Body-parser failures are reported as HTML by default, which the frontend
+// surfaces verbatim. Answer in JSON so the UI can show a real message.
+app.use((err, req, res, next) => {
+  if (err && err.type === "entity.too.large") {
+    return res.status(413).json({
+      success: false,
+      message:
+        "Request is too large. Try saving this invoice with fewer line items.",
+    });
+  }
+  if (err && err.type === "entity.parse.failed") {
+    return res
+      .status(400)
+      .json({ success: false, message: "Request body is not valid JSON" });
+  }
+  return next(err);
+});
 
 // Database configuration
 const dbConfig = {
