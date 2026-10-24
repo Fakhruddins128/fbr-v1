@@ -26,6 +26,8 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  Stack,
+  InputAdornment,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -34,9 +36,13 @@ import {
   Visibility as ViewIcon,
   Delete as DeleteIcon,
   Download as DownloadIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { itemsApi, Item } from '../api/itemsApi';
 import { downloadCSVFile, formatCurrency } from '../utils/formatUtils';
+import useTableControls from '../hooks/useTableControls';
+import SortableTableCell from '../components/common/SortableTableCell';
+import TablePaginationControls from '../components/common/TablePaginationControls';
 import { purchasesApi, Purchase, PurchaseItem } from '../services/purchasesApi';
 import { vendorApi, Vendor } from '../api/vendorApi';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
@@ -55,12 +61,34 @@ interface FormData {
   items: PurchaseItem[];
 }
 
+/** The vendor invoice date, with the fallbacks the table itself displays. */
+const purchaseDate = (purchase: Purchase) =>
+  purchase.date || purchase.poDate || purchase.createdAt || '';
+
+/** Fields the search box matches against. */
+const SEARCH_FIELDS = (purchase: Purchase) => [
+  purchase.crNumber,
+  purchase.poNumber,
+  purchase.vendorName,
+  purchase.status
+];
+
+const SORT_ACCESSORS: Record<string, (purchase: Purchase) => string | number | null | undefined> = {
+  crNumber: (purchase) => purchase.crNumber || purchase.poNumber,
+  date: purchaseDate,
+  vendorName: (purchase) => purchase.vendorName,
+  itemCount: (purchase) => purchase.items?.length ?? 0,
+  totalAmount: (purchase) => purchase.totalAmount,
+  status: (purchase) => purchase.status
+};
+
 const Purchases: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { companies, isLoading: companiesLoading } = useAppSelector(state => state.company);
   
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [items, setItems] = useState<Item[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -434,6 +462,22 @@ const Purchases: React.FC = () => {
     showSnackbar('Purchase CSV template downloaded successfully', 'success');
   };
 
+  const filteredPurchases = useMemo(
+    () =>
+      statusFilter === 'all'
+        ? purchases
+        : purchases.filter((purchase) => purchase.status === statusFilter),
+    [purchases, statusFilter]
+  );
+
+  const controls = useTableControls<Purchase>({
+    rows: filteredPurchases,
+    searchFields: SEARCH_FIELDS,
+    sortAccessors: SORT_ACCESSORS,
+    initialSortKey: 'date',
+    initialSortDirection: 'desc'
+  });
+
   if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -546,21 +590,63 @@ const Purchases: React.FC = () => {
           </Box>
         </Box>
         
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          sx={{ mb: 2 }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
+          <TextField
+            size="small"
+            label="Search purchases"
+            placeholder="CR number, PO number or vendor"
+            value={controls.search}
+            onChange={(e) => controls.setSearch(e.target.value)}
+            sx={{ minWidth: 300 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              )
+            }}
+          />
+          <TextField
+            select
+            size="small"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            sx={{ minWidth: 170 }}
+          >
+            <MenuItem value="all">All statuses</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="received">Received</MenuItem>
+            <MenuItem value="cancelled">Cancelled</MenuItem>
+          </TextField>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Typography variant="body2" color="text.secondary">
+            {controls.total} of {purchases.length} purchases
+          </Typography>
+        </Stack>
+
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>CR Number</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Vendor</TableCell>
-                <TableCell>Items</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
+                <SortableTableCell columnKey="crNumber" label="CR Number" sort={controls} />
+                <SortableTableCell columnKey="date" label="Date" sort={controls} />
+                <SortableTableCell columnKey="vendorName" label="Vendor" sort={controls} />
+                <SortableTableCell columnKey="itemCount" label="Items" sort={controls} />
+                <SortableTableCell columnKey="totalAmount" label="Total Amount" sort={controls} />
+                <SortableTableCell columnKey="status" label="Status" sort={controls} />
+                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {purchases.map((purchase) => (
+              {controls.pageRows.map((purchase) => (
                 <TableRow key={purchase.id}>
                   <TableCell>{purchase.crNumber || purchase.poNumber}</TableCell>
                   <TableCell>{new Date(purchase.date || purchase.poDate || new Date()).toLocaleDateString()}</TableCell>
@@ -594,6 +680,7 @@ const Purchases: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePaginationControls pagination={controls} />
       </Paper>
 
       {/* Add/Edit Dialog */}

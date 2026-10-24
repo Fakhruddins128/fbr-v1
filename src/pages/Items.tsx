@@ -47,6 +47,7 @@ import {
 import { downloadCSVFile, formatCurrency, formatDate, parseCSV } from '../utils/formatUtils';
 import useTableControls from '../hooks/useTableControls';
 import SortableTableCell from '../components/common/SortableTableCell';
+import TablePaginationControls from '../components/common/TablePaginationControls';
 import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
 
 interface ItemFormData {
@@ -601,7 +602,7 @@ const Items: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {controls.rows.map((item) => (
+              {controls.pageRows.map((item) => (
                 <TableRow key={item.itemId} hover>
                   <TableCell>{item.hsCode}</TableCell>
                   <TableCell>
@@ -668,6 +669,7 @@ const Items: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePaginationControls pagination={controls} />
       </Paper>
 
       {/* Add/Edit Item Dialog */}

@@ -24,6 +24,18 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-24 - Purchases controls, and pagination on every list page
+
+- `src/pages/Purchases.tsx` - search over CR number, PO number and vendor; status filter (pending / received / cancelled); six sortable columns. Date sorting uses the same `date -> poDate -> createdAt` fallback the table displays, so the order matches what is on screen.
+- `src/hooks/useTableControls.ts` - the hook now owns pagination as well as search and sort, so the page state and its reset rules live in one place rather than being repeated per page. It returns `pageRows` for the table body and `rows`/`total` for counts.
+- `src/components/common/TablePaginationControls.tsx` - the shared pager, with one set of rows-per-page options (5/10/25/50/100) for every list.
+- Pagination added to `Purchases`, `Items`, `Customers` and `Vendors`; `Invoices` migrated onto the shared pager and its local page state removed.
+
+Two rules in the hook, because the naive version of each is wrong:
+
+- A new search or sort order resets to page 1, since the old page number means nothing against a different result set.
+- Everything else clamps instead of resetting: if the list shrinks under you - a filter, a deletion - the view slides to the last page that still exists rather than jumping back to the first or rendering an out-of-range blank page.
+
 ### 2026-10-24 - Sorting, filtering and searching on the list pages
 
 Items, Vendors, Customers and Invoices had no search, sort or filter. All four now share one implementation rather than four bespoke ones.

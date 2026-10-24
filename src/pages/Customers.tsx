@@ -47,6 +47,7 @@ import { customerApi, Customer, CreateCustomerRequest, UpdateCustomerRequest } f
 import { downloadCSVFile } from '../utils/formatUtils';
 import useTableControls from '../hooks/useTableControls';
 import SortableTableCell from '../components/common/SortableTableCell';
+import TablePaginationControls from '../components/common/TablePaginationControls';
 import { 
   BUSINESS_ACTIVITIES, 
   SECTORS, 
@@ -671,7 +672,7 @@ const Customers: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {controls.rows.map((customer) => (
+              {controls.pageRows.map((customer) => (
                 <TableRow key={customer.id} hover>
                   <TableCell>{customer.buyerNTNCNIC}</TableCell>
                   <TableCell>{customer.buyerNIC || 'N/A'}</TableCell>
@@ -710,6 +711,7 @@ const Customers: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePaginationControls pagination={controls} />
       </Paper>
 
       {/* Add/Edit Dialog */}

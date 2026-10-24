@@ -28,7 +28,6 @@ import {
   Select,
   FormControl,
   InputLabel,
-  TablePagination,
   Stack,
   InputAdornment
 } from '@mui/material';
@@ -48,6 +47,7 @@ import {
 import { formatCurrency, formatDate } from '../utils/formatUtils';
 import useTableControls from '../hooks/useTableControls';
 import SortableTableCell from '../components/common/SortableTableCell';
+import TablePaginationControls from '../components/common/TablePaginationControls';
 import { printReactContent } from '../utils/printUtils';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
 import { Invoice, InvoiceItem, Company } from '../types';
@@ -94,8 +94,6 @@ const Invoices: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Print state
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
@@ -710,11 +708,6 @@ const Invoices: React.FC = () => {
     initialSortDirection: 'desc'
   });
 
-  // A narrowed result set can leave the current page past the end of the list
-  useEffect(() => {
-    setPage(0);
-  }, [controls.search, fbrFilter, controls.sortKey, controls.sortDirection]);
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -857,7 +850,7 @@ const Invoices: React.FC = () => {
           <Box sx={{ flexGrow: 1 }} />
 
           <Typography variant="body2" color="text.secondary">
-            {controls.rows.length} of {invoices.length} invoices
+            {controls.total} of {invoices.length} invoices
           </Typography>
         </Stack>
 
@@ -879,9 +872,7 @@ const Invoices: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {controls.rows
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((invoice, index) => (
+              {controls.pageRows.map((invoice, index) => (
                 <TableRow key={invoice.invoiceID} hover>
                   <TableCell>
                     <Tooltip title="Print">
@@ -918,7 +909,7 @@ const Invoices: React.FC = () => {
                       </span>
                     </Tooltip>
                   </TableCell>
-                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                  <TableCell>{controls.page * controls.rowsPerPage + index + 1}</TableCell>
                   <TableCell>{formatDate(invoice.invoiceDate)}</TableCell>
                   <TableCell>
                     <Chip 
@@ -953,18 +944,7 @@ const Invoices: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={controls.rows.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
-            setPage(0);
-          }}
-        />
+        <TablePaginationControls pagination={controls} />
       </Paper>
 
       {/* Floating Action Button */}

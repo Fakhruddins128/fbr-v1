@@ -55,6 +55,7 @@ import {
 import { downloadCSVFile } from '../utils/formatUtils';
 import useTableControls from '../hooks/useTableControls';
 import SortableTableCell from '../components/common/SortableTableCell';
+import TablePaginationControls from '../components/common/TablePaginationControls';
 
 interface VendorFormData {
   vendorName: string;
@@ -666,7 +667,7 @@ const Vendors: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {controls.rows.map((vendor) => (
+              {controls.pageRows.map((vendor) => (
                 <TableRow key={vendor.vendorId} hover>
                   <TableCell>{vendor.vendorNTN}</TableCell>
                   <TableCell>{vendor.vendorCNIC || 'N/A'}</TableCell>
@@ -720,6 +721,7 @@ const Vendors: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePaginationControls pagination={controls} />
       </Paper>
 
       {/* Add/Edit Vendor Dialog */}

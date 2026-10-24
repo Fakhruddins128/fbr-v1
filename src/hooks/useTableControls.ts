@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -9,11 +9,23 @@ export interface SortState {
   toggleSort: (key: string) => void;
 }
 
-export interface TableControls<T> extends SortState {
+/** The pagination half of the controls, as TablePagination needs it. */
+export interface PaginationState {
+  page: number;
+  rowsPerPage: number;
+  setPage: (page: number) => void;
+  setRowsPerPage: (rowsPerPage: number) => void;
+  /** Length of `rows`, which is what TablePagination must count. */
+  total: number;
+}
+
+export interface TableControls<T> extends SortState, PaginationState {
   search: string;
   setSearch: (value: string) => void;
-  /** Rows after searching and sorting, in display order. */
+  /** Every row after searching and sorting, in display order. */
   rows: T[];
+  /** Just the current page of `rows`. This is what the table body renders. */
+  pageRows: T[];
 }
 
 type Value = string | number | null | undefined;
@@ -26,6 +38,7 @@ interface Options<T> {
   sortAccessors: Record<string, (row: T) => Value>;
   initialSortKey?: string;
   initialSortDirection?: SortDirection;
+  initialRowsPerPage?: number;
 }
 
 const isBlank = (value: Value) => value === null || value === undefined || value === '';
@@ -43,11 +56,14 @@ export function useTableControls<T>({
   searchFields,
   sortAccessors,
   initialSortKey = '',
-  initialSortDirection = 'asc'
+  initialSortDirection = 'asc',
+  initialRowsPerPage = 10
 }: Options<T>): TableControls<T> {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState(initialSortKey);
   const [sortDirection, setSortDirection] = useState<SortDirection>(initialSortDirection);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
 
   const toggleSort = useCallback(
     (key: string) => {
@@ -102,7 +118,40 @@ export function useTableControls<T>({
     });
   }, [rows, search, searchFields, sortAccessors, sortKey, sortDirection]);
 
-  return { search, setSearch, sortKey, sortDirection, toggleSort, rows: processed };
+  // A new search or sort order means the old page number is meaningless
+  useEffect(() => {
+    setPage(0);
+  }, [search, sortKey, sortDirection]);
+
+  // Clamped rather than reset, so narrowing the list (a filter, a deletion)
+  // slides to the last page that exists instead of jumping back to the first.
+  const lastPage = Math.max(0, Math.ceil(processed.length / rowsPerPage) - 1);
+  const currentPage = Math.min(page, lastPage);
+
+  const pageRows = useMemo(
+    () => processed.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage),
+    [processed, currentPage, rowsPerPage]
+  );
+
+  const changeRowsPerPage = useCallback((value: number) => {
+    setRowsPerPage(value);
+    setPage(0);
+  }, []);
+
+  return {
+    search,
+    setSearch,
+    sortKey,
+    sortDirection,
+    toggleSort,
+    rows: processed,
+    pageRows,
+    page: currentPage,
+    rowsPerPage,
+    setPage,
+    setRowsPerPage: changeRowsPerPage,
+    total: processed.length
+  };
 }
 
 export default useTableControls;
