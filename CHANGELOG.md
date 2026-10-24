@@ -24,6 +24,19 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-24 - Rows-per-page dropdown: investigated, not reproduced
+
+Reported: the rows-per-page dropdown does not hold a selection. Not reproducible from the code. What was checked:
+
+- All five list pages (Items, Vendors, Customers, Invoices, Purchases) are wired identically: one `useTableControls`, rendering `controls.pageRows`, one `TablePaginationControls`. No page renders the unpaged `controls.rows`.
+- No global handler can interfere. The only document-level listeners are the input restriction in `src/App.tsx` (keydown, beforeinput, paste, drop) and two window listeners for FBR error events. None touches mousedown or click, and the restriction treats only inputs, textareas and contenteditable as editable, so it does not see the select trigger or the menu options.
+- Nothing resets `rowsPerPage`. The hook resets only `page`, and only on a search or sort change.
+
+- `src/components/common/TablePaginationControls.test.tsx` - new test covering the reported behaviour: the dropdown holds a selection, holds a page size larger than the row count, keeps the selection while paging, and returns to page 1 when the size changes. It installs the same document-level keydown restriction App.tsx uses and renders under the real application theme. All pass.
+- `src/theme.ts` - the MUI theme moved out of `src/App.tsx` so it can be imported by tests and anything else that needs it. No values changed; App.tsx now imports it.
+
+If the problem persists it is environment- or data-specific rather than structural, so the next useful evidence is the browser console on an affected page.
+
 ### 2026-10-24 - Inventory Report driven by a From/To date range
 
 The report had a single "As of" date. It now takes From and To, and the four quantity columns became a real movement statement for that period.
