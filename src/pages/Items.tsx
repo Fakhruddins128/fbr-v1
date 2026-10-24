@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -27,6 +27,8 @@ import {
   Select,
   CircularProgress,
   Tooltip,
+  Stack,
+  InputAdornment,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -40,8 +42,11 @@ import {
   Refresh as RefreshIcon,
   Upload as UploadIcon,
   Download as DownloadIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { downloadCSVFile, formatCurrency, formatDate, parseCSV } from '../utils/formatUtils';
+import useTableControls from '../hooks/useTableControls';
+import SortableTableCell from '../components/common/SortableTableCell';
 import { itemsApi, Item, CreateItemRequest } from '../api/itemsApi';
 
 interface ItemFormData {
@@ -53,6 +58,21 @@ interface ItemFormData {
   uom: string;
   initialStock: number;
 }
+
+/** Fields the search box matches against. */
+const SEARCH_FIELDS = (item: Item) => [item.hsCode, item.description, item.uom];
+
+const SORT_ACCESSORS: Record<string, (item: Item) => string | number | null | undefined> = {
+  hsCode: (item) => item.hsCode,
+  description: (item) => item.description,
+  unitPrice: (item) => item.unitPrice,
+  currentStock: (item) => item.currentStock ?? 0,
+  purchaseTaxValue: (item) => item.purchaseTaxValue,
+  salesTaxValue: (item) => item.salesTaxValue,
+  uom: (item) => item.uom,
+  isActive: (item) => (item.isActive ? 1 : 0),
+  itemCreateDate: (item) => item.itemCreateDate
+};
 
 const Items: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
@@ -75,6 +95,8 @@ const Items: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [stockFilter, setStockFilter] = useState('all');
 
   const uoms = ['1000 kWh', '40KG', 'Bag', 'Barrels', 'Bill of lading', 'Carat', 'Cubic Metre', 'Dozen', 'Foot', 'Gallon', 'Gram', 'KG', 'Kilogram', 'KWH', 'Liter', 'Mega Watt', 'Meter', 'MMBTU', 'MT', 'NO', 'Numbers, pieces, units', 'Others', 'Packs', 'Pair', 'Pcs', 'Pound', 'SET', 'Square Foot', 'Square Metre', 'SqY', 'Thousand Unit', 'Timber Logs'];
 
@@ -333,6 +355,26 @@ const Items: React.FC = () => {
     showSnackbar('Item CSV template downloaded successfully', 'success');
   };
 
+  // Select filters run first, then the hook's search and sort
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        if (statusFilter === 'active' && !item.isActive) return false;
+        if (statusFilter === 'inactive' && item.isActive) return false;
+        if (stockFilter === 'in' && (item.currentStock ?? 0) <= 0) return false;
+        if (stockFilter === 'out' && (item.currentStock ?? 0) > 0) return false;
+        return true;
+      }),
+    [items, statusFilter, stockFilter]
+  );
+
+  const controls = useTableControls<Item>({
+    rows: filteredItems,
+    searchFields: SEARCH_FIELDS,
+    sortAccessors: SORT_ACCESSORS,
+    initialSortKey: 'hsCode'
+  });
+
   // Calculate summary statistics
   const totalItems = items.length;
   const activeItems = items.filter(item => item.isActive).length;
@@ -489,25 +531,77 @@ const Items: React.FC = () => {
           </Box>
         </Box>
         
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          sx={{ mb: 2 }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
+          <TextField
+            size="small"
+            label="Search items"
+            placeholder="HS code, description or unit"
+            value={controls.search}
+            onChange={(e) => controls.setSearch(e.target.value)}
+            sx={{ minWidth: 280 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              )
+            }}
+          />
+          <TextField
+            select
+            size="small"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="inactive">Inactive</MenuItem>
+          </TextField>
+          <TextField
+            select
+            size="small"
+            label="Stock"
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value)}
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="in">In stock</MenuItem>
+            <MenuItem value="out">Out of stock</MenuItem>
+          </TextField>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Typography variant="body2" color="text.secondary">
+            {controls.rows.length} of {items.length} items
+          </Typography>
+        </Stack>
+
         <TableContainer>
           <Table>
             <TableHead sx={{ backgroundColor: 'grey.50' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>HS Code</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Unit Price</TableCell>
-                {/* <TableCell sx={{ fontWeight: 'bold' }}>Initial Stock</TableCell> */}
-                <TableCell sx={{ fontWeight: 'bold' }}>Current Stock</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Purchase Tax</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Sales Tax</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>UoM</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Created Date</TableCell>
+                <SortableTableCell columnKey="hsCode" label="HS Code" sort={controls} />
+                <SortableTableCell columnKey="description" label="Description" sort={controls} />
+                <SortableTableCell columnKey="unitPrice" label="Unit Price" sort={controls} />
+                <SortableTableCell columnKey="currentStock" label="Current Stock" sort={controls} align="center" />
+                <SortableTableCell columnKey="purchaseTaxValue" label="Purchase Tax" sort={controls} />
+                <SortableTableCell columnKey="salesTaxValue" label="Sales Tax" sort={controls} />
+                <SortableTableCell columnKey="uom" label="UoM" sort={controls} />
+                <SortableTableCell columnKey="isActive" label="Status" sort={controls} />
+                <SortableTableCell columnKey="itemCreateDate" label="Created Date" sort={controls} />
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {items.map((item) => (
+              {controls.rows.map((item) => (
                 <TableRow key={item.itemId} hover>
                   <TableCell>{item.hsCode}</TableCell>
                   <TableCell>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -28,7 +28,9 @@ import {
   Select,
   FormControl,
   InputLabel,
-  TablePagination
+  TablePagination,
+  Stack,
+  InputAdornment
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -40,9 +42,12 @@ import {
   CurrencyExchange as CurrencyIcon,
   Assessment as AssessmentIcon,
   Print as PrintIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '../utils/formatUtils';
+import useTableControls from '../hooks/useTableControls';
+import SortableTableCell from '../components/common/SortableTableCell';
 import { printReactContent } from '../utils/printUtils';
 import SalesInvoiceReport from '../components/SalesInvoiceReport';
 import { Invoice, InvoiceItem, Company } from '../types';
@@ -52,6 +57,26 @@ import { inventoryApi, InventoryItem } from '../services/inventoryApi';
 import { useAppSelector, useAppDispatch } from '../hooks/useAppDispatch';
 import { fetchCompanies, fetchCompanyById } from '../store/slices/companySlice';
 
+/** Fields the search box matches against. */
+const SEARCH_FIELDS = (invoice: Invoice) => [
+  invoice.invoiceRefNo,
+  invoice.fbrInvoiceNumber,
+  invoice.buyerBusinessName,
+  invoice.buyerNTNCNIC,
+  invoice.invoiceType
+];
+
+const SORT_ACCESSORS: Record<string, (invoice: Invoice) => string | number | null | undefined> = {
+  invoiceDate: (invoice) => invoice.invoiceDate,
+  invoiceType: (invoice) => invoice.invoiceType,
+  fbrInvoiceNumber: (invoice) => invoice.fbrInvoiceNumber,
+  invoiceRefNo: (invoice) => invoice.invoiceRefNo,
+  buyerBusinessName: (invoice) => invoice.buyerBusinessName,
+  totalAmount: (invoice) => invoice.totalAmount,
+  totalSalesTax: (invoice) => invoice.totalSalesTax,
+  itemCount: (invoice) => invoice.items?.length ?? 0
+};
+
 const Invoices: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -59,6 +84,7 @@ const Invoices: React.FC = () => {
   const { companies, currentCompany, isLoading: companiesLoading } = useAppSelector(state => state.company);
   
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [fbrFilter, setFbrFilter] = useState('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -666,6 +692,28 @@ const Invoices: React.FC = () => {
   const totalSalesTax = invoices.reduce((sum, invoice) => sum + (Number(invoice.totalSalesTax) || 0), 0);
   const fbrSubmittedInvoices = invoices.filter(invoice => !!invoice.fbrInvoiceNumber).length;
 
+  const filteredInvoices = useMemo(
+    () =>
+      invoices.filter((invoice) => {
+        if (fbrFilter === 'submitted') return !!invoice.fbrInvoiceNumber;
+        if (fbrFilter === 'pending') return !invoice.fbrInvoiceNumber;
+        return true;
+      }),
+    [invoices, fbrFilter]
+  );
+
+  const controls = useTableControls<Invoice>({
+    rows: filteredInvoices,
+    searchFields: SEARCH_FIELDS,
+    sortAccessors: SORT_ACCESSORS,
+    initialSortKey: 'invoiceDate',
+    initialSortDirection: 'desc'
+  });
+
+  // A narrowed result set can leave the current page past the end of the list
+  useEffect(() => {
+    setPage(0);
+  }, [controls.search, fbrFilter, controls.sortKey, controls.sortDirection]);
 
   if (loading) {
     return (
@@ -772,25 +820,66 @@ const Invoices: React.FC = () => {
 
       {/* Invoices Table */}
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          sx={{ p: 2 }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
+          <TextField
+            size="small"
+            label="Search invoices"
+            placeholder="Invoice no, FBR no or buyer"
+            value={controls.search}
+            onChange={(e) => controls.setSearch(e.target.value)}
+            sx={{ minWidth: 300 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              )
+            }}
+          />
+          <TextField
+            select
+            size="small"
+            label="FBR status"
+            value={fbrFilter}
+            onChange={(e) => setFbrFilter(e.target.value)}
+            sx={{ minWidth: 180 }}
+          >
+            <MenuItem value="all">All invoices</MenuItem>
+            <MenuItem value="submitted">Submitted to FBR</MenuItem>
+            <MenuItem value="pending">Not submitted</MenuItem>
+          </TextField>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Typography variant="body2" color="text.secondary">
+            {controls.rows.length} of {invoices.length} invoices
+          </Typography>
+        </Stack>
+
         <TableContainer>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell>Actions</TableCell>
                 <TableCell>SNo.</TableCell>
-                <TableCell>Invoice Date</TableCell>
-                <TableCell>Invoice Type</TableCell>
-                <TableCell>FBR Invoice No</TableCell>
-                <TableCell>Invoice No</TableCell>
-                <TableCell>Buyer Business</TableCell>
-                <TableCell>Total Amount</TableCell>
-                <TableCell>Sales Tax</TableCell>
-                <TableCell>Items</TableCell>
+                <SortableTableCell columnKey="invoiceDate" label="Invoice Date" sort={controls} />
+                <SortableTableCell columnKey="invoiceType" label="Invoice Type" sort={controls} />
+                <SortableTableCell columnKey="fbrInvoiceNumber" label="FBR Invoice No" sort={controls} />
+                <SortableTableCell columnKey="invoiceRefNo" label="Invoice No" sort={controls} />
+                <SortableTableCell columnKey="buyerBusinessName" label="Buyer Business" sort={controls} />
+                <SortableTableCell columnKey="totalAmount" label="Total Amount" sort={controls} />
+                <SortableTableCell columnKey="totalSalesTax" label="Sales Tax" sort={controls} />
+                <SortableTableCell columnKey="itemCount" label="Items" sort={controls} />
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {invoices
+              {controls.rows
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((invoice, index) => (
                 <TableRow key={invoice.invoiceID} hover>
@@ -867,7 +956,7 @@ const Invoices: React.FC = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={invoices.length}
+          count={controls.rows.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}

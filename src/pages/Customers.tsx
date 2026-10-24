@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -27,6 +27,8 @@ import {
   MenuItem,
   CircularProgress,
   OutlinedInput,
+  Stack,
+  InputAdornment,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -39,9 +41,12 @@ import {
   Upload as UploadIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { customerApi, Customer, CreateCustomerRequest, UpdateCustomerRequest } from '../api/customerApi';
 import { downloadCSVFile } from '../utils/formatUtils';
+import useTableControls from '../hooks/useTableControls';
+import SortableTableCell from '../components/common/SortableTableCell';
 import { 
   BUSINESS_ACTIVITIES, 
   SECTORS, 
@@ -64,8 +69,32 @@ interface CustomerFormData {
   sector: string[];
 }
 
+/** Fields the search box matches against. */
+const SEARCH_FIELDS = (customer: Customer) => [
+  customer.buyerBusinessName,
+  customer.buyerNTNCNIC,
+  customer.buyerNIC,
+  customer.buyerNTN,
+  customer.buyerRegistrationNo,
+  customer.contactPersonName,
+  customer.buyerEmail,
+  customer.buyerCellphone
+];
+
+const SORT_ACCESSORS: Record<string, (customer: Customer) => string | number | null | undefined> = {
+  buyerNTNCNIC: (customer) => customer.buyerNTNCNIC,
+  buyerNIC: (customer) => customer.buyerNIC,
+  buyerNTN: (customer) => customer.buyerNTN,
+  buyerRegistrationNo: (customer) => customer.buyerRegistrationNo,
+  buyerBusinessName: (customer) => customer.buyerBusinessName,
+  contactPersonName: (customer) => customer.contactPersonName,
+  businessActivity: (customer) => customer.businessActivity?.join(', '),
+  sector: (customer) => customer.sector?.join(', ')
+};
+
 const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [registrationTypeFilter, setRegistrationTypeFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -412,6 +441,32 @@ const Customers: React.FC = () => {
     .filter((type, index, array) => type && array.indexOf(type) === index)
     .length;
 
+  // Only the registration types the current customers actually use
+  const registrationTypeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(customers.map((customer) => customer.buyerRegistrationType).filter(Boolean))
+      ).sort((a, b) => a.localeCompare(b)),
+    [customers]
+  );
+
+  const filteredCustomers = useMemo(
+    () =>
+      registrationTypeFilter === 'all'
+        ? customers
+        : customers.filter(
+            (customer) => customer.buyerRegistrationType === registrationTypeFilter
+          ),
+    [customers, registrationTypeFilter]
+  );
+
+  const controls = useTableControls<Customer>({
+    rows: filteredCustomers,
+    searchFields: SEARCH_FIELDS,
+    sortAccessors: SORT_ACCESSORS,
+    initialSortKey: 'buyerBusinessName'
+  });
+
 
 
   return (
@@ -556,23 +611,67 @@ const Customers: React.FC = () => {
           </Box>
         </Box>
         
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          sx={{ mb: 2 }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
+          <TextField
+            size="small"
+            label="Search customers"
+            placeholder="Business name, NTN, CNIC or contact"
+            value={controls.search}
+            onChange={(e) => controls.setSearch(e.target.value)}
+            sx={{ minWidth: 300 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              )
+            }}
+          />
+          <TextField
+            select
+            size="small"
+            label="Registration type"
+            value={registrationTypeFilter}
+            onChange={(e) => setRegistrationTypeFilter(e.target.value)}
+            sx={{ minWidth: 200 }}
+          >
+            <MenuItem value="all">All types</MenuItem>
+            {registrationTypeOptions.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Typography variant="body2" color="text.secondary">
+            {controls.rows.length} of {customers.length} customers
+          </Typography>
+        </Stack>
+
         <TableContainer>
           <Table>
             <TableHead sx={{ backgroundColor: 'grey.50' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold' }}>NTN/CNIC</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>NIC</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>NTN</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Registration No</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Business Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Contact Person</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Business Activity</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Sector</TableCell>
+                <SortableTableCell columnKey="buyerNTNCNIC" label="NTN/CNIC" sort={controls} />
+                <SortableTableCell columnKey="buyerNIC" label="NIC" sort={controls} />
+                <SortableTableCell columnKey="buyerNTN" label="NTN" sort={controls} />
+                <SortableTableCell columnKey="buyerRegistrationNo" label="Registration No" sort={controls} />
+                <SortableTableCell columnKey="buyerBusinessName" label="Business Name" sort={controls} />
+                <SortableTableCell columnKey="contactPersonName" label="Contact Person" sort={controls} />
+                <SortableTableCell columnKey="businessActivity" label="Business Activity" sort={controls} />
+                <SortableTableCell columnKey="sector" label="Sector" sort={controls} />
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {customers.map((customer) => (
+              {controls.rows.map((customer) => (
                 <TableRow key={customer.id} hover>
                   <TableCell>{customer.buyerNTNCNIC}</TableCell>
                   <TableCell>{customer.buyerNIC || 'N/A'}</TableCell>

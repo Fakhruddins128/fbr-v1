@@ -24,6 +24,21 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-24 - Sorting, filtering and searching on the list pages
+
+Items, Vendors, Customers and Invoices had no search, sort or filter. All four now share one implementation rather than four bespoke ones.
+
+- `src/hooks/useTableControls.ts` - new hook handling search and column sort over a row set the page already holds, so nothing re-fetches when the controls change. Sorting is numeric-aware for text (HS codes order correctly), truly numeric for numbers, case-insensitive, and keeps blank values last in both directions so empty cells never lead the table. The input array is copied before sorting.
+- `src/components/common/SortableTableCell.tsx` - header cell wired to the hook, so the sort affordance is identical on every page.
+- `src/pages/Items.tsx` - search over HS code, description and UoM; filters for status and in/out of stock; nine sortable columns.
+- `src/pages/Vendors.tsx` - search over name, NTN, CNIC, contact, email and phone; sector filter built from the sectors vendors actually carry; six sortable columns.
+- `src/pages/Customers.tsx` - search over business name, NTN, CNIC, registration no, contact, email and phone; registration-type filter; eight sortable columns.
+- `src/pages/Invoices.tsx` - search over invoice no, FBR no, buyer and type; FBR submitted/not-submitted filter; eight sortable columns. `TablePagination` now counts the filtered set rather than all invoices, and the page resets to the first page when the search, filter or sort changes - otherwise a narrowed result could leave the view parked past the end of the list.
+
+Each toolbar shows a "N of M" count so a filtered view is never mistaken for the full list.
+
+Pre-existing bug found and NOT changed: in `src/pages/Vendors.tsx` the first two column headers are swapped relative to the data under them - "CNIC/NTN" renders `vendorNTN` and "Registration No." renders `vendorCNIC`. Sorting was bound to the field each column actually displays, so sort matches what is on screen, but the labels remain wrong.
+
 ### 2026-10-23 - Fix: Items CSV import dropped UoM and Initial Stock
 
 Importing items stored a truncated unit of measure and an initial stock of 0. The CSV writer quotes any value containing a comma, but the reader split each line on `,` with no notion of quoting. Exactly one UoM in the list contains commas - `Numbers, pieces, units` - and it is both the default and the value shipped in the import template, so most imports hit it. The row shattered into extra fields, UoM became `Numbers`, and every column after it shifted left, leaving InitialStock reading a non-numeric cell.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -29,6 +29,8 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
+  Stack,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,6 +41,7 @@ import {
   Email as EmailIcon,
   LocationOn as LocationIcon,
   Refresh as RefreshIcon,
+  Search as SearchIcon,
   Upload as UploadIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
@@ -50,6 +53,8 @@ import {
   validateBusinessActivitySectorCombination 
 } from '../utils/scenarioValidation';
 import { downloadCSVFile } from '../utils/formatUtils';
+import useTableControls from '../hooks/useTableControls';
+import SortableTableCell from '../components/common/SortableTableCell';
 
 interface VendorFormData {
   vendorName: string;
@@ -63,8 +68,30 @@ interface VendorFormData {
   sector: string[];
 }
 
+/** Fields the search box matches against. */
+const SEARCH_FIELDS = (vendor: Vendor) => [
+  vendor.vendorName,
+  vendor.vendorNTN,
+  vendor.vendorCNIC,
+  vendor.contactPersonName,
+  vendor.vendorEmail,
+  vendor.vendorPhone
+];
+
+// Keys follow the column each header actually renders, which for the first two
+// columns is not what their labels say. See the note in CHANGELOG.
+const SORT_ACCESSORS: Record<string, (vendor: Vendor) => string | number | null | undefined> = {
+  vendorNTN: (vendor) => vendor.vendorNTN,
+  vendorCNIC: (vendor) => vendor.vendorCNIC,
+  vendorName: (vendor) => vendor.vendorName,
+  contactPersonName: (vendor) => vendor.contactPersonName,
+  businessActivity: (vendor) => vendor.businessActivity?.join(', '),
+  sector: (vendor) => vendor.sector?.join(', ')
+};
+
 const Vendors: React.FC = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [sectorFilter, setSectorFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
@@ -439,6 +466,31 @@ const Vendors: React.FC = () => {
     showSnackbar('Vendor CSV template downloaded successfully', 'success');
   };
 
+  // Sector is stored per vendor as an array, so the filter list is whatever
+  // sectors the current vendors actually carry, not the full master list.
+  const sectorFilterOptions = useMemo(
+    () =>
+      Array.from(new Set(vendors.flatMap((vendor) => vendor.sector ?? []).filter(Boolean))).sort(
+        (a, b) => a.localeCompare(b)
+      ),
+    [vendors]
+  );
+
+  const filteredVendors = useMemo(
+    () =>
+      sectorFilter === 'all'
+        ? vendors
+        : vendors.filter((vendor) => vendor.sector?.includes(sectorFilter)),
+    [vendors, sectorFilter]
+  );
+
+  const controls = useTableControls<Vendor>({
+    rows: filteredVendors,
+    searchFields: SEARCH_FIELDS,
+    sortAccessors: SORT_ACCESSORS,
+    initialSortKey: 'vendorName'
+  });
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -555,22 +607,66 @@ const Vendors: React.FC = () => {
           </Box>
         </Box>
         
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
+          sx={{ mb: 2 }}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+        >
+          <TextField
+            size="small"
+            label="Search vendors"
+            placeholder="Name, NTN, CNIC or contact"
+            value={controls.search}
+            onChange={(e) => controls.setSearch(e.target.value)}
+            sx={{ minWidth: 280 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              )
+            }}
+          />
+          <TextField
+            select
+            size="small"
+            label="Sector"
+            value={sectorFilter}
+            onChange={(e) => setSectorFilter(e.target.value)}
+            sx={{ minWidth: 200 }}
+          >
+            <MenuItem value="all">All sectors</MenuItem>
+            {sectorFilterOptions.map((sector) => (
+              <MenuItem key={sector} value={sector}>
+                {sector}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          <Typography variant="body2" color="text.secondary">
+            {controls.rows.length} of {vendors.length} vendors
+          </Typography>
+        </Stack>
+
         <TableContainer>
           <Table>
             <TableHead sx={{ backgroundColor: 'grey.50' }}>
               <TableRow>
                 
-                <TableCell sx={{ fontWeight: 'bold' }}>CNIC/NTN</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Registration No.</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Vendor Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Contact Person</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Business Activity</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Sector</TableCell>
+                <SortableTableCell columnKey="vendorNTN" label="CNIC/NTN" sort={controls} />
+                <SortableTableCell columnKey="vendorCNIC" label="Registration No." sort={controls} />
+                <SortableTableCell columnKey="vendorName" label="Vendor Name" sort={controls} />
+                <SortableTableCell columnKey="contactPersonName" label="Contact Person" sort={controls} />
+                <SortableTableCell columnKey="businessActivity" label="Business Activity" sort={controls} />
+                <SortableTableCell columnKey="sector" label="Sector" sort={controls} />
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {vendors.map((vendor) => (
+              {controls.rows.map((vendor) => (
                 <TableRow key={vendor.vendorId} hover>
                   <TableCell>{vendor.vendorNTN}</TableCell>
                   <TableCell>{vendor.vendorCNIC || 'N/A'}</TableCell>
