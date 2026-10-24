@@ -135,10 +135,13 @@ export interface InventoryItemRow {
   description: string;
   unit: string;
   unitPrice: number;
+  /** Stock carried into the period: initial stock plus movement before From. */
   openingStock: number;
+  /** Received within the period. */
   purchased: number;
+  /** Invoiced within the period. */
   sold: number;
-  /** openingStock + purchased - sold, the same derivation /api/items uses. */
+  /** openingStock + purchased - sold: the stock standing at To. */
   balance: number;
   /** balance * unitPrice. */
   value: number;
@@ -174,7 +177,7 @@ export interface InventoryTotals {
 
 export interface InventoryData {
   company: { name: string; ntnNumber: string };
-  asOf: string | null;
+  period: { startDate: string | null; endDate: string | null };
   rows: InventoryRow[];
   totals: InventoryTotals;
 }
@@ -306,12 +309,13 @@ class ReportsApiService {
     }
   }
   async getInventoryReport(
-    params: { asOf?: string } = {},
+    params: { startDate?: string; endDate?: string } = {},
     companyId?: string
   ): Promise<InventoryResponse> {
     try {
       const queryParams = new URLSearchParams();
-      if (params.asOf) queryParams.append('asOf', params.asOf);
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
 
       const query = queryParams.toString();
       const url = `${API_BASE_URL}/api/reports/inventory${query ? `?${query}` : ''}`;

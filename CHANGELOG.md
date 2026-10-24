@@ -24,6 +24,23 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-24 - Inventory Report driven by a From/To date range
+
+The report had a single "As of" date. It now takes From and To, and the four quantity columns became a real movement statement for that period.
+
+- Opening: stock carried into the period, i.e. the item's initial stock plus everything received and less everything invoiced *before* From. It was previously always `Items.InitialStock`, ignoring the date entirely.
+- Purchased / Sold: movement *within* From..To, previously everything up to the as-of date.
+- Balance: Opening + Purchased - Sold, so it closes the period and equals the stock standing at To.
+- Value: Balance priced at the item's UnitPrice, so it values the stock at To.
+
+With both dates blank the report is current stock and the figures are identical to before, which keeps it reconcilable against the Items page.
+
+- `backend/server.js` - `GET /api/reports/inventory` takes `startDate`/`endDate` instead of `asOf`, and returns `period` instead of `asOf`. Two extra correlated subqueries compute movement before From, emitted only when From is supplied so an undated report does no extra work. `endDate` is an exclusive upper bound, so documents dated on the To date are included. A From on or after To is rejected with 400. All dates stay bound as parameters.
+- `src/services/reportsApi.ts` - `getInventoryReport` takes the range; `InventoryData.asOf` became `period`.
+- `src/pages/InventoryReport.tsx` - From and To fields, a period label matching the Sales and Purchase registers, and an export filename carrying the range.
+
+Unchanged: sold quantities still match an item by HSCode plus ProductDescription, which is how `/api/items` derives stock. Renaming an item still detaches its sales history from it.
+
 ### 2026-10-24 - Purchases controls, and pagination on every list page
 
 - `src/pages/Purchases.tsx` - search over CR number, PO number and vendor; status filter (pending / received / cancelled); six sortable columns. Date sorting uses the same `date -> poDate -> createdAt` fallback the table displays, so the order matches what is on screen.

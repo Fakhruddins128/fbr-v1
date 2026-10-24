@@ -5217,7 +5217,7 @@ app.get("/api/reports/purchase-register", authenticateToken, async (req, res) =>
 // page and the dashboard cannot disagree.
 app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
   try {
-    const { asOf } = req.query;
+    const { startDate, endDate } = req.query;
 
     // Super Admin may target another company via header, as elsewhere in this API
     let companyId = req.user.companyId;
@@ -5233,16 +5233,32 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
 
     // Validate input before anything else, so bad input is rejected the same way
     // whether or not the database happens to be reachable.
-    let asOfDate = null;
-    if (asOf) {
-      asOfDate = new Date(asOf);
-      if (isNaN(asOfDate.getTime())) {
+    let start = null;
+    if (startDate) {
+      start = new Date(startDate);
+      if (isNaN(start.getTime())) {
         return res
           .status(400)
-          .json({ success: false, message: "Invalid asOf date" });
+          .json({ success: false, message: "Invalid startDate" });
       }
-      // Exclusive upper bound so documents timestamped later on the as-of date count
-      asOfDate.setDate(asOfDate.getDate() + 1);
+    }
+
+    let end = null;
+    if (endDate) {
+      end = new Date(endDate);
+      if (isNaN(end.getTime())) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid endDate" });
+      }
+      // Exclusive upper bound so documents dated on the end date are included
+      end.setDate(end.getDate() + 1);
+    }
+
+    if (start && end && start >= end) {
+      return res
+        .status(400)
+        .json({ success: false, message: "startDate must be before endDate" });
     }
 
     if (!isDbConnected) {
@@ -5256,14 +5272,51 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
     const request = pool.request();
     request.input("companyId", sql.UniqueIdentifier, companyId);
 
+    const purchaseDate = "COALESCE(p.Date, p.PODate, p.CreatedAt)";
+    const invoiceDate = "i.InvoiceDate";
+
     // Dates are bound as parameters, never interpolated into the statement.
-    let purchaseCutoff = "";
-    let invoiceCutoff = "";
-    if (asOfDate) {
-      request.input("asOf", sql.DateTime, asOfDate);
-      purchaseCutoff = " AND COALESCE(p.Date, p.PODate, p.CreatedAt) < @asOf";
-      invoiceCutoff = " AND i.InvoiceDate < @asOf";
+    let periodPurchase = "";
+    let periodInvoice = "";
+    if (start) {
+      request.input("startDate", sql.DateTime, start);
+      periodPurchase += ` AND ${purchaseDate} >= @startDate`;
+      periodInvoice += ` AND ${invoiceDate} >= @startDate`;
     }
+    if (end) {
+      request.input("endDate", sql.DateTime, end);
+      periodPurchase += ` AND ${purchaseDate} < @endDate`;
+      periodInvoice += ` AND ${invoiceDate} < @endDate`;
+    }
+
+    const purchasedQuery = (dateFilter) => `
+          SELECT ISNULL(SUM(pi.PurchaseQty), 0)
+          FROM PurchaseItems pi
+          JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+          WHERE pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
+            AND p.CompanyID = @companyId
+            AND p.IsActive = 1
+            AND p.Status IN ('received', 'completed')${dateFilter}`;
+
+    const soldQuery = (dateFilter) => `
+          SELECT ISNULL(SUM(ii.Quantity), 0)
+          FROM InvoiceItems ii
+          JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+          WHERE ii.HSCode = it.HSCode
+            AND ii.ProductDescription = CAST(it.Description AS NVARCHAR(255))
+            AND i.CompanyID = @companyId${dateFilter}`;
+
+    // Movement before the period start, which is what turns an item's initial
+    // stock into its opening balance. With no start date there is no "before",
+    // so opening stays the initial stock and the period runs from inception.
+    const priorPurchased = start
+      ? `(${purchasedQuery(` AND ${purchaseDate} < @startDate`)}
+        )`
+      : "0";
+    const priorSold = start
+      ? `(${soldQuery(` AND ${invoiceDate} < @startDate`)}
+        )`
+      : "0";
 
     // One row per item. The HS Code grouping is done below in JS so that each
     // group's figures are exactly the sum of the detail rows the drill-down
@@ -5278,22 +5331,11 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
         it.UoM,
         ISNULL(it.UnitPrice, 0) AS UnitPrice,
         ISNULL(it.InitialStock, 0) AS InitialStock,
-        (
-          SELECT ISNULL(SUM(pi.PurchaseQty), 0)
-          FROM PurchaseItems pi
-          JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
-          WHERE pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
-            AND p.CompanyID = @companyId
-            AND p.IsActive = 1
-            AND p.Status IN ('received', 'completed')${purchaseCutoff}
+        ${priorPurchased} AS PriorPurchased,
+        ${priorSold} AS PriorSold,
+        (${purchasedQuery(periodPurchase)}
         ) AS Purchased,
-        (
-          SELECT ISNULL(SUM(ii.Quantity), 0)
-          FROM InvoiceItems ii
-          JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
-          WHERE ii.HSCode = it.HSCode
-            AND ii.ProductDescription = CAST(it.Description AS NVARCHAR(255))
-            AND i.CompanyID = @companyId${invoiceCutoff}
+        (${soldQuery(periodInvoice)}
         ) AS Sold
       FROM Items it
       WHERE it.CompanyID = @companyId
@@ -5320,7 +5362,11 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
     const groups = new Map();
     for (const r of result.recordset) {
       const hsCode = r.HSCode || "";
-      const openingStock = num(r.InitialStock);
+      // Opening is the stock the item carried into the period: what it started
+      // life with, plus everything received and less everything invoiced before
+      // the start date. Balance then closes the period.
+      const openingStock =
+        num(r.InitialStock) + num(r.PriorPurchased) - num(r.PriorSold);
       const purchased = num(r.Purchased);
       const sold = num(r.Sold);
       const balance = openingStock + purchased - sold;
@@ -5370,7 +5416,7 @@ app.get("/api/reports/inventory", authenticateToken, async (req, res) => {
           name: companyRow.BusinessNameForSalesInvoice || companyRow.Name || "",
           ntnNumber: companyRow.NTNNumber || "",
         },
-        asOf: asOf || null,
+        period: { startDate: startDate || null, endDate: endDate || null },
         rows,
         totals: {
           itemCount: sumOf("itemCount", round4),

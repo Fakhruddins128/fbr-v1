@@ -129,8 +129,8 @@ const itemCellText = (item: InventoryItemRow, column: ItemColumnDef): string => 
 };
 
 const InventoryReport: React.FC = () => {
-  // Blank means stock as it stands now, which matches the Items page exactly.
-  const [asOf, setAsOf] = useState('');
+  // Both blank means stock as it stands now, which matches the Items page.
+  const [range, setRange] = useState({ startDate: '', endDate: '' });
   const [data, setData] = useState<InventoryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,9 +145,11 @@ const InventoryReport: React.FC = () => {
   }, []);
 
   const periodLabel = useMemo(() => {
-    const on = safeFormatDate(asOf);
-    return on ? `STOCK AS AT ${on}` : 'CURRENT STOCK';
-  }, [asOf]);
+    const from = safeFormatDate(range.startDate);
+    const to = safeFormatDate(range.endDate);
+    if (!from && !to) return 'CURRENT STOCK';
+    return `FOR THE PERIOD ${from || 'INCEPTION'} TO ${to || 'DATE'}`;
+  }, [range.startDate, range.endDate]);
 
   const fetchReport = useCallback(async () => {
     setLoading(true);
@@ -156,7 +158,10 @@ const InventoryReport: React.FC = () => {
       // Super admins operate against the company selected elsewhere in the app
       const selectedCompanyId = localStorage.getItem('selectedCompanyId') || undefined;
       const response = await reportsApi.getInventoryReport(
-        { asOf: asOf || undefined },
+        {
+          startDate: range.startDate || undefined,
+          endDate: range.endDate || undefined
+        },
         selectedCompanyId
       );
 
@@ -172,7 +177,7 @@ const InventoryReport: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [asOf]);
+  }, [range.startDate, range.endDate]);
 
   useEffect(() => {
     fetchReport();
@@ -210,10 +215,10 @@ const InventoryReport: React.FC = () => {
     [totalKeys]
   );
 
-  const fileStem = useMemo(
-    () => `Inventory-Report_${asOf || 'current'}`,
-    [asOf]
-  );
+  const fileStem = useMemo(() => {
+    if (!range.startDate && !range.endDate) return 'Inventory-Report_current';
+    return `Inventory-Report_${range.startDate || 'inception'}_to_${range.endDate || 'date'}`;
+  }, [range.startDate, range.endDate]);
 
   const exportExcel = () => {
     if (!data || !hasRows) return;
@@ -436,9 +441,11 @@ const InventoryReport: React.FC = () => {
         Inventory Report
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Stock on hand grouped by HS Code. Click an HS Code to see the individual
-        items under it. Balance is opening stock plus purchases received less
-        quantities invoiced, the same figure the Items page shows.
+        Stock movement grouped by HS Code, for the period you choose. Opening is
+        the stock carried into the period, Purchased and Sold are the movements
+        within it, and Balance closes it. Click an HS Code to see the individual
+        items under it. With no dates set this is current stock, matching the
+        Items page.
       </Typography>
 
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -448,13 +455,26 @@ const InventoryReport: React.FC = () => {
           alignItems={{ xs: 'stretch', md: 'center' }}
         >
           <TextField
-            label="As of"
+            label="From"
             type="date"
             size="small"
-            value={asOf}
-            onChange={(event) => setAsOf(event.target.value)}
+            value={range.startDate}
+            onChange={(event) =>
+              setRange((prev) => ({ ...prev, startDate: event.target.value }))
+            }
             InputLabelProps={{ shrink: true }}
-            helperText="Leave blank for current stock"
+            helperText="Opening balance is taken at this date"
+          />
+          <TextField
+            label="To"
+            type="date"
+            size="small"
+            value={range.endDate}
+            onChange={(event) =>
+              setRange((prev) => ({ ...prev, endDate: event.target.value }))
+            }
+            InputLabelProps={{ shrink: true }}
+            helperText="Leave both blank for current stock"
           />
           <Button variant="contained" onClick={fetchReport} disabled={loading}>
             Apply
