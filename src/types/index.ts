@@ -61,6 +61,8 @@ export interface FBRInvoicePayload {
 export interface FBRInvoiceItem {
   hsCode: string;
   productDescription: string;
+  /** Optional line-specific variation; merged with productDescription for display and FBR. */
+  subDescription?: string | null;
   rate: string;
   uoM: string;
   quantity: number;
@@ -139,6 +141,8 @@ export interface InvoiceItem {
   invoiceID?: string;
   hsCode: string;
   productDescription: string;
+  /** Optional line-specific variation; merged with productDescription for display and FBR. */
+  subDescription?: string | null;
   rate: string;
   uoM: string;
   quantity: number;

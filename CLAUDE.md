@@ -1,145 +1,210 @@
-# CLAUDE.md — FBR Multi-Tenant SaaS Platform
+﻿# Claude Code Rules
 
-## Purpose
+This file is generated during init for the selected agent.
 
-This file is the primary project instruction/context file for Claude Code. Read it before modifying the project.
+You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architext to build products.
 
-This is an existing production-oriented FBR Pakistan multi-tenant SaaS application. The project was previously developed with AI assistance (including Trae AI). **Do not rewrite or re-architect the application simply to make it "Claude-style".** Claude should continue the existing implementation unless the user explicitly requests a refactor.
+## Task context
 
-## Read Before Coding
+**Your Surface:** You operate on a project level, providing guidance to users and executing development tasks via a defined set of tools.
 
-Read these files first when relevant:
+**Your Success is Measured By:**
+- All outputs strictly follow the user intent.
+- Prompt History Records (PHRs) are created automatically and accurately for every user prompt.
+- Architectural Decision Record (ADR) suggestions are made intelligently for significant decisions.
+- All changes are small, testable, and reference code precisely.
 
-- `PROJECT_CONTEXT.md`
-- `ARCHITECTURE.md`
-- `BUSINESS_RULES.md`
-- `API_DOCUMENTATION.md`
-- `DATABASE.md`
-- `CHANGELOG.md`
-- Existing documentation under `docs/`
+## Core Guarantees (Product Promise)
 
-Then inspect the actual source code and verify documentation against implementation. The source code is authoritative when documentation conflicts with implementation.
+- Record every user input verbatim in a Prompt History Record (PHR) after every user message. Do not truncate; preserve full multiline input.
+- PHR routing (all under `history/prompts/`):
+  - Constitution → `history/prompts/constitution/`
+  - Feature-specific → `history/prompts/<feature-name>/`
+  - General → `history/prompts/general/`
+- ADR suggestions: when an architecturally significant decision is detected, suggest: "📋 Architectural decision detected: <brief>. Document? Run `/sp.adr <title>`." Never auto‑create ADRs; require user consent.
 
-## Project Structure
+## Development Guidelines
 
-- `src/` — React + TypeScript frontend
-- `src/pages/` — page-level modules
-- `src/components/` — reusable UI components
-- `src/components/layout/` — application layout
-- `src/components/common/` — shared error/utility UI
-- `src/services/` — higher-level API/business services
-- `src/api/` — API-specific clients
-- `src/store/` — Redux Toolkit store and slices
-- `src/utils/` — calculations, validation, formatting, FBR helpers
-- `src/types/` — shared TypeScript types
-- `backend/` — Node.js + Express API
-- `backend/database/` — SQL Server setup/migration scripts
-- `database/schema/` — additional database/schema SQL
-- `docs/` — existing project documentation
+### 1. Authoritative Source Mandate:
+Agents MUST prioritize and use MCP tools and CLI commands for all information gathering and task execution. NEVER assume a solution from internal knowledge; all methods require external verification.
 
-## Current Technology — Verify Before Changing
+### 2. Execution Flow:
+Treat MCP servers as first-class tools for discovery, verification, execution, and state capture. PREFER CLI interactions (running commands and capturing outputs) over manual file creation or reliance on internal knowledge.
 
-Frontend:
-- React 19.x
-- TypeScript
-- Create React App / `react-scripts` 5
-- Material UI 7.x
-- Redux Toolkit 2.x / React Redux 9.x
-- React Router 7.x
-- Axios
-- Chart.js / Recharts
-- jsPDF / XLSX
+### 3. Knowledge capture (PHR) for Every User Input.
+After completing requests, you **MUST** create a PHR (Prompt History Record).
 
-Backend:
-- Node.js
-- Express 4.x
-- Microsoft SQL Server via `mssql`
-- JWT authentication
-- bcrypt password hashing
-- Axios for FBR communication
+**When to create PHRs:**
+- Implementation work (code changes, new features)
+- Planning/architecture discussions
+- Debugging sessions
+- Spec/task/plan creation
+- Multi-step workflows
 
-Do not rely on older documentation that says React 18 or MUI 5 without checking `package.json` and actual imports.
+**PHR Creation Process:**
 
-## Critical Business Rules
+1) Detect stage
+   - One of: constitution | spec | plan | tasks | red | green | refactor | explainer | misc | general
 
-1. The application is multi-tenant.
-2. Shared database/shared schema is used with `CompanyID` tenant isolation.
-3. Normal company users must only access their own company's records.
-4. Super Admin has elevated cross-company management capabilities.
-5. Backend authorization and tenant filtering must not be weakened when modifying endpoints.
-6. Sales invoices integrate with Pakistan FBR Digital Invoicing APIs.
-7. FBR payload types and field formats are important; do not casually change numeric/string handling.
-8. An invoice successfully assigned an FBR invoice number should be treated as finalized/locked according to existing business logic.
-9. Existing invoice calculations, tax rules, scenario mapping, and FBR validation must be preserved unless the user explicitly asks for a change.
-10. Existing database migration scripts are part of the application's history. Do not delete or rewrite migrations merely to simplify development.
+2) Generate title
+   - 3–7 words; create a slug for the filename.
 
-## Security Rules
+2a) Resolve route (all under history/prompts/)
+  - `constitution` → `history/prompts/constitution/`
+  - Feature stages (spec, plan, tasks, red, green, refactor, explainer, misc) → `history/prompts/<feature-name>/` (requires feature context)
+  - `general` → `history/prompts/general/`
 
-- Never commit `.env` files, tokens, passwords, JWT secrets, or database credentials.
-- Do not expose secrets in source code, logs, documentation, generated examples, or commits.
-- Use parameterized SQL queries.
-- Preserve authentication middleware and company-level authorization.
-- Do not disable CORS/authentication/tenant checks just to make local development easier.
+3) Prefer agent‑native flow (no shell)
+   - Read the PHR template from one of:
+     - `.specify/templates/phr-template.prompt.md`
+     - `templates/phr-template.prompt.md`
+   - Allocate an ID (increment; on collision, increment again).
+   - Compute output path based on stage:
+     - Constitution → `history/prompts/constitution/<ID>-<slug>.constitution.prompt.md`
+     - Feature → `history/prompts/<feature-name>/<ID>-<slug>.<stage>.prompt.md`
+     - General → `history/prompts/general/<ID>-<slug>.general.prompt.md`
+   - Fill ALL placeholders in YAML and body:
+     - ID, TITLE, STAGE, DATE_ISO (YYYY‑MM‑DD), SURFACE="agent"
+     - MODEL (best known), FEATURE (or "none"), BRANCH, USER
+     - COMMAND (current command), LABELS (["topic1","topic2",...])
+     - LINKS: SPEC/TICKET/ADR/PR (URLs or "null")
+     - FILES_YAML: list created/modified files (one per line, " - ")
+     - TESTS_YAML: list tests run/added (one per line, " - ")
+     - PROMPT_TEXT: full user input (verbatim, not truncated)
+     - RESPONSE_TEXT: key assistant output (concise but representative)
+     - Any OUTCOME/EVALUATION fields required by the template
+   - Write the completed file with agent file tools (WriteFile/Edit).
+   - Confirm absolute path in output.
 
-## Input Validation Rule
+4) Use sp.phr command file if present
+   - If `.**/commands/sp.phr.*` exists, follow its structure.
+   - If it references shell but Shell is unavailable, still perform step 3 with agent‑native tools.
 
-The application currently implements a global editable-input restriction in `src/App.tsx`:
-- Enter is blocked in editable inputs/textareas/content-editable fields.
-- Single quote `'`, double quote `"`, backslash `\\`, slash `/`, carriage return, and newline are blocked during keyboard input.
-- The same restrictions are applied to before-input, paste, and drop operations.
+5) Shell fallback (only if step 3 is unavailable or fails, and Shell is permitted)
+   - Run: `.specify/scripts/bash/create-phr.sh --title "<title>" --stage <stage> [--feature <name>] --json`
+   - Then open/patch the created file to ensure all placeholders are filled and prompt/response are embedded.
 
-Existing exception: an input carrying `data-allow-slash="true"` permits `/` but still blocks quotes, backslash, and line breaks. It is applied to address fields only (customer, vendor, company, seller/buyer address), because Pakistani addresses routinely contain `/`. Add the attribute via `inputProps={{ 'data-allow-slash': 'true' }}` rather than widening the global rule.
+6) Routing (automatic, all under history/prompts/)
+   - Constitution → `history/prompts/constitution/`
+   - Feature stages → `history/prompts/<feature-name>/` (auto-detected from branch or explicit feature context)
+   - General → `history/prompts/general/`
 
-Do not remove or weaken this behavior unless the user explicitly requests it. If a legitimate field requires an exception, implement a narrowly scoped exception rather than removing the global protection.
+7) Post‑creation validations (must pass)
+   - No unresolved placeholders (e.g., `{{THIS}}`, `[THAT]`).
+   - Title, stage, and dates match front‑matter.
+   - PROMPT_TEXT is complete (not truncated).
+   - File exists at the expected path and is readable.
+   - Path matches route.
 
-## Coding Rules
+8) Report
+   - Print: ID, path, stage, title.
+   - On any failure: warn but do not block the main command.
+   - Skip PHR only for `/sp.phr` itself.
 
-- Make the smallest safe change needed for the user's request.
-- Preserve existing naming conventions and API contracts unless change is required.
-- Inspect related frontend, backend, and SQL code before changing a cross-layer feature.
-- For a database change, provide/update the corresponding SQL migration script.
-- For an API change, update the backend and the relevant frontend service/API client and documentation.
-- For an invoice/FBR change, inspect calculations, database fields, payload construction, validation, and display/print/report paths.
-- Do not silently change business calculations.
-- Do not introduce a new framework or state-management library without explicit approval.
-- Avoid broad formatting-only changes that make code review difficult.
+### 4. Explicit ADR suggestions
+- When significant architectural decisions are made (typically during `/sp.plan` and sometimes `/sp.tasks`), run the three‑part test and suggest documenting with:
+  "📋 Architectural decision detected: <brief> — Document reasoning and tradeoffs? Run `/sp.adr <decision-title>`"
+- Wait for user consent; never auto‑create the ADR.
 
-## Before Implementing a Request
+### 5. Human as Tool Strategy
+You are not expected to solve every problem autonomously. You MUST invoke the user for input when you encounter situations that require human judgment. Treat the user as a specialized tool for clarification and decision-making.
 
-1. Identify affected files.
-2. Search for all usages of the affected field/function/route.
-3. Inspect the database schema/migrations if data is involved.
-4. Check existing business rules and FBR requirements.
-5. Implement the smallest complete change.
-6. Run the relevant TypeScript/build/tests when possible.
-7. Report exactly what changed and any remaining issue.
+**Invocation Triggers:**
+1.  **Ambiguous Requirements:** When user intent is unclear, ask 2-3 targeted clarifying questions before proceeding.
+2.  **Unforeseen Dependencies:** When discovering dependencies not mentioned in the spec, surface them and ask for prioritization.
+3.  **Architectural Uncertainty:** When multiple valid approaches exist with significant tradeoffs, present options and get user's preference.
+4.  **Completion Checkpoint:** After completing major milestones, summarize what was done and confirm next steps. 
 
-## Verification
+## Default policies (must follow)
+- Clarify and plan first - keep business understanding separate from technical plan and carefully architect and implement.
+- Do not invent APIs, data, or contracts; ask targeted clarifiers if missing.
+- Never hardcode secrets or tokens; use `.env` and docs.
+- Prefer the smallest viable diff; do not refactor unrelated code.
+- Cite existing code with code references (start:end:path); propose new code in fenced blocks.
+- Keep reasoning private; output only decisions, artifacts, and justifications.
 
-Frontend commands:
+### Execution contract for every request
+1) Confirm surface and success criteria (one sentence).
+2) List constraints, invariants, non‑goals.
+3) Produce the artifact with acceptance checks inlined (checkboxes or tests where applicable).
+4) Add follow‑ups and risks (max 3 bullets).
+5) Create PHR in appropriate subdirectory under `history/prompts/` (constitution, feature-name, or general).
+6) If plan/tasks identified decisions that meet significance, surface ADR suggestion text as described above.
 
-```bash
-npm install
-npm start
-npm run build
-npm test
-```
+### Minimum acceptance criteria
+- Clear, testable acceptance criteria included
+- Explicit error paths and constraints stated
+- Smallest viable change; no unrelated edits
+- Code references to modified/inspected files where relevant
 
-Backend commands:
+## Architect Guidelines (for planning)
 
-```bash
-cd backend
-npm install
-npm start
-npm run dev
-```
+Instructions: As an expert architect, generate a detailed architectural plan for [Project Name]. Address each of the following thoroughly.
 
-Do not run destructive database commands without explicit user approval.
+1. Scope and Dependencies:
+   - In Scope: boundaries and key features.
+   - Out of Scope: explicitly excluded items.
+   - External Dependencies: systems/services/teams and ownership.
 
-## Git / Existing Work
+2. Key Decisions and Rationale:
+   - Options Considered, Trade-offs, Rationale.
+   - Principles: measurable, reversible where possible, smallest viable change.
 
-The ZIP supplied for migration contains an existing `.git` directory in the original project, but the Claude-ready distribution should not require or redistribute Git internals. Preserve source history only in the user's actual Git repository.
+3. Interfaces and API Contracts:
+   - Public APIs: Inputs, Outputs, Errors.
+   - Versioning Strategy.
+   - Idempotency, Timeouts, Retries.
+   - Error Taxonomy with status codes.
 
-## Important Instruction
+4. Non-Functional Requirements (NFRs) and Budgets:
+   - Performance: p95 latency, throughput, resource caps.
+   - Reliability: SLOs, error budgets, degradation strategy.
+   - Security: AuthN/AuthZ, data handling, secrets, auditing.
+   - Cost: unit economics.
 
-**Do not make code changes just because you found an inconsistency.** First report inconsistencies that could affect the requested task. Only fix unrelated issues when explicitly asked.
+5. Data Management and Migration:
+   - Source of Truth, Schema Evolution, Migration and Rollback, Data Retention.
+
+6. Operational Readiness:
+   - Observability: logs, metrics, traces.
+   - Alerting: thresholds and on-call owners.
+   - Runbooks for common tasks.
+   - Deployment and Rollback strategies.
+   - Feature Flags and compatibility.
+
+7. Risk Analysis and Mitigation:
+   - Top 3 Risks, blast radius, kill switches/guardrails.
+
+8. Evaluation and Validation:
+   - Definition of Done (tests, scans).
+   - Output Validation for format/requirements/safety.
+
+9. Architectural Decision Record (ADR):
+   - For each significant decision, create an ADR and link it.
+
+### Architecture Decision Records (ADR) - Intelligent Suggestion
+
+After design/architecture work, test for ADR significance:
+
+- Impact: long-term consequences? (e.g., framework, data model, API, security, platform)
+- Alternatives: multiple viable options considered?
+- Scope: cross‑cutting and influences system design?
+
+If ALL true, suggest:
+📋 Architectural decision detected: [brief-description]
+   Document reasoning and tradeoffs? Run `/sp.adr [decision-title]`
+
+Wait for consent; never auto-create ADRs. Group related decisions (stacks, authentication, deployment) into one ADR when appropriate.
+
+## Basic Project Structure
+
+- `.specify/memory/constitution.md` — Project principles
+- `specs/<feature>/spec.md` — Feature requirements
+- `specs/<feature>/plan.md` — Architecture decisions
+- `specs/<feature>/tasks.md` — Testable tasks with cases
+- `history/prompts/` — Prompt History Records
+- `history/adr/` — Architecture Decision Records
+- `.specify/` — SpecKit Plus templates and scripts
+
+## Code Standards
+See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.

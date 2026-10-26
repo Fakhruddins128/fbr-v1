@@ -1,4 +1,5 @@
 import { FBRInvoicePayload, FBRInvoiceItem } from '../types';
+import { MAX_PRODUCT_DESCRIPTION_LENGTH } from './invoiceDescription';
 
 /**
  * Validates an FBR invoice payload
@@ -60,6 +61,11 @@ export const validateFBRInvoiceItem = (item: FBRInvoiceItem): string[] => {
   
   if (!item.hsCode) errors.push('HS Code is required');
   if (!item.productDescription) errors.push('Product description is required');
+  if (item.productDescription && item.productDescription.length > MAX_PRODUCT_DESCRIPTION_LENGTH) {
+    errors.push(
+      `Product description must not exceed ${MAX_PRODUCT_DESCRIPTION_LENGTH} characters`
+    );
+  }
   if (!item.rate) errors.push('Rate is required');
   if (!item.uoM) errors.push('Unit of Measure is required');
   if (item.quantity <= 0) errors.push('Quantity must be greater than 0');

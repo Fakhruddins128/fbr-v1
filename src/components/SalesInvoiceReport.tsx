@@ -14,10 +14,13 @@ import {
 } from '@mui/material';
 import { format } from 'date-fns';
 import { QRCodeCanvas } from 'qrcode.react';
+import { mergeProductDescription } from '../utils/invoiceDescription';
 
 interface InvoiceItem {
   hsCode: string;
   productDescription: string;
+  /** Optional line-specific variation, merged with productDescription for output. */
+  subDescription?: string | null;
   rate: string;
   uoM: string;
   quantity: number;
@@ -255,7 +258,7 @@ const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.hsCode}</TableCell>
-                  <TableCell>{item.productDescription}</TableCell>
+                  <TableCell>{mergeProductDescription(item.productDescription, item.subDescription)}</TableCell>
                   <TableCell>{item.uoM}</TableCell>
                   <TableCell align="right">{item.quantity}</TableCell>
                   <TableCell align="right">{item.rate}</TableCell>
@@ -706,7 +709,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem'  }}>{displayUom}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top', fontSize: '1.00rem' }}>{mergeProductDescription(item.productDescription, item.subDescription)}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
@@ -1561,7 +1564,7 @@ const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.quantity}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.5, whiteSpace: 'nowrap', verticalAlign: 'top', fontSize: '1.00rem'  }}>{displayUom}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.6, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.hsCode}</TableCell>
-                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top', fontSize: '1.00rem' }}>{item.productDescription}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top', fontSize: '1.00rem' }}>{mergeProductDescription(item.productDescription, item.subDescription)}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(unitPrice)}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top', fontSize: '1.00rem' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
                   <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top', fontSize: '1.00rem' }}>{item.rate}</TableCell>
@@ -1922,7 +1925,7 @@ const TemplateFour: React.FC<SalesInvoiceReportProps> = ({ invoiceData }) => {
     const unitPrice = item.quantity ? item.valueSalesExcludingST / item.quantity : item.valueSalesExcludingST;
     return {
       itemNo: item.hsCode,
-      description: item.productDescription,
+      description: mergeProductDescription(item.productDescription, item.subDescription),
       qty: item.quantity,
       unitPrice,
       lineTotal: item.totalValues

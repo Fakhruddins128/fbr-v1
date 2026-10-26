@@ -23,3 +23,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .env
+
+# editor / OS
+.vscode/
+.idea/
+Thumbs.db
+*.swp
+*.tmp

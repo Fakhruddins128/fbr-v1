@@ -41,6 +41,12 @@ import {
   Lock as LockIcon
 } from '@mui/icons-material';
 import { itemsApi, Item } from '../api/itemsApi';
+import {
+  mergeProductDescription,
+  normaliseSubDescription,
+  isMergedDescriptionTooLong,
+  MAX_PRODUCT_DESCRIPTION_LENGTH
+} from '../utils/invoiceDescription';
 import { customerApi, Customer } from '../api/customerApi';
 import { invoiceAPI } from '../services/invoiceApi';
 import { downloadCSVFile } from '../utils/formatUtils';
@@ -57,6 +63,8 @@ interface InvoiceItem {
   masterItemId?: string;
   hsCodeDescription: string;
   productDescription: string;
+  /** Optional line-specific variation. Merged with productDescription on output. */
+  subDescription: string;
   rate: string;
   uom: string;
   quantity: number;
@@ -1145,6 +1153,7 @@ const SalesInvoice: React.FC = () => {
                   masterItemId: item.masterItemID,
                   hsCodeDescription,
                   productDescription: item.productDescription || '',
+                  subDescription: item.subDescription || '',
                   rate: item.rate || 'Select',
                   uom: item.uoM || 'Select',
                   quantity: item.quantity || 0,
@@ -1184,6 +1193,7 @@ const SalesInvoice: React.FC = () => {
     id: '',
     hsCodeDescription: 'Select',
     productDescription: '',
+    subDescription: '',
     rate: 'Select',
     uom: 'Select',
     quantity: 0,
@@ -1430,6 +1440,7 @@ const SalesInvoice: React.FC = () => {
         masterItemId: undefined,
         hsCodeDescription: 'Select',
         productDescription: '',
+        subDescription: '',
         rate: 'Select',
         uom: 'Select',
         quantity: 0,
@@ -1466,6 +1477,7 @@ const SalesInvoice: React.FC = () => {
       masterItemId: item.masterItemId,
       hsCodeDescription: item.hsCodeDescription,
       productDescription: item.productDescription,
+      subDescription: item.subDescription,
       rate: item.rate,
       uom: item.uom,
       quantity: item.quantity,
@@ -1506,6 +1518,7 @@ const SalesInvoice: React.FC = () => {
       masterItemId: undefined,
       hsCodeDescription: 'Select',
       productDescription: '',
+      subDescription: '',
       rate: 'Select',
       uom: 'Select',
       quantity: 0,
@@ -1741,7 +1754,10 @@ const SalesInvoice: React.FC = () => {
       buyerRegistrationType: formData.buyerType,
       items: formData.items.map(item => ({
         hsCode: item.hsCodeDescription.split(' - ')[0] || '0101.2100',
-        productDescription: item.productDescription,
+        productDescription: mergeProductDescription(
+          item.productDescription,
+          item.subDescription
+        ),
         rate: item.rate,
         uoM: item.uom,
         quantity: item.quantity,
@@ -1766,6 +1782,20 @@ const SalesInvoice: React.FC = () => {
       setNotification({
         open: true,
         message: 'Please save the invoice first before sending to FBR',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // A description the user cannot see in full must never reach FBR, so this
+    // blocks rather than truncating (FR-017).
+    const overlongLine = formData.items.find(item =>
+      isMergedDescriptionTooLong(item.productDescription, item.subDescription)
+    );
+    if (overlongLine) {
+      setNotification({
+        open: true,
+        message: `Cannot submit: "${overlongLine.productDescription}" and its sub-description exceed ${MAX_PRODUCT_DESCRIPTION_LENGTH} characters together. Shorten the sub-description.`,
         severity: 'error'
       });
       return;
@@ -2041,6 +2071,7 @@ const SalesInvoice: React.FC = () => {
       items: formData.items.map(item => ({
         hsCode: item.hsCodeDescription.split(' - ')[0] || '',
         productDescription: item.productDescription,
+        subDescription: item.subDescription,
         rate: item.rate,
         uoM: item.uom,
         quantity: item.quantity,
@@ -2133,6 +2164,7 @@ const SalesInvoice: React.FC = () => {
           masterItemId: item.masterItemId,
           hsCode: item.hsCodeDescription.split(' - ')[0] || '',
           productDescription: item.productDescription,
+          subDescription: normaliseSubDescription(item.subDescription),
           rate: item.rate,
           uoM: item.uom,
           quantity: item.quantity,
@@ -2523,6 +2555,29 @@ const SalesInvoice: React.FC = () => {
               disabled={isInvoiceSentToFBR()}
             />
           </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              fullWidth
+              label="Sub-Description"
+              placeholder="e.g. Size 30mm"
+              value={currentItem.subDescription}
+              onChange={(e) => handleItemChange('subDescription', e.target.value)}
+              size="small"
+              disabled={isInvoiceSentToFBR()}
+              error={isMergedDescriptionTooLong(
+                currentItem.productDescription,
+                currentItem.subDescription
+              )}
+              helperText={
+                isMergedDescriptionTooLong(
+                  currentItem.productDescription,
+                  currentItem.subDescription
+                )
+                  ? `Too long. Product description and sub-description together must not exceed ${MAX_PRODUCT_DESCRIPTION_LENGTH} characters.`
+                  : 'Optional. Appended to the product description on the invoice.'
+              }
+            />
+          </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
@@ -2796,7 +2851,9 @@ const SalesInvoice: React.FC = () => {
                   <TableCell>-</TableCell>
                   <TableCell>{formData.invoiceType}</TableCell>
                   <TableCell>{formData.invoiceNo}</TableCell>
-                  <TableCell>{item.productDescription}</TableCell>
+                  <TableCell>
+                    {mergeProductDescription(item.productDescription, item.subDescription)}
+                  </TableCell>
                   <TableCell>{item.productDescription}</TableCell>
                   <TableCell>{item.hsCodeDescription}</TableCell>
                   <TableCell>{formData.saleType}</TableCell>

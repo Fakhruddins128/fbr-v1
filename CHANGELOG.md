@@ -24,6 +24,28 @@ This file is a Claude handoff record for the existing project. It is intentional
 
 ## Changes
 
+### 2026-10-26 - Optional product sub-description on sales invoice lines
+
+Feature `001-invoice-sub-description`. One Item Master product can now be invoiced with line-specific variations ("Ink Roll" + "Size 30mm") without duplicating the catalogue record.
+
+**Migration required**: `backend/database/add_sub_description_to_invoice_items.sql` adds `InvoiceItems.SubDescription NVARCHAR(255) NULL`. Guarded and rerunnable; no backfill. The API probes `sys.columns` for the column and degrades gracefully, so code and migration can be deployed in either order.
+
+- `src/utils/invoiceDescription.ts` - new. `mergeProductDescription` (the `"name - variation"` rule), `normaliseSubDescription` (empty and whitespace-only collapse to null), `isMergedDescriptionTooLong`, and `MAX_PRODUCT_DESCRIPTION_LENGTH`.
+- `src/pages/SalesInvoice.tsx` - optional Sub-Description input per line; value preserved through add, edit, save and reload; merged value shown in the Description column and sent to FBR; submission blocked when the merged value would exceed the limit.
+- `src/components/SalesInvoiceReport.tsx` - merged description rendered in all four templates, covering preview, print and PDF.
+- `backend/server.js` - `SubDescription` added to the four `sys.columns` probes, the four `InvoiceItems` SELECT lists, both camelCase read mappers, and both insert paths.
+- `src/utils/fbrUtils.ts` - FBR item validation now enforces the description length as well as its presence.
+
+**The constraint this design exists for.** Stock is derived, not stored: it is recomputed on every read by matching invoice lines to catalogue products on HS Code *and* product name, in four places (`/api/items`, the Inventory Report, `/api/dashboard/stats`, and `getAvailableStock` in the invoice editor). `InvoiceItems.ProductDescription` therefore still holds the catalogue product name alone - the merge happens only at display and submission. Writing the merged value there would silently stop sold quantities from counting and overstate stock. `src/utils/invoiceDescription.invariant.test.ts` guards this at the source level.
+
+**FBR scenario detection deliberately reads the unmerged name.** `determineFbrScenario` substring-matches for "scrap", "steel" and similar; feeding it the merged value would let a free-text variation change which tax scenario is submitted.
+
+**Deliberate non-change**: the Sales Register and Inventory Report continue to show the catalogue product name without the variation. The spec lists five output paths for the merged description and the registers are not among them.
+
+**Known limitation**: `MAX_PRODUCT_DESCRIPTION_LENGTH` is 255, matching the column. FBR's own maximum for `productDescription` is not documented in this repository; if it differs, change that one constant.
+
+Not verified: the migration has not been applied and no screen was exercised in a browser - no database was available. Typecheck, production build and the feature test suite (23 tests) pass.
+
 ### 2026-10-24 - Fix: "Payload too Large" when updating an invoice
 
 Saving an invoice failed with a bare HTML page reading `Payload too Large`. The body parser was on its 100kb default; an invoice line item serialises to about 575 bytes, so any invoice past roughly 175 lines was rejected before it reached the route.
