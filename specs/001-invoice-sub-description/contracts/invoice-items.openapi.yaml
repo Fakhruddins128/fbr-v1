@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Sales Invoice — line sub-description
+  version: 1.0.0
+  description: >
+    Contract delta for feature 001-invoice-sub-description. Only the parts of the
+    existing invoice endpoints that change are described. Every other field,
+    endpoint, header and status code is unchanged and is deliberately omitted so
+    this file cannot be mistaken for a full API definition.
+
+    One field is added to the invoice line object: subDescription. It is additive
+    and optional, so existing clients continue to work without modification.
+
+servers:
+  - url: /api
+
+paths:
+  /invoices:
+    post:
+      summary: Create an invoice (changed — accepts subDescription per line)
+      tags: [invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompanyIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceWriteDelta'
+      responses:
+        '200':
+          description: Created. The echoed line items include subDescription.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceReadDelta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+
+  /invoices/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Read an invoice (changed — returns subDescription per line)
+      tags: [invoices]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: >
+            Found. Each line includes subDescription, which is null for lines
+            saved before this feature existed and for lines left blank.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceReadDelta'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Update an invoice (changed — persists subDescription per line)
+      tags: [invoices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompanyIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceWriteDelta'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceReadDelta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    CompanyIdHeader:
+      name: X-Company-ID
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+      description: >
+        Super Admin only, to act against another company. Ignored for other
+        roles, whose company is taken from the token. Unchanged by this feature.
+
+  schemas:
+    InvoiceLineWrite:
+      type: object
+      description: >
+        An invoice line as sent by the client. Only the fields this feature
+        touches are listed; all other existing line fields remain required and
+        unchanged.
+      required: [hsCode, productDescription, quantity]
+      properties:
+        hsCode:
+          type: string
+          maxLength: 50
+          example: '1111.2222'
+          description: Unchanged. Half of the key that ties a line to its catalogue product.
+        productDescription:
+          type: string
+          maxLength: 255
+          example: 'Ink Roll'
+          description: >
+            The catalogue product name, verbatim. MUST NOT contain the merged
+            value. Stock is derived by matching this against the catalogue, so a
+            merged value written here silently stops sold quantities from being
+            counted. See research.md R2.
+        subDescription:
+          type: string
+          maxLength: 255
+          nullable: true
+          example: 'Size 30mm'
+          description: >
+            Optional per-line variation. Absent, null, empty and whitespace-only
+            are equivalent and are normalised to null on write. Each line keeps
+            its own value even when several lines share a product.
+        quantity:
+          type: number
+          example: 1
+
+    InvoiceLineRead:
+      allOf:
+        - $ref: '#/components/schemas/InvoiceLineWrite'
+        - type: object
+          properties:
+            subDescription:
+              type: string
+              nullable: true
+              description: >
+                Null for lines saved before this feature and for lines left
+                blank. Always present as a key.
+
+    InvoiceWriteDelta:
+      type: object
+      description: Only the changed portion of the invoice write payload.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLineWrite'
+
+    InvoiceReadDelta:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/InvoiceLineRead'
+
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+
+  responses:
+    BadRequest:
+      description: Validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Invoice not found, or not visible to this company.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PayloadTooLarge:
+      description: >
+        Request body exceeded the configured limit. Listed because adding a
+        field to every line increases payload size on large invoices.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

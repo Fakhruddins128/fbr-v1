@@ -234,7 +234,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
       SELECT name
       FROM sys.columns
       WHERE object_id = OBJECT_ID('InvoiceItems')
-        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
+        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
     `);
     const invoiceItemsColumns = new Set(
       invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -248,6 +248,11 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
     const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
       ? "AdvanceTaxValue"
       : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+    // Optional per-line variation. Absent on databases where the
+    // add_sub_description_to_invoice_items migration has not been applied.
+    const subDescriptionSelect = invoiceItemsColumns.has("SubDescription")
+      ? "SubDescription"
+      : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
     const discountSelect = invoiceItemsColumns.has("Discount")
       ? "Discount"
       : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -270,6 +275,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             ${masterItemIdSelect},
             HSCode,
             ProductDescription,
+            ${subDescriptionSelect},
             Rate,
             UoM,
             Quantity,
@@ -304,6 +310,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             invoiceID: item.InvoiceID,
             hsCode: item.HSCode,
             productDescription: item.ProductDescription,
+            subDescription: item.SubDescription ?? null,
             rate: item.Rate,
             uoM: item.UoM,
             quantity: item.Quantity,
@@ -386,7 +393,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       SELECT name
       FROM sys.columns
       WHERE object_id = OBJECT_ID('InvoiceItems')
-        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
+        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
     `);
     const invoiceItemsColumns = new Set(
       invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -400,6 +407,11 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
     const advanceTaxValueSelect = invoiceItemsColumns.has("AdvanceTaxValue")
       ? "AdvanceTaxValue"
       : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+    // Optional per-line variation. Absent on databases where the
+    // add_sub_description_to_invoice_items migration has not been applied.
+    const subDescriptionSelect = invoiceItemsColumns.has("SubDescription")
+      ? "SubDescription"
+      : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
     const discountSelect = invoiceItemsColumns.has("Discount")
       ? "Discount"
       : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -423,6 +435,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
             ${masterItemIdSelect},
             HSCode,
             ProductDescription,
+            ${subDescriptionSelect},
             Rate,
             UoM,
             Quantity,
@@ -464,6 +477,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
           invoiceID: item.InvoiceID,
           hsCode: item.HSCode,
           productDescription: item.ProductDescription,
+          subDescription: item.SubDescription ?? null,
           rate: item.Rate,
           uoM: item.UoM,
           quantity: item.Quantity,
@@ -582,7 +596,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         SELECT name
         FROM sys.columns
         WHERE object_id = OBJECT_ID('InvoiceItems')
-          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
+          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
       `);
       const invoiceItemsColumns = new Set(
         invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -590,6 +604,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
       const hasMasterItemId = invoiceItemsColumns.has("MasterItemID");
       const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
       const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
+      const hasSubDescription = invoiceItemsColumns.has("SubDescription");
       const hasDiscount = invoiceItemsColumns.has("Discount");
       const hasSaleType = invoiceItemsColumns.has("SaleType");
       const hasSroItemSerialNo = invoiceItemsColumns.has("SROItemSerialNo");
@@ -602,6 +617,10 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
       const advanceTaxValueSelect = hasAdvanceTaxValue
         ? "AdvanceTaxValue"
         : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+      // Optional per-line variation; absent until the migration is applied.
+      const subDescriptionSelect = hasSubDescription
+        ? "SubDescription"
+        : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
       const discountSelect = hasDiscount
         ? "Discount"
         : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -616,6 +635,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         ...(hasMasterItemId ? ["MasterItemID"] : []),
         "HSCode",
         "ProductDescription",
+        ...(hasSubDescription ? ["SubDescription"] : []),
         "Rate",
         "UoM",
         "Quantity",
@@ -639,6 +659,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         ...(hasMasterItemId ? ["@masterItemId"] : []),
         "@hsCode",
         "@productDescription",
+        ...(hasSubDescription ? ["@subDescription"] : []),
         "@rate",
         "@uoM",
         "@quantity",
@@ -737,6 +758,15 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           .input("masterItemId", sql.UniqueIdentifier, item.masterItemId || null)
           .input("hsCode", sql.NVarChar, item.hsCode)
           .input("productDescription", sql.NVarChar, item.productDescription)
+          .input(
+            "subDescription",
+            sql.NVarChar(255),
+            // Empty and whitespace-only both collapse to NULL, so storage
+            // carries one representation of "no variation".
+            typeof item.subDescription === "string" && item.subDescription.trim()
+              ? item.subDescription.trim()
+              : null
+          )
           .input("rate", sql.NVarChar, item.rate)
           .input("uoM", sql.NVarChar, item.uoM)
           .input("quantity", sql.Decimal(18, 4), item.quantity)
@@ -797,6 +827,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
               ${masterItemIdSelect},
               HSCode,
               ProductDescription,
+              ${subDescriptionSelect},
               Rate,
               UoM,
               Quantity,
@@ -992,7 +1023,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         SELECT name
         FROM sys.columns
         WHERE object_id = OBJECT_ID('InvoiceItems')
-          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo')
+          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
       `);
       const invoiceItemsColumns = new Set(
         invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -1000,6 +1031,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       const hasMasterItemId = invoiceItemsColumns.has("MasterItemID");
       const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
       const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
+      const hasSubDescription = invoiceItemsColumns.has("SubDescription");
       const hasDiscount = invoiceItemsColumns.has("Discount");
       const hasSaleType = invoiceItemsColumns.has("SaleType");
       const hasSroItemSerialNo = invoiceItemsColumns.has("SROItemSerialNo");
@@ -1012,6 +1044,10 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       const advanceTaxValueSelect = hasAdvanceTaxValue
         ? "AdvanceTaxValue"
         : "CAST(0 AS DECIMAL(18, 2)) AS AdvanceTaxValue";
+      // Optional per-line variation; absent until the migration is applied.
+      const subDescriptionSelect = hasSubDescription
+        ? "SubDescription"
+        : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
       const discountSelect = hasDiscount
         ? "Discount"
         : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -1026,6 +1062,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         ...(hasMasterItemId ? ["MasterItemID"] : []),
         "HSCode",
         "ProductDescription",
+        ...(hasSubDescription ? ["SubDescription"] : []),
         "Rate",
         "UoM",
         "Quantity",
@@ -1049,6 +1086,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         ...(hasMasterItemId ? ["@masterItemId"] : []),
         "@hsCode",
         "@productDescription",
+        ...(hasSubDescription ? ["@subDescription"] : []),
         "@rate",
         "@uoM",
         "@quantity",
@@ -1160,6 +1198,15 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           .input("masterItemId", sql.UniqueIdentifier, item.masterItemId || null)
           .input("hsCode", sql.NVarChar, item.hsCode)
           .input("productDescription", sql.NVarChar, item.productDescription)
+          .input(
+            "subDescription",
+            sql.NVarChar(255),
+            // Empty and whitespace-only both collapse to NULL, so storage
+            // carries one representation of "no variation".
+            typeof item.subDescription === "string" && item.subDescription.trim()
+              ? item.subDescription.trim()
+              : null
+          )
           .input("rate", sql.NVarChar, item.rate)
           .input("uoM", sql.NVarChar, item.uoM)
           .input("quantity", sql.Decimal(18, 4), item.quantity)
@@ -1220,6 +1267,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
               ${masterItemIdSelect},
               HSCode,
               ProductDescription,
+              ${subDescriptionSelect},
               Rate,
               UoM,
               Quantity,
