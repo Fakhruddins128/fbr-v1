@@ -26,7 +26,8 @@ export interface Company {
   ntnNumber: string;
   cnic: string;
   businessNameForSalesInvoice?: string;
-  salesInvoiceTemplate?: 'template1' | 'template2' | 'template3' | 'template4';
+  /** `template5` is `template2` with the MRP pricing columns; see SalesInvoiceReport. */
+  salesInvoiceTemplate?: 'template1' | 'template2' | 'template3' | 'template4' | 'template5';
   address: string;
   city: string;
   province: string;
@@ -151,6 +152,11 @@ export interface InvoiceItem {
   fixedNotifiedValueOrRetailPrice: number;
   salesTaxApplicable: number;
   salesTaxWithheldAtSource: number;
+  /** MRP-mode pricing detail; absent on lines priced as unit price x quantity. */
+  isMrpMode?: boolean;
+  mrpPerItem?: number;
+  salePricePerProduct?: number;
+  furtherTaxRate?: number;
   advanceTaxRate?: number;
   advanceTaxValue?: number;
   AdvanceTaxRate?: number;

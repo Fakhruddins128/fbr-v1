@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { QRCodeCanvas } from 'qrcode.react';
 import { mergeProductDescription } from '../utils/invoiceDescription';
 
-interface InvoiceItem {
+export interface InvoiceItem {
   hsCode: string;
   productDescription: string;
   /** Optional line-specific variation, merged with productDescription for output. */
@@ -28,6 +28,13 @@ interface InvoiceItem {
   fixedNotifiedValueOrRetailPrice: number;
   salesTaxApplicable: number;
   salesTaxWithheldAtSource: number;
+  /**
+   * MRP-mode pricing detail. Only Template 5 renders these; every other template
+   * ignores them, and a line entered as unit price x quantity leaves them unset.
+   */
+  isMrpMode?: boolean;
+  mrpPerItem?: number;
+  salePricePerProduct?: number;
   AdvanceTaxValue?: number;
   AdvanceTaxRate?: number;
   advanceTaxValue?: number;
@@ -82,8 +89,44 @@ interface SalesInvoiceReportProps {
     items: InvoiceItem[];
   };
   fbrResponse?: FbrResponse;
-  template?: 'template1' | 'template2' | 'template3' | 'template4';
+  template?: 'template1' | 'template2' | 'template3' | 'template4' | 'template5';
 }
+
+/**
+ * Gross retail value of a line before discount. Stored on the line as the MRP
+ * value when the invoice was entered in MRP mode; derived from the retail price
+ * only as a fallback for lines saved before the MRP columns existed.
+ */
+export const mrpValueOf = (item: InvoiceItem): number => {
+  if (!item.isMrpMode) {
+    return 0;
+  }
+
+  if (item.fixedNotifiedValueOrRetailPrice) {
+    return item.fixedNotifiedValueOrRetailPrice;
+  }
+
+  return (item.mrpPerItem || 0) * (item.quantity || 0);
+};
+
+/**
+ * Advance tax is charged on the tax-exclusive total for an MRP line and on the
+ * tax-inclusive total otherwise, so the printed rate has to be derived against
+ * whichever base produced the figure.
+ */
+export const advanceTaxBaseOf = (item: InvoiceItem): number =>
+  item.isMrpMode
+    ? item.valueSalesExcludingST
+    : item.valueSalesExcludingST + item.salesTaxApplicable;
+
+/**
+ * An MRP line's discount has already been taken off inside valueSalesExcludingST
+ * (MRP value less discount), so deducting it from an invoice total again would
+ * remove it twice. Only a line priced as unit price x quantity carries a
+ * discount that is still to be applied.
+ */
+export const deductibleDiscountOf = (item: InvoiceItem): number =>
+  item.isMrpMode ? 0 : item.discount;
 
 const formatAmount = (value: number): string => value.toLocaleString(undefined, {
   minimumFractionDigits: 2,
@@ -97,14 +140,19 @@ const formatAmount = (value: number): string => value.toLocaleString(undefined, 
 const advanceTaxOf = (item: InvoiceItem) =>
   item.AdvanceTaxValue ?? item.advanceTaxValue ?? 0;
 
-const calculateTotals = (items: InvoiceItem[]) => {
+export const calculateTotals = (items: InvoiceItem[]) => {
   const subtotal = items.reduce((sum, item) => sum + item.valueSalesExcludingST, 0);
   const totalSalesTax = items.reduce((sum, item) => sum + item.salesTaxApplicable, 0);
   const totalFED = items.reduce((sum, item) => sum + item.fedPayable, 0);
-  const totalDiscount = items.reduce((sum, item) => sum + item.discount, 0);
+  // Discount still to come off the invoice total. MRP lines report 0 here
+  // because their discount is already inside valueSalesExcludingST.
+  const totalDiscount = items.reduce((sum, item) => sum + deductibleDiscountOf(item), 0);
+  // Discount given across every line, whether already applied or not. Template 5
+  // shows this; the arithmetic ladders on the other sheets must not use it.
+  const discountGiven = items.reduce((sum, item) => sum + (item.discount || 0), 0);
   const grandTotal = subtotal + totalSalesTax + totalFED - totalDiscount;
 
-  return { subtotal, totalSalesTax, totalFED, totalDiscount, grandTotal };
+  return { subtotal, totalSalesTax, totalFED, totalDiscount, discountGiven, grandTotal };
 };
 
 const parsePercentNumber = (value: string | undefined): number => {
@@ -252,7 +300,7 @@ const TemplateOne: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrRespon
           </TableHead>
           <TableBody>
             {invoiceData.items.map((item, index) => {
-              const itemTotal = item.valueSalesExcludingST + item.salesTaxApplicable + item.fedPayable - item.discount;
+              const itemTotal = item.valueSalesExcludingST + item.salesTaxApplicable + item.fedPayable - deductibleDiscountOf(item);
 
               return (
                 <TableRow key={index}>
@@ -2240,6 +2288,588 @@ html, body { margin: 0; padding: 0; }
   );
 };
 
+/**
+ * Template Five is Template Two for companies that price in MRP mode: the same
+ * sheet, with the retail price, gross retail value and discount shown per line.
+ * Lines entered as unit price x quantity print a dash in those three columns, so
+ * an invoice that mixes the two modes still reads correctly.
+ */
+const TemplateFive: React.FC<SalesInvoiceReportProps> = ({ invoiceData, fbrResponse }) => {
+  const totals = calculateTotals(invoiceData.items);
+  const invoiceDate = format(new Date(invoiceData.invoiceDate), 'dd/MM/yyyy');
+  const inclusiveAmount = totals.subtotal + totals.totalSalesTax;
+  const totalFurtherTax = invoiceData.items.reduce((sum, item) => sum + (item.furtherTax || 0), 0);
+  const totalAdvanceTax = invoiceData.items.reduce(
+    (sum, item) => sum + advanceTaxOf(item),
+    0
+  );
+  const totalExtraTax = invoiceData.items.reduce((sum, item) => sum + (item.extraTax || 0), 0);
+  const totalQuantity = invoiceData.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const totalMrpValue = invoiceData.items.reduce((sum, item) => sum + mrpValueOf(item), 0);
+  const totalAdvanceTaxBase = invoiceData.items.reduce(
+    (sum, item) => sum + advanceTaxBaseOf(item),
+    0
+  );
+  const hasMrpLine = invoiceData.items.some((item) => Boolean(item.isMrpMode));
+  const netTotal = inclusiveAmount + totalFurtherTax + totalAdvanceTax + totalExtraTax;
+  const qrValue = (fbrResponse?.invoiceNumber || invoiceData.invoiceRefNo || 'N/A').trim();
+  const blankRows = Math.max(0, 12 - invoiceData.items.length);   // to ensure 12 rows are used
+  const printCss = `
+    @page {
+      size: A4;
+      margin: 0.5in;
+    }
+
+    @media print {
+      html, body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+    }
+  `;
+  const printColorExactSx = {
+    WebkitPrintColorAdjust: 'exact',
+    printColorAdjust: 'exact'
+  };
+
+  const formatPercentage = (value: number) => {
+    if (!Number.isFinite(value) || value === 0) {
+      return '';
+    }
+
+    const decimals = value < 1 ? 1 : value % 1 === 0 ? 0 : 2;
+    return `${value.toFixed(decimals)}%`;
+  };
+  const paymentTerm = netTotal >= 50000 ? "Credit" : "Cash";
+  const furtherTaxRate = formatPercentage(totals.subtotal ? (totalFurtherTax / totals.subtotal) * 100 : 0);
+  const advanceTaxRate = formatPercentage(
+    totalAdvanceTaxBase ? (totalAdvanceTax / totalAdvanceTaxBase) * 100 : 0
+  );
+  const borderColor = '#222';
+  // Three more columns than Template Two have to fit the same A4 width, so the
+  // table type is a step smaller here than on that sheet.
+  const headerFontSize = '0.78rem';
+  const cellFontSize = '0.78rem';
+  const headerCellSx = {
+    ...printColorExactSx,
+    border: `2.0px solid ${borderColor}`,
+    backgroundColor: '#0b4d73',
+    color: '#fff',
+    fontSize: headerFontSize,
+    fontWeight: 700,
+    lineHeight: 1.05,
+    px: 0.25,
+    py: 0.92,
+    textAlign: 'center',
+    height: '0.56in'
+  };
+  const bodyCellSx = {
+    ...printColorExactSx,
+    borderLeft: `2.0px solid ${borderColor}`,
+    borderRight: `2.0px solid ${borderColor}`,
+    borderBottom: '0',
+    borderTop: '0',
+    fontSize: cellFontSize,
+    color: '#222',
+    lineHeight: 1,
+    px: 0.25,
+    py: 0.5,
+    height: '0.28in',
+    paddingTop: '20px',
+    paddingBottom: '20px'
+  };
+  const totalRowCellSx = {
+    ...printColorExactSx,
+    borderTop: `2px solid ${borderColor}`,
+    borderBottom: `2px solid ${borderColor}`,
+    borderLeft: `2px solid ${borderColor}`,
+    borderRight: `2px solid ${borderColor}`,
+    fontSize: '0.74rem',
+    fontWeight: 700,
+    py: 0.55,
+    px: 0.18,
+    whiteSpace: 'nowrap',
+    backgroundColor: '#0b4d73',
+    color: '#ffffffff',
+  };
+
+  return (
+    <Box
+      sx={{
+        backgroundColor: '#fff',
+        color: '#111',
+        margin: '0 auto',
+        width: '210mm',
+        minHeight: '297mm',
+        ...printColorExactSx,
+        boxSizing: 'border-box',
+        px: '0.22in',
+        py: '0.2in',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        '@media print': {
+          width: '210mm',
+          minHeight: '297mm',
+          boxSizing: 'border-box',
+          px: '0.22in',
+          py: '0.2in',
+          boxShadow: 'none',
+          WebkitPrintColorAdjust: 'exact',
+          printColorAdjust: 'exact',
+          '& *': {
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact'
+          }
+        }
+      }}
+    >
+      <style>{printCss}</style>
+      <Typography
+        sx={{
+          textAlign: 'center',
+          fontSize: '2rem',
+          fontWeight: 500,
+          lineHeight: 1.05,
+          mb: '0.24in',
+          color: '#0b4d73'
+        }}
+      >
+        Sales Tax Invoice
+      </Typography>
+
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '1.25rem',
+          ml: '-1.0in',
+          mr: '-0.6in',
+          mb: '0.14in',
+          px: '0.05in'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Typography component="span" sx={{ fontSize: '1.25rem' }}>
+            Invoice No. :
+          </Typography>
+          <Typography component="span" sx={{ fontSize: '1.25rem', fontWeight: 700, textDecoration: 'underline' }}>
+            {invoiceData.invoiceRefNo || 'N/A'}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Typography component="span" sx={{ fontSize: '1.25rem' }}>
+            Date :
+          </Typography>
+          <Typography component="span" sx={{ fontSize: '1.25rem', fontWeight: 700, textDecoration: 'underline' }}>
+            {invoiceDate}
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: '0.13in', ml: '-1.0in', mr: '-0.6in' }}>
+        <Box sx={{ width: '47.8%' }}>
+          <Box
+            sx={{
+              ...printColorExactSx,
+              border: `1.5px solid ${borderColor}`,
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              py: 0.2,
+              lineHeight: 2,
+              backgroundColor: '#d9d9d9',
+              color: '#000000'
+            }}
+          >
+            SELLER NAME &amp; ADDRESS
+          </Box>
+          <Box
+            sx={{
+              border: `0`,
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              py: 0.2,
+              lineHeight: 2
+            }}
+          >
+            &nbsp;
+          </Box>
+          <Box
+            sx={{
+              border: `2.5px solid ${borderColor}`,
+              minHeight: '1.7in',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              px: 0,
+              pt: 0.45,
+              pb: 0.45,
+              mt: 0.5
+            }}
+          >
+            <Box>
+              <Box sx={{ py: 0.18, px: 0.8, mb: 0.5 }}>
+                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase', lineHeight: 1.1, backgroundColor: '#0b4d73' }}>
+                  {invoiceData.sellerBusinessName || 'N/A'}
+                </Typography>
+              </Box>
+              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
+                {invoiceData.sellerAddress || 'N/A'}
+              </Typography>
+            </Box>
+            <Box sx={{ pt: 0.35, px: 1.25 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+                REG NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+              </Typography>
+              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+                NTN NO. : <strong>{invoiceData.sellerNTNCNIC || 'N/A'}</strong>
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '47.8%' }}>
+          <Box
+            sx={{
+              ...printColorExactSx,
+              border: `1.5px solid ${borderColor}`,
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              py: 0.2,
+              lineHeight: 2,
+              backgroundColor: '#d9d9d9',
+              color: '#000000ff'
+            }}
+          >
+            BUYER NAME &amp; ADDRESS
+          </Box>
+          <Box
+            sx={{
+              border: `0`,
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              py: 0.2,
+              lineHeight: 2
+            }}
+          >
+            &nbsp;
+          </Box>
+          <Box
+            sx={{
+              border: `2.5px solid ${borderColor}`,
+              minHeight: '1.7in',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              px: 0,
+              pt: 0.45,
+              pb: 0.45,
+              mt: 0.5
+            }}
+          >
+            <Box>
+              <Box sx={{ py: 0.18, px: 0.8, mb: 0.5 }}>
+                <Typography sx={{ ...printColorExactSx, textAlign: 'center', color: '#ffffffff', fontSize: '1.25rem', fontWeight: 700, textTransform: 'uppercase', lineHeight: 1.1, backgroundColor: '#0b4d73' }}>
+                  {invoiceData.buyerBusinessName || 'N/A'}
+                </Typography>
+              </Box>
+              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', fontWeight: 700, lineHeight: 1.45, textTransform: 'uppercase', whiteSpace: 'pre-line', px: 1.25 }}>
+                {invoiceData.buyerAddress || 'N/A'}
+              </Typography>
+            </Box>
+            <Box sx={{ pt: 0.35, px: 1.25 }}>
+              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+                NIC NO. : <strong>{invoiceData.buyerNIC || 'N/A'}</strong>
+              </Typography>
+              <Typography sx={{ textAlign: 'center', fontSize: '1.00rem', lineHeight: 1.3 }}>
+                NTN NO. : <strong>{invoiceData.buyerNTN || 'N/A'}</strong>
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: `1.5px solid ${borderColor}`,
+          ml: '-1.0in',
+          mr: '-0.5in',
+          mb: '0.11in',
+          pb: '0.02in'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography sx={{ fontSize: '0.9rem', minWidth: '0.72in' }}>TERM :</Typography>
+          <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>{paymentTerm}</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography sx={{ fontSize: '0.9rem' }}>PO No. :</Typography>
+          <Typography sx={{ fontSize: '0.9rem', fontWeight: 700 }}>
+            {invoiceData.poNumber || 'N/A'}
+          </Typography>
+        </Box>
+      </Box>
+
+      <TableContainer
+        sx={{
+          mb: '0.18in',
+          width: '120%',
+          mr: '1.0in',
+          ml: '-1.0in'
+        }}
+      >
+        <Table size="small" sx={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: '100%', border: `2.0px solid ${borderColor}` }}>
+          <colgroup>
+            <col style={{ width: '6.0%' }} />
+            <col style={{ width: '4.6%' }} />
+            <col style={{ width: '8.0%' }} />
+            <col style={{ width: '18.0%' }} />
+            <col style={{ width: '7.6%' }} />
+            <col style={{ width: '8.6%' }} />
+            <col style={{ width: '7.6%' }} />
+            <col style={{ width: '8.0%' }} />
+            <col style={{ width: '9.6%' }} />
+            <col style={{ width: '5.6%' }} />
+            <col style={{ width: '8.0%' }} />
+            <col style={{ width: '8.4%' }} />
+          </colgroup>
+          <TableHead>
+            <TableRow>
+              <TableCell colSpan={2} sx={headerCellSx}>Quantity</TableCell>
+              <TableCell sx={headerCellSx}>
+                H. S.
+                <br />
+                CODE
+              </TableCell>
+              <TableCell sx={headerCellSx}>Description Of Goods</TableCell>
+              <TableCell sx={headerCellSx}>
+                M.R.P.
+                <br />
+                Per Item
+              </TableCell>
+              <TableCell sx={headerCellSx}>
+                M.R.P.
+                <br />
+                Value
+              </TableCell>
+              <TableCell sx={headerCellSx}>Discount</TableCell>
+              <TableCell sx={headerCellSx}>Unit Price</TableCell>
+              <TableCell sx={headerCellSx}>
+                Val. Excl.
+                <br />
+                S.Tax
+              </TableCell>
+              <TableCell sx={headerCellSx}>
+                Rate Of
+                <br />
+                S. Tax
+              </TableCell>
+              <TableCell sx={headerCellSx}>Sales Tax</TableCell>
+              <TableCell sx={headerCellSx}>
+                Val. Incl.
+                <br />
+                S.Tax
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {invoiceData.items.map((item, index) => {
+              // Sale price per product is stored on an MRP line and derived on a
+              // normal one, where it is what was typed in the first place.
+              const unitPrice = item.isMrpMode && item.salePricePerProduct
+                ? item.salePricePerProduct
+                : item.quantity
+                  ? item.valueSalesExcludingST / item.quantity
+                  : item.valueSalesExcludingST;
+              const lineInclusive = item.valueSalesExcludingST + item.salesTaxApplicable;
+              const displayUom = item.uoM === 'Numbers, pieces, units' ? 'NOS' : item.uoM;
+              const rowBackground = index % 2 === 0 ? '#fff' : '#d9d9d9';
+              const lineMrpValue = mrpValueOf(item);
+
+              return (
+                <TableRow key={index}>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.35, whiteSpace: 'nowrap', verticalAlign: 'top' }}>{displayUom}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', px: 0.4, verticalAlign: 'top' }}>{item.hsCode}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, verticalAlign: 'top' }}>{mergeProductDescription(item.productDescription, item.subDescription)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>
+                    {item.isMrpMode ? formatAmount(item.mrpPerItem || 0) : '-'}
+                  </TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>
+                    {item.isMrpMode ? formatAmount(lineMrpValue) : '-'}
+                  </TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>
+                    {item.isMrpMode ? formatAmount(item.discount || 0) : '-'}
+                  </TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(unitPrice)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.valueSalesExcludingST)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'center', verticalAlign: 'top' }}>{item.rate}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(item.salesTaxApplicable)}</TableCell>
+                  <TableCell sx={{ ...bodyCellSx, backgroundColor: rowBackground, textAlign: 'right', verticalAlign: 'top' }}>{formatAmount(lineInclusive)}</TableCell>
+                </TableRow>
+              );
+            })}
+
+            {Array.from({ length: blankRows }).map((_, index) => {
+              const rowBackground = index % 2 === 0 ? '#fff' : '#d9d9d9';
+
+              return (
+                <TableRow key={`blank-${index}`}>
+                  {Array.from({ length: 12 }).map((__, cellIndex) => (
+                    <TableCell key={cellIndex} sx={{ ...bodyCellSx, backgroundColor: rowBackground }}>&nbsp;</TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
+
+            <TableRow>
+              <TableCell sx={{ ...totalRowCellSx, textAlign: 'center' }}>
+                {totalQuantity || ''}
+              </TableCell>
+              <TableCell sx={{ ...totalRowCellSx }} />
+              <TableCell colSpan={2} sx={{ ...totalRowCellSx, textAlign: 'center' }}>
+                Total Amount :
+              </TableCell>
+              <TableCell sx={{ ...totalRowCellSx }} />
+              <TableCell sx={{ ...totalRowCellSx, textAlign: 'right' }}>
+                {hasMrpLine ? formatAmount(totalMrpValue) : ''}
+              </TableCell>
+              <TableCell sx={{ ...totalRowCellSx, textAlign: 'right' }}>
+                {hasMrpLine ? formatAmount(totals.discountGiven) : ''}
+              </TableCell>
+              <TableCell sx={{ ...totalRowCellSx }} />
+              <TableCell sx={{ ...totalRowCellSx, textAlign: 'right' }}>
+                {formatAmount(totals.subtotal)}
+              </TableCell>
+              <TableCell sx={{ ...totalRowCellSx }} />
+              <TableCell sx={{ ...totalRowCellSx, textAlign: 'right' }}>
+                {formatAmount(totals.totalSalesTax)}
+              </TableCell>
+              <TableCell sx={{ ...totalRowCellSx, textAlign: 'right' }}>
+                {formatAmount(inclusiveAmount)}
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', ml: '-1.0in' }}>
+        <Box sx={{ width: '48%', pl: '0.02in' }}>
+          <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, mb: '0.08in' }}>
+            Comments:
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.4, mb: '0.1in' }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              FBR INVOICE :
+            </Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700 }}>
+              {qrValue}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '0.16in' }}>
+            <Box
+              component="img"
+              src="/fbr-digital-logo.png"
+              alt="FBR Digital"
+              sx={{ width: '1.25in', height: '1.25in', objectFit: 'contain', display: 'block' }}
+            />
+            <Box
+              sx={{
+                width: '1.25in',
+                height: '1.25in',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fff',
+                '& canvas': {
+                  width: '1.25in !important',
+                  height: '1.25in !important',
+                  display: 'block'
+                }
+              }}
+            >
+              <QRCodeCanvas
+                value={qrValue}
+                size={68}
+                level="H"
+                includeMargin={false}
+              />
+            </Box>
+          </Box>
+        </Box>
+
+        <Box sx={{ width: '36%', mr: '-0.5in' }}>
+          {hasMrpLine && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+                <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>M.R.P. VALUE :</Typography>
+                <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalMrpValue)}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+                <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>LESS DISCOUNT :</Typography>
+                <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totals.discountGiven)}</Typography>
+              </Box>
+            </>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>INCL AMOUNT :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(inclusiveAmount)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>FURTHER TAX :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+              {furtherTaxRate ? `@ ${furtherTaxRate}` : ''}
+            </Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalFurtherTax)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>ADVANCE TAX :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+              {advanceTaxRate ? `@ ${advanceTaxRate}` : ''}
+            </Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalAdvanceTax)}</Typography>
+          </Box>
+          {totalExtraTax > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.55 }}>
+              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>EXTRA TAX :</Typography>
+              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700, minWidth: '0.62in', textAlign: 'center' }}>
+                &nbsp;
+              </Typography>
+              <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(totalExtraTax)}</Typography>
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>NET TOTAL :</Typography>
+            <Typography sx={{ fontSize: '1.00rem', fontWeight: 700 }}>{formatAmount(netTotal)}</Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      <Typography
+        sx={{
+          textAlign: 'center',
+          fontSize: '0.85rem',
+          mt: 'auto',
+          pt: '0.42in',
+          fontFamily: '"Times New Roman", serif',
+          fontWeight: 700
+        }}
+      >
+        NOTE : THIS IS A SYSTEM GENERATED DOCUMENT DOES NOT REQUIRED ANY SIGNATURE AND STAMP
+      </Typography>
+    </Box>
+  );
+};
+
 const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
   if (props.template === 'template2') {
     return <TemplateTwo {...props} />;
@@ -2251,6 +2881,10 @@ const SalesInvoiceReport: React.FC<SalesInvoiceReportProps> = (props) => {
 
   if (props.template === 'template4') {
     return <TemplateFour {...props} />;
+  }
+
+  if (props.template === 'template5') {
+    return <TemplateFive {...props} />;
   }
 
   return <TemplateOne {...props} />;

@@ -18,6 +18,7 @@ import {
   Radio,
   RadioGroup,
   FormControlLabel,
+  Switch,
   FormControl,
   Grid,
   Alert,
@@ -47,6 +48,7 @@ import {
   isMergedDescriptionTooLong,
   MAX_PRODUCT_DESCRIPTION_LENGTH
 } from '../utils/invoiceDescription';
+import { calculateInvoiceLine } from '../utils/invoiceLineCalculations';
 import { customerApi, Customer } from '../api/customerApi';
 import { invoiceAPI } from '../services/invoiceApi';
 import { downloadCSVFile } from '../utils/formatUtils';
@@ -65,6 +67,16 @@ interface InvoiceItem {
   productDescription: string;
   /** Optional line-specific variation. Merged with productDescription on output. */
   subDescription: string;
+  /** Toggle ON prices the line from retail price down; OFF from unit price up. */
+  isMrpMode: boolean;
+  /** MRP mode only: retail price of a single unit. */
+  mrpPerItem: number;
+  /** MRP mode only: amount taken off the retail total. */
+  discountValue: number;
+  /** Manual in normal mode; derived from the discounted total in MRP mode. */
+  salePricePerProduct: number;
+  /** Further tax percentage; the value is derived from it. */
+  furtherTaxRate: number;
   rate: string;
   uom: string;
   quantity: number;
@@ -1154,6 +1166,11 @@ const SalesInvoice: React.FC = () => {
                   hsCodeDescription,
                   productDescription: item.productDescription || '',
                   subDescription: item.subDescription || '',
+                  isMrpMode: Boolean(item.isMrpMode),
+                  mrpPerItem: item.mrpPerItem || 0,
+                  discountValue: item.discount || 0,
+                  salePricePerProduct: item.salePricePerProduct || 0,
+                  furtherTaxRate: item.furtherTaxRate || 0,
                   rate: item.rate || 'Select',
                   uom: item.uoM || 'Select',
                   quantity: item.quantity || 0,
@@ -1194,6 +1211,11 @@ const SalesInvoice: React.FC = () => {
     hsCodeDescription: 'Select',
     productDescription: '',
     subDescription: '',
+    isMrpMode: false,
+    mrpPerItem: 0,
+    discountValue: 0,
+    salePricePerProduct: 0,
+    furtherTaxRate: 0,
     rate: 'Select',
     uom: 'Select',
     quantity: 0,
@@ -1318,7 +1340,7 @@ const SalesInvoice: React.FC = () => {
     return (masterItem.currentStock || 0) + qtyHeldByThisInvoice;
   };
 
-  const handleItemChange = (field: keyof InvoiceItem, value: string | number) => {
+  const handleItemChange = (field: keyof InvoiceItem, value: string | number | boolean) => {
     // Prevent changes to SRO fields when sale type is SRO.297 (both I and | versions) or Goods at Reduced Rate
     if (isSroFieldsDisabled() && (field === 'sroScheduleNo' || field === 'itemSrNo')) {
       return;
@@ -1380,27 +1402,41 @@ const SalesInvoice: React.FC = () => {
         }
       }
 
-      // Auto-calculate Sales Tax when Value of Sales Excl. ST or Rate changes
-      if (field === 'valueSalesExclST' || field === 'rate') {
-        const valueSalesExclST = field === 'valueSalesExclST' ? (value as number) : updatedItem.valueSalesExclST;
-        const rateString = field === 'rate' ? (value as string) : updatedItem.rate;
-        
-        // Extract numeric tax rate from rate string (e.g., "18%" -> 18)
-        const taxRateMatch = rateString.match(/^(\d+(?:\.\d+)?)%?$/);
-        if (taxRateMatch && valueSalesExclST > 0) {
-          const taxRate = parseFloat(taxRateMatch[1]);
-          updatedItem.salesTax = (valueSalesExclST * taxRate) / 100;
-        } else if (valueSalesExclST === 0) {
-          updatedItem.salesTax = 0;
-        }
-      }
+      // Every priced field flows through one tested module, so the two modes
+      // cannot drift apart. See src/utils/invoiceLineCalculations.ts.
+      const PRICING_FIELDS: string[] = [
+        'isMrpMode',
+        'mrpPerItem',
+        'discountValue',
+        'salePricePerProduct',
+        'quantity',
+        'rate',
+        'advanceTaxRate',
+        'furtherTaxRate'
+      ];
 
-      if (field === 'advanceTaxRate' || field === 'valueSalesExclST' || field === 'rate' || field === 'salesTax') {
-        const valueExcl = updatedItem.valueSalesExclST || 0;
-        const salesTax = updatedItem.salesTax || 0;
-        const inclusive = valueExcl + salesTax;
-        const rate = updatedItem.advanceTaxRate || 0;
-        updatedItem.advanceTaxValue = rate > 0 ? (inclusive * rate) / 100 : 0;
+      if (PRICING_FIELDS.includes(field as string)) {
+        const totals = calculateInvoiceLine({
+          isMrpMode: updatedItem.isMrpMode,
+          quantity: updatedItem.quantity,
+          mrpPerItem: updatedItem.mrpPerItem,
+          discountValue: updatedItem.discountValue,
+          salePricePerProduct: updatedItem.salePricePerProduct,
+          rate: updatedItem.rate,
+          advanceTaxRate: updatedItem.advanceTaxRate,
+          furtherTaxRate: updatedItem.furtherTaxRate
+        });
+
+        updatedItem.valueSalesExclST = totals.valueSalesExclST;
+        updatedItem.salesTax = totals.salesTax;
+        updatedItem.advanceTaxValue = totals.advanceTaxValue;
+        updatedItem.furtherTax = totals.furtherTax;
+        // Derived in MRP mode; in normal mode it is what the user typed.
+        updatedItem.salePricePerProduct = totals.salePricePerProduct;
+        // FBR's retail-price field carries the MRP total while the toggle is on.
+        if (updatedItem.isMrpMode) {
+          updatedItem.fixedNotifiedValue = totals.mrpValue;
+        }
       }
 
       return updatedItem;
@@ -1441,6 +1477,11 @@ const SalesInvoice: React.FC = () => {
         hsCodeDescription: 'Select',
         productDescription: '',
         subDescription: '',
+        isMrpMode: false,
+        mrpPerItem: 0,
+        discountValue: 0,
+        salePricePerProduct: 0,
+        furtherTaxRate: 0,
         rate: 'Select',
         uom: 'Select',
         quantity: 0,
@@ -1478,6 +1519,11 @@ const SalesInvoice: React.FC = () => {
       hsCodeDescription: item.hsCodeDescription,
       productDescription: item.productDescription,
       subDescription: item.subDescription,
+      isMrpMode: item.isMrpMode,
+      mrpPerItem: item.mrpPerItem,
+      discountValue: item.discountValue,
+      salePricePerProduct: item.salePricePerProduct,
+      furtherTaxRate: item.furtherTaxRate,
       rate: item.rate,
       uom: item.uom,
       quantity: item.quantity,
@@ -1519,6 +1565,11 @@ const SalesInvoice: React.FC = () => {
       hsCodeDescription: 'Select',
       productDescription: '',
       subDescription: '',
+      isMrpMode: false,
+      mrpPerItem: 0,
+      discountValue: 0,
+      salePricePerProduct: 0,
+      furtherTaxRate: 0,
       rate: 'Select',
       uom: 'Select',
       quantity: 0,
@@ -1770,7 +1821,7 @@ const SalesInvoice: React.FC = () => {
         furtherTax: item.furtherTax || 0,
         sroScheduleNo: item.sroScheduleNo,
         fedPayable: 0,
-        discount: 0,
+        discount: item.discountValue || 0,
         saleType: formData.saleType,
         sroItemSerialNo: item.itemSrNo
       }))
@@ -2079,13 +2130,17 @@ const SalesInvoice: React.FC = () => {
         fixedNotifiedValueOrRetailPrice: item.fixedNotifiedValue,
         salesTaxApplicable: item.salesTax,
         salesTaxWithheldAtSource: item.stWithheldAtSource,
+        // Template 5 prints the MRP columns; every other template ignores these.
+        isMrpMode: item.isMrpMode,
+        mrpPerItem: item.mrpPerItem,
+        salePricePerProduct: item.salePricePerProduct,
         AdvanceTaxRate: item.advanceTaxRate,
         AdvanceTaxValue: item.advanceTaxValue,
         extraTax: item.extraTax,
         furtherTax: item.furtherTax,
         sroScheduleNo: item.sroScheduleNo,
         fedPayable: 0,
-        discount: 0,
+        discount: item.discountValue || 0,
         totalValues: item.totalValueSales,
         saleType: formData.saleType,
         sroItemSerialNo: item.itemSrNo
@@ -2165,6 +2220,11 @@ const SalesInvoice: React.FC = () => {
           hsCode: item.hsCodeDescription.split(' - ')[0] || '',
           productDescription: item.productDescription,
           subDescription: normaliseSubDescription(item.subDescription),
+          isMrpMode: item.isMrpMode,
+          mrpPerItem: item.mrpPerItem,
+          salePricePerProduct: item.salePricePerProduct,
+          furtherTaxRate: item.furtherTaxRate,
+          discount: item.discountValue,
           rate: item.rate,
           uoM: item.uom,
           quantity: item.quantity,
@@ -2179,7 +2239,6 @@ const SalesInvoice: React.FC = () => {
           furtherTax: item.furtherTax,
           sroScheduleNo: item.sroScheduleNo,
           fedPayable: 0,
-          discount: 0,
           saleType: formData.saleType,
           sroItemSerialNo: item.itemSrNo
         }))
@@ -2505,9 +2564,24 @@ const SalesInvoice: React.FC = () => {
           borderRadius: 2
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-          Item Detail
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            Item Detail
+          </Typography>
+          <FormControlLabel
+            sx={{ mr: 0, color: 'white' }}
+            label={currentItem.isMrpMode ? 'MRP pricing' : 'Unit pricing'}
+            labelPlacement="start"
+            control={
+              <Switch
+                checked={currentItem.isMrpMode}
+                disabled={isInvoiceSentToFBR()}
+                onChange={(e) => handleItemChange('isMrpMode', e.target.checked)}
+                inputProps={{ 'aria-label': 'Price this line from retail price' }}
+              />
+            }
+          />
+        </Box>
       </Paper>
 
       {/* Item Form */}
@@ -2611,15 +2685,83 @@ const SalesInvoice: React.FC = () => {
               disabled={isInvoiceSentToFBR()}
             />
           </Grid>
+          {currentItem.isMrpMode && (
+            <>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Retail Market Price (MRP) per Item"
+                  type="number"
+                  value={currentItem.mrpPerItem}
+                  onChange={(e) => handleItemChange('mrpPerItem', parseFloat(e.target.value) || 0)}
+                  size="small"
+                  disabled={isInvoiceSentToFBR()}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <TextField
+                  fullWidth
+                  label="Retail Market Price (MRP) Value"
+                  type="number"
+                  value={currentItem.mrpPerItem * currentItem.quantity}
+                  size="small"
+                  InputProps={{ readOnly: true }}
+                  helperText="Auto-calculated: MRP per Item × Qty"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 3 }}>
+                <TextField
+                  fullWidth
+                  label="Discount Value"
+                  type="number"
+                  value={currentItem.discountValue}
+                  onChange={(e) => handleItemChange('discountValue', parseFloat(e.target.value) || 0)}
+                  size="small"
+                  disabled={isInvoiceSentToFBR()}
+                  error={currentItem.valueSalesExclST < 0}
+                  helperText={
+                    currentItem.valueSalesExclST < 0
+                      ? 'Discount is larger than the MRP value, so the line total is negative.'
+                      : 'Taken off the MRP value.'
+                  }
+                />
+              </Grid>
+            </>
+          )}
           <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
-              label="Value of Sales Excl. ST"
+              required
+              label="Sale Price per Product"
+              type="number"
+              value={currentItem.salePricePerProduct}
+              onChange={(e) =>
+                handleItemChange('salePricePerProduct', parseFloat(e.target.value) || 0)
+              }
+              size="small"
+              disabled={isInvoiceSentToFBR() || currentItem.isMrpMode}
+              InputProps={{ readOnly: currentItem.isMrpMode }}
+              helperText={
+                currentItem.isMrpMode
+                  ? 'Auto-calculated: Total Excl. ST ÷ Qty'
+                  : 'Line total is this × Qty'
+              }
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <TextField
+              fullWidth
+              label="Total Sale Value Excluding ST"
               type="number"
               value={currentItem.valueSalesExclST}
-              onChange={(e) => handleItemChange('valueSalesExclST', parseFloat(e.target.value) || 0)}
               size="small"
-              disabled={isInvoiceSentToFBR()}
+              InputProps={{ readOnly: true }}
+              helperText={
+                currentItem.isMrpMode
+                  ? 'Auto-calculated: MRP Value − Discount'
+                  : 'Auto-calculated: Sale Price × Qty'
+              }
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
@@ -2703,12 +2845,23 @@ const SalesInvoice: React.FC = () => {
           <Grid size={{ xs: 12, md: 3 }}>
             <TextField
               fullWidth
-              label="Further Tax"
+              label="Further Tax %"
               type="number"
-              value={currentItem.furtherTax}
-              onChange={(e) => handleItemChange('furtherTax', parseFloat(e.target.value) || 0)}
+              value={currentItem.furtherTaxRate}
+              onChange={(e) => handleItemChange('furtherTaxRate', parseFloat(e.target.value) || 0)}
               size="small"
               disabled={isInvoiceSentToFBR()}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <TextField
+              fullWidth
+              label="Further Tax Value"
+              type="number"
+              value={currentItem.furtherTax}
+              size="small"
+              InputProps={{ readOnly: true }}
+              helperText="Auto-calculated: Total Excl. ST × Further Tax %"
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
