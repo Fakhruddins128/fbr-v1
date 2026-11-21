@@ -234,7 +234,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
       SELECT name
       FROM sys.columns
       WHERE object_id = OBJECT_ID('InvoiceItems')
-        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
+        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription', 'IsMrpMode', 'MrpPerItem', 'SalePricePerProduct', 'FurtherTaxRate')
     `);
     const invoiceItemsColumns = new Set(
       invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -253,6 +253,21 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
     const subDescriptionSelect = invoiceItemsColumns.has("SubDescription")
       ? "SubDescription"
       : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
+    // MRP-mode pricing columns; absent until add_mrp_fields_to_invoice_items runs.
+    const mrpSelects = [
+      invoiceItemsColumns.has("IsMrpMode")
+        ? "IsMrpMode"
+        : "CAST(0 AS BIT) AS IsMrpMode",
+      invoiceItemsColumns.has("MrpPerItem")
+        ? "MrpPerItem"
+        : "CAST(NULL AS DECIMAL(18, 2)) AS MrpPerItem",
+      invoiceItemsColumns.has("SalePricePerProduct")
+        ? "SalePricePerProduct"
+        : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
+      invoiceItemsColumns.has("FurtherTaxRate")
+        ? "FurtherTaxRate"
+        : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+    ].join(", ");
     const discountSelect = invoiceItemsColumns.has("Discount")
       ? "Discount"
       : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -276,6 +291,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             HSCode,
             ProductDescription,
             ${subDescriptionSelect},
+            ${mrpSelects},
             Rate,
             UoM,
             Quantity,
@@ -311,6 +327,10 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
             hsCode: item.HSCode,
             productDescription: item.ProductDescription,
             subDescription: item.SubDescription ?? null,
+            isMrpMode: Boolean(item.IsMrpMode),
+            mrpPerItem: item.MrpPerItem ?? 0,
+            salePricePerProduct: item.SalePricePerProduct ?? 0,
+            furtherTaxRate: item.FurtherTaxRate ?? 0,
             rate: item.Rate,
             uoM: item.UoM,
             quantity: item.Quantity,
@@ -393,7 +413,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
       SELECT name
       FROM sys.columns
       WHERE object_id = OBJECT_ID('InvoiceItems')
-        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
+        AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription', 'IsMrpMode', 'MrpPerItem', 'SalePricePerProduct', 'FurtherTaxRate')
     `);
     const invoiceItemsColumns = new Set(
       invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -412,6 +432,21 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
     const subDescriptionSelect = invoiceItemsColumns.has("SubDescription")
       ? "SubDescription"
       : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
+    // MRP-mode pricing columns; absent until add_mrp_fields_to_invoice_items runs.
+    const mrpSelects = [
+      invoiceItemsColumns.has("IsMrpMode")
+        ? "IsMrpMode"
+        : "CAST(0 AS BIT) AS IsMrpMode",
+      invoiceItemsColumns.has("MrpPerItem")
+        ? "MrpPerItem"
+        : "CAST(NULL AS DECIMAL(18, 2)) AS MrpPerItem",
+      invoiceItemsColumns.has("SalePricePerProduct")
+        ? "SalePricePerProduct"
+        : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
+      invoiceItemsColumns.has("FurtherTaxRate")
+        ? "FurtherTaxRate"
+        : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+    ].join(", ");
     const discountSelect = invoiceItemsColumns.has("Discount")
       ? "Discount"
       : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -436,6 +471,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
             HSCode,
             ProductDescription,
             ${subDescriptionSelect},
+            ${mrpSelects},
             Rate,
             UoM,
             Quantity,
@@ -478,6 +514,10 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
           hsCode: item.HSCode,
           productDescription: item.ProductDescription,
           subDescription: item.SubDescription ?? null,
+          isMrpMode: Boolean(item.IsMrpMode),
+          mrpPerItem: item.MrpPerItem ?? 0,
+          salePricePerProduct: item.SalePricePerProduct ?? 0,
+          furtherTaxRate: item.FurtherTaxRate ?? 0,
           rate: item.Rate,
           uoM: item.UoM,
           quantity: item.Quantity,
@@ -596,7 +636,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         SELECT name
         FROM sys.columns
         WHERE object_id = OBJECT_ID('InvoiceItems')
-          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
+          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription', 'IsMrpMode', 'MrpPerItem', 'SalePricePerProduct', 'FurtherTaxRate')
       `);
       const invoiceItemsColumns = new Set(
         invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -605,6 +645,10 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
       const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
       const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
       const hasSubDescription = invoiceItemsColumns.has("SubDescription");
+      const hasIsMrpMode = invoiceItemsColumns.has("IsMrpMode");
+      const hasMrpPerItem = invoiceItemsColumns.has("MrpPerItem");
+      const hasSalePricePerProduct = invoiceItemsColumns.has("SalePricePerProduct");
+      const hasFurtherTaxRate = invoiceItemsColumns.has("FurtherTaxRate");
       const hasDiscount = invoiceItemsColumns.has("Discount");
       const hasSaleType = invoiceItemsColumns.has("SaleType");
       const hasSroItemSerialNo = invoiceItemsColumns.has("SROItemSerialNo");
@@ -621,6 +665,18 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
       const subDescriptionSelect = hasSubDescription
         ? "SubDescription"
         : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
+      const mrpSelects = [
+        hasIsMrpMode ? "IsMrpMode" : "CAST(0 AS BIT) AS IsMrpMode",
+        hasMrpPerItem
+          ? "MrpPerItem"
+          : "CAST(NULL AS DECIMAL(18, 2)) AS MrpPerItem",
+        hasSalePricePerProduct
+          ? "SalePricePerProduct"
+          : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
+        hasFurtherTaxRate
+          ? "FurtherTaxRate"
+          : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+      ].join(", ");
       const discountSelect = hasDiscount
         ? "Discount"
         : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -636,6 +692,10 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         "HSCode",
         "ProductDescription",
         ...(hasSubDescription ? ["SubDescription"] : []),
+        ...(hasIsMrpMode ? ["IsMrpMode"] : []),
+        ...(hasMrpPerItem ? ["MrpPerItem"] : []),
+        ...(hasSalePricePerProduct ? ["SalePricePerProduct"] : []),
+        ...(hasFurtherTaxRate ? ["FurtherTaxRate"] : []),
         "Rate",
         "UoM",
         "Quantity",
@@ -660,6 +720,10 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
         "@hsCode",
         "@productDescription",
         ...(hasSubDescription ? ["@subDescription"] : []),
+        ...(hasIsMrpMode ? ["@isMrpMode"] : []),
+        ...(hasMrpPerItem ? ["@mrpPerItem"] : []),
+        ...(hasSalePricePerProduct ? ["@salePricePerProduct"] : []),
+        ...(hasFurtherTaxRate ? ["@furtherTaxRate"] : []),
         "@rate",
         "@uoM",
         "@quantity",
@@ -767,6 +831,14 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
               ? item.subDescription.trim()
               : null
           )
+          .input("isMrpMode", sql.Bit, item.isMrpMode ? 1 : 0)
+          .input("mrpPerItem", sql.Decimal(18, 2), item.mrpPerItem || 0)
+          .input(
+            "salePricePerProduct",
+            sql.Decimal(18, 2),
+            item.salePricePerProduct || 0
+          )
+          .input("furtherTaxRate", sql.Decimal(5, 2), item.furtherTaxRate || 0)
           .input("rate", sql.NVarChar, item.rate)
           .input("uoM", sql.NVarChar, item.uoM)
           .input("quantity", sql.Decimal(18, 4), item.quantity)
@@ -828,6 +900,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
               HSCode,
               ProductDescription,
               ${subDescriptionSelect},
+              ${mrpSelects},
               Rate,
               UoM,
               Quantity,
@@ -1023,7 +1096,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         SELECT name
         FROM sys.columns
         WHERE object_id = OBJECT_ID('InvoiceItems')
-          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription')
+          AND name IN ('MasterItemID', 'AdvanceTaxRate', 'AdvanceTaxValue', 'Discount', 'SaleType', 'SROItemSerialNo', 'SubDescription', 'IsMrpMode', 'MrpPerItem', 'SalePricePerProduct', 'FurtherTaxRate')
       `);
       const invoiceItemsColumns = new Set(
         invoiceItemsColumnsResult.recordset.map((r) => r.name)
@@ -1032,6 +1105,10 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       const hasAdvanceTaxRate = invoiceItemsColumns.has("AdvanceTaxRate");
       const hasAdvanceTaxValue = invoiceItemsColumns.has("AdvanceTaxValue");
       const hasSubDescription = invoiceItemsColumns.has("SubDescription");
+      const hasIsMrpMode = invoiceItemsColumns.has("IsMrpMode");
+      const hasMrpPerItem = invoiceItemsColumns.has("MrpPerItem");
+      const hasSalePricePerProduct = invoiceItemsColumns.has("SalePricePerProduct");
+      const hasFurtherTaxRate = invoiceItemsColumns.has("FurtherTaxRate");
       const hasDiscount = invoiceItemsColumns.has("Discount");
       const hasSaleType = invoiceItemsColumns.has("SaleType");
       const hasSroItemSerialNo = invoiceItemsColumns.has("SROItemSerialNo");
@@ -1048,6 +1125,18 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
       const subDescriptionSelect = hasSubDescription
         ? "SubDescription"
         : "CAST(NULL AS NVARCHAR(255)) AS SubDescription";
+      const mrpSelects = [
+        hasIsMrpMode ? "IsMrpMode" : "CAST(0 AS BIT) AS IsMrpMode",
+        hasMrpPerItem
+          ? "MrpPerItem"
+          : "CAST(NULL AS DECIMAL(18, 2)) AS MrpPerItem",
+        hasSalePricePerProduct
+          ? "SalePricePerProduct"
+          : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
+        hasFurtherTaxRate
+          ? "FurtherTaxRate"
+          : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+      ].join(", ");
       const discountSelect = hasDiscount
         ? "Discount"
         : "CAST(0 AS DECIMAL(18, 2)) AS Discount";
@@ -1063,6 +1152,10 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         "HSCode",
         "ProductDescription",
         ...(hasSubDescription ? ["SubDescription"] : []),
+        ...(hasIsMrpMode ? ["IsMrpMode"] : []),
+        ...(hasMrpPerItem ? ["MrpPerItem"] : []),
+        ...(hasSalePricePerProduct ? ["SalePricePerProduct"] : []),
+        ...(hasFurtherTaxRate ? ["FurtherTaxRate"] : []),
         "Rate",
         "UoM",
         "Quantity",
@@ -1087,6 +1180,10 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
         "@hsCode",
         "@productDescription",
         ...(hasSubDescription ? ["@subDescription"] : []),
+        ...(hasIsMrpMode ? ["@isMrpMode"] : []),
+        ...(hasMrpPerItem ? ["@mrpPerItem"] : []),
+        ...(hasSalePricePerProduct ? ["@salePricePerProduct"] : []),
+        ...(hasFurtherTaxRate ? ["@furtherTaxRate"] : []),
         "@rate",
         "@uoM",
         "@quantity",
@@ -1207,6 +1304,14 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
               ? item.subDescription.trim()
               : null
           )
+          .input("isMrpMode", sql.Bit, item.isMrpMode ? 1 : 0)
+          .input("mrpPerItem", sql.Decimal(18, 2), item.mrpPerItem || 0)
+          .input(
+            "salePricePerProduct",
+            sql.Decimal(18, 2),
+            item.salePricePerProduct || 0
+          )
+          .input("furtherTaxRate", sql.Decimal(5, 2), item.furtherTaxRate || 0)
           .input("rate", sql.NVarChar, item.rate)
           .input("uoM", sql.NVarChar, item.uoM)
           .input("quantity", sql.Decimal(18, 4), item.quantity)
@@ -1268,6 +1373,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
               HSCode,
               ProductDescription,
               ${subDescriptionSelect},
+              ${mrpSelects},
               Rate,
               UoM,
               Quantity,
