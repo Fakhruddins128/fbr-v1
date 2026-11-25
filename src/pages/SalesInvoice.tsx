@@ -48,7 +48,7 @@ import {
   isMergedDescriptionTooLong,
   MAX_PRODUCT_DESCRIPTION_LENGTH
 } from '../utils/invoiceDescription';
-import { calculateInvoiceLine } from '../utils/invoiceLineCalculations';
+import { calculateInvoiceLine, rateFromValue } from '../utils/invoiceLineCalculations';
 import { customerApi, Customer } from '../api/customerApi';
 import { invoiceAPI } from '../services/invoiceApi';
 import { downloadCSVFile } from '../utils/formatUtils';
@@ -1404,6 +1404,13 @@ const SalesInvoice: React.FC = () => {
 
       // Every priced field flows through one tested module, so the two modes
       // cannot drift apart. See src/utils/invoiceLineCalculations.ts.
+      //
+      // Advance Tax and Further Tax are each a two-way pair: typing the
+      // percentage computes the amount, and typing the amount back-solves the
+      // percentage. Both halves stay editable. The percentage is the one that
+      // survives, so once a line's sale value changes the amount is recomputed
+      // from the rate -- a tax rate is a fact about the sale, an amount is a
+      // consequence of it.
       const PRICING_FIELDS: string[] = [
         'isMrpMode',
         'mrpPerItem',
@@ -1412,7 +1419,9 @@ const SalesInvoice: React.FC = () => {
         'quantity',
         'rate',
         'advanceTaxRate',
-        'furtherTaxRate'
+        'advanceTaxValue',
+        'furtherTaxRate',
+        'furtherTax'
       ];
 
       if (PRICING_FIELDS.includes(field as string)) {
@@ -1429,13 +1438,47 @@ const SalesInvoice: React.FC = () => {
 
         updatedItem.valueSalesExclST = totals.valueSalesExclST;
         updatedItem.salesTax = totals.salesTax;
-        updatedItem.advanceTaxValue = totals.advanceTaxValue;
-        updatedItem.furtherTax = totals.furtherTax;
         // Derived in MRP mode; in normal mode it is what the user typed.
         updatedItem.salePricePerProduct = totals.salePricePerProduct;
         // FBR's retail-price field carries the MRP total while the toggle is on.
         if (updatedItem.isMrpMode) {
           updatedItem.fixedNotifiedValue = totals.mrpValue;
+        }
+
+        if (field === 'advanceTaxValue') {
+          // Keep the amount exactly as typed. Deriving it back from the rounded
+          // rate would nudge it off by paisas the user did not ask for.
+          updatedItem.advanceTaxRate = rateFromValue(
+            updatedItem.advanceTaxValue,
+            totals.advanceTaxBase
+          );
+        } else {
+          updatedItem.advanceTaxValue = totals.advanceTaxValue;
+        }
+
+        if (field === 'furtherTax') {
+          updatedItem.furtherTaxRate = rateFromValue(
+            updatedItem.furtherTax,
+            totals.furtherTaxBase
+          );
+        } else {
+          updatedItem.furtherTax = totals.furtherTax;
+        }
+
+        // An amount typed before the line has a sale value cannot be turned
+        // into a percentage, and the percentage is what survives the next edit,
+        // so say so rather than letting the amount vanish silently later.
+        const typedAmountWithoutBase =
+          (field === 'advanceTaxValue' && totals.advanceTaxBase <= 0 && Number(value) > 0) ||
+          (field === 'furtherTax' && totals.furtherTaxBase <= 0 && Number(value) > 0);
+
+        if (typedAmountWithoutBase) {
+          setNotification({
+            open: true,
+            message:
+              'Enter quantity and price first. A tax amount cannot be converted to a percentage while the line has no sale value, and will be recalculated as 0.',
+            severity: 'warning'
+          });
         }
       }
 
@@ -2797,6 +2840,7 @@ const SalesInvoice: React.FC = () => {
               onChange={(e) => handleItemChange('advanceTaxRate', Math.max(0, parseFloat(e.target.value) || 0))}
               size="small"
               disabled={isInvoiceSentToFBR()}
+              helperText="Sets the value alongside"
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
@@ -2805,8 +2849,10 @@ const SalesInvoice: React.FC = () => {
               label="Advance Tax Value"
               type="number"
               value={currentItem.advanceTaxValue}
+              onChange={(e) => handleItemChange('advanceTaxValue', Math.max(0, parseFloat(e.target.value) || 0))}
               size="small"
-              disabled
+              disabled={isInvoiceSentToFBR()}
+              helperText="Or type the value to set the %"
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
@@ -2848,9 +2894,10 @@ const SalesInvoice: React.FC = () => {
               label="Further Tax %"
               type="number"
               value={currentItem.furtherTaxRate}
-              onChange={(e) => handleItemChange('furtherTaxRate', parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleItemChange('furtherTaxRate', Math.max(0, parseFloat(e.target.value) || 0))}
               size="small"
               disabled={isInvoiceSentToFBR()}
+              helperText="Sets the value alongside"
             />
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
@@ -2859,9 +2906,10 @@ const SalesInvoice: React.FC = () => {
               label="Further Tax Value"
               type="number"
               value={currentItem.furtherTax}
+              onChange={(e) => handleItemChange('furtherTax', Math.max(0, parseFloat(e.target.value) || 0))}
               size="small"
-              InputProps={{ readOnly: true }}
-              helperText="Auto-calculated: Total Excl. ST × Further Tax %"
+              disabled={isInvoiceSentToFBR()}
+              helperText="Or type the value to set the %"
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>

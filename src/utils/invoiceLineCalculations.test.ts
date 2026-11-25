@@ -1,6 +1,7 @@
 import {
   calculateInvoiceLine,
   parseTaxRate,
+  rateFromValue,
   InvoiceLineInputs
 } from './invoiceLineCalculations';
 
@@ -134,5 +135,74 @@ describe('normal mode', () => {
     );
     expect(totals.salesTax).toBe(0);
     expect(totals.valueSalesExclST).toBe(500);
+  });
+});
+
+/**
+ * Advance Tax and Further Tax are two-way pairs on the form: the percentage
+ * drives the amount, and an amount typed directly back-solves the percentage.
+ * These cover the inverse and the bases it has to divide by.
+ */
+describe('rateFromValue', () => {
+  it('back-solves a round percentage', () => {
+    expect(rateFromValue(60, 12000)).toBe(0.5);
+  });
+
+  it('keeps four decimals, because a typed amount rarely divides evenly', () => {
+    expect(rateFromValue(61, 12000)).toBe(0.5083);
+  });
+
+  it('round-trips a rate through a value and back', () => {
+    const base = 14160;
+    const value = Math.round(((base * 0.5) / 100) * 100) / 100;
+    expect(rateFromValue(value, base)).toBe(0.5);
+  });
+
+  it('returns 0 when there is nothing to charge tax on', () => {
+    expect(rateFromValue(60, 0)).toBe(0);
+  });
+
+  it('does not produce Infinity or NaN for a negative or missing base', () => {
+    expect(rateFromValue(60, -100)).toBe(0);
+    expect(rateFromValue(60, NaN)).toBe(0);
+  });
+
+  it('treats a cleared amount as no tax', () => {
+    expect(rateFromValue(0, 12000)).toBe(0);
+  });
+});
+
+describe('tax bases returned for back-solving', () => {
+  it('reports the tax-inclusive base in normal mode', () => {
+    const totals = calculateInvoiceLine(
+      line({ quantity: 10, salePricePerProduct: 1200, rate: '18%' })
+    );
+
+    expect(totals.advanceTaxBase).toBe(14160);
+    expect(totals.furtherTaxBase).toBe(12000);
+  });
+
+  it('reports the tax-exclusive advance tax base in MRP mode', () => {
+    const totals = calculateInvoiceLine(
+      line({ isMrpMode: true, quantity: 10, mrpPerItem: 1500, discountValue: 3000, rate: '18%' })
+    );
+
+    expect(totals.advanceTaxBase).toBe(12000);
+    expect(totals.furtherTaxBase).toBe(12000);
+  });
+
+  it('divides by exactly what the module multiplied by', () => {
+    const inputs = line({ quantity: 7, salePricePerProduct: 331.5, rate: '18%', advanceTaxRate: 0.5 });
+    const totals = calculateInvoiceLine(inputs);
+
+    expect(rateFromValue(totals.advanceTaxValue, totals.advanceTaxBase)).toBeCloseTo(0.5, 3);
+  });
+
+  it('reports a zero base for an empty line, so no rate can be back-solved', () => {
+    const totals = calculateInvoiceLine(line());
+
+    expect(totals.advanceTaxBase).toBe(0);
+    expect(totals.furtherTaxBase).toBe(0);
+    expect(rateFromValue(60, totals.advanceTaxBase)).toBe(0);
   });
 });

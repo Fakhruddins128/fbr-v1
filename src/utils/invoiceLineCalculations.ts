@@ -17,6 +17,33 @@
 const round2 = (value: number): number => Math.round(value * 100) / 100;
 
 /**
+ * Tax percentages are carried to 4 decimals, matching
+ * InvoiceItems.AdvanceTaxRate and .FurtherTaxRate. Back-solving a rate from a
+ * typed amount rarely lands on a round number, and 2 decimals would lose enough
+ * to shift the amount back by a rupee or more on a large line.
+ */
+const round4 = (value: number): number => Math.round(value * 10000) / 10000;
+
+/**
+ * Back-solves a tax percentage from an amount the user typed directly.
+ *
+ * Returns 0 when there is nothing to charge tax on — a line with no quantity or
+ * price yet — because no percentage of zero produces a non-zero amount. The
+ * caller is responsible for telling the user that the amount they typed cannot
+ * be expressed as a rate until the line has a sale value.
+ */
+export const rateFromValue = (value: number, base: number): number => {
+  const amount = Number(value) || 0;
+  const divisor = Number(base) || 0;
+
+  if (divisor <= 0) {
+    return 0;
+  }
+
+  return round4((amount * 100) / divisor);
+};
+
+/**
  * Sales tax is held as a string such as "18%" because that is the form FBR
  * requires and the item master supplies. Non-numeric values ("Select", "")
  * read as zero rather than throwing.
@@ -62,6 +89,13 @@ export interface InvoiceLineTotals {
   salesTax: number;
   advanceTaxValue: number;
   furtherTax: number;
+  /**
+   * The amounts the two percentage-driven taxes are charged on. Returned so
+   * that a caller back-solving a rate from a typed amount divides by exactly
+   * the figure this module multiplied by, including the mode split above.
+   */
+  advanceTaxBase: number;
+  furtherTaxBase: number;
 }
 
 export const calculateInvoiceLine = (inputs: InvoiceLineInputs): InvoiceLineTotals => {
@@ -101,6 +135,8 @@ export const calculateInvoiceLine = (inputs: InvoiceLineInputs): InvoiceLineTota
     salePricePerProduct,
     salesTax,
     advanceTaxValue,
-    furtherTax
+    furtherTax,
+    advanceTaxBase,
+    furtherTaxBase: valueSalesExclST
   };
 };

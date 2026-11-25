@@ -11,6 +11,10 @@
 -- would misread a line whose retail price is legitimately zero, and the mode
 -- decides which fields the form shows when the invoice is reopened.
 --
+-- FurtherTaxRate matches AdvanceTaxRate at DECIMAL(18,4). Typing a Further
+-- Tax amount back-solves the percentage, which rarely lands on 2 decimals;
+-- see widen_further_tax_rate_to_4dp.sql for databases built before this.
+--
 -- Safe to run more than once.
 
 USE FBR_SaaS;
@@ -63,7 +67,7 @@ IF NOT EXISTS (
     WHERE object_id = OBJECT_ID('InvoiceItems') AND name = 'FurtherTaxRate'
 )
 BEGIN
-    ALTER TABLE InvoiceItems ADD FurtherTaxRate DECIMAL(5, 2) NULL;
+    ALTER TABLE InvoiceItems ADD FurtherTaxRate DECIMAL(18, 4) NULL;
     PRINT 'Column InvoiceItems.FurtherTaxRate added successfully.';
 END
 ELSE

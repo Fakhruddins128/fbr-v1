@@ -266,7 +266,7 @@ app.get("/api/invoices", authenticateToken, async (req, res) => {
         : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
       invoiceItemsColumns.has("FurtherTaxRate")
         ? "FurtherTaxRate"
-        : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+        : "CAST(NULL AS DECIMAL(18, 4)) AS FurtherTaxRate"
     ].join(", ");
     const discountSelect = invoiceItemsColumns.has("Discount")
       ? "Discount"
@@ -445,7 +445,7 @@ app.get("/api/invoices/:id", authenticateToken, async (req, res) => {
         : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
       invoiceItemsColumns.has("FurtherTaxRate")
         ? "FurtherTaxRate"
-        : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+        : "CAST(NULL AS DECIMAL(18, 4)) AS FurtherTaxRate"
     ].join(", ");
     const discountSelect = invoiceItemsColumns.has("Discount")
       ? "Discount"
@@ -675,7 +675,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
           : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
         hasFurtherTaxRate
           ? "FurtherTaxRate"
-          : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+          : "CAST(NULL AS DECIMAL(18, 4)) AS FurtherTaxRate"
       ].join(", ");
       const discountSelect = hasDiscount
         ? "Discount"
@@ -838,7 +838,7 @@ app.post("/api/invoices", authenticateToken, async (req, res) => {
             sql.Decimal(18, 2),
             item.salePricePerProduct || 0
           )
-          .input("furtherTaxRate", sql.Decimal(5, 2), item.furtherTaxRate || 0)
+          .input("furtherTaxRate", sql.Decimal(18, 4), item.furtherTaxRate || 0)
           .input("rate", sql.NVarChar, item.rate)
           .input("uoM", sql.NVarChar, item.uoM)
           .input("quantity", sql.Decimal(18, 4), item.quantity)
@@ -1135,7 +1135,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
           : "CAST(NULL AS DECIMAL(18, 2)) AS SalePricePerProduct",
         hasFurtherTaxRate
           ? "FurtherTaxRate"
-          : "CAST(NULL AS DECIMAL(5, 2)) AS FurtherTaxRate"
+          : "CAST(NULL AS DECIMAL(18, 4)) AS FurtherTaxRate"
       ].join(", ");
       const discountSelect = hasDiscount
         ? "Discount"
@@ -1311,7 +1311,7 @@ app.put("/api/invoices/:id", authenticateToken, async (req, res) => {
             sql.Decimal(18, 2),
             item.salePricePerProduct || 0
           )
-          .input("furtherTaxRate", sql.Decimal(5, 2), item.furtherTaxRate || 0)
+          .input("furtherTaxRate", sql.Decimal(18, 4), item.furtherTaxRate || 0)
           .input("rate", sql.NVarChar, item.rate)
           .input("uoM", sql.NVarChar, item.uoM)
           .input("quantity", sql.Decimal(18, 4), item.quantity)

@@ -302,3 +302,98 @@ changes for a normal-mode invoice.
 - **A pre-migration invoice prints as normal mode.** Correct — that is how it was
   entered — but an invoice saved in MRP mode *before* the migration is applied
   also prints as normal mode, with the discount lost. §8 item 1 still applies.
+
+---
+
+## 10. Advance Tax and Further Tax as two-way pairs
+
+Added 2026-11-25.
+
+### Requirement
+
+> Advance Tax %, Advance Tax value, Further Tax%, Further Tax Value. should be
+> open for Edit. if type % then calculate value but its open for edit. if type
+> Value then calculate % and its open for Edit too
+
+### What it did before
+
+| Field | Before |
+|---|---|
+| Advance Tax % | Editable |
+| Advance Tax Value | `disabled` |
+| Further Tax % | Editable |
+| Further Tax Value | `readOnly` |
+
+Both amounts were one-way outputs of their percentage.
+
+### What it does now
+
+All four are editable. Typing a percentage computes the amount, as before.
+Typing an amount back-solves the percentage, and the amount is kept **exactly as
+typed** — deriving it back from the rounded percentage would move it by paisas
+the user did not ask for.
+
+The percentage is the half that survives. When a line's sale value changes —
+quantity, price, MRP, discount, the mode toggle — both amounts are recomputed
+from their percentages. A tax rate is a fact about the sale; an amount is a
+consequence of it, so the rate is what carries forward.
+
+**This is a decision, not a reading of the requirement.** The requirement says
+each direction should calculate the other and leave both editable; it does not
+say which one wins when the base later moves. The alternative — remembering which
+half the user last touched, per line, and preserving that one — needs state that
+has no column to live in and cannot survive reopening an invoice. If a typed
+amount should instead hold its figure and let the percentage drift, that is a
+different design and worth saying so.
+
+### Precision
+
+A back-solved percentage rarely lands on two decimals: 61 on a 12,000 base is
+0.5083%. `AdvanceTaxRate` has always been `DECIMAL(18, 4)`; `FurtherTaxRate` was
+added at `DECIMAL(5, 2)` on 2026-11-18, which would have rounded that to 0.51 and
+recomputed the amount as 61.20 on the next edit.
+
+- `add_mrp_fields_to_invoice_items.sql` now creates `FurtherTaxRate` as
+  `DECIMAL(18, 4)`.
+- `widen_further_tax_rate_to_4dp.sql` **(new)** widens it for a database that
+  already ran the earlier version. Guarded on `sys.columns.scale`, rerunnable,
+  order-independent.
+- `backend/server.js` bound `furtherTaxRate` as `sql.Decimal(5, 2)` in both
+  insert paths, which would have rounded at the driver whatever the column said.
+  Now `sql.Decimal(18, 4)`, and the four `CAST(NULL AS DECIMAL(5, 2))` fallbacks
+  match.
+
+### Changed
+
+| File | Change |
+|---|---|
+| `src/utils/invoiceLineCalculations.ts` | `rateFromValue(value, base)` added; `advanceTaxBase` and `furtherTaxBase` added to `InvoiceLineTotals` so a caller divides by exactly what the module multiplied by, mode split included. |
+| `src/utils/invoiceLineCalculations.test.ts` | 10 tests added, 30 total. |
+| `src/pages/SalesInvoice.tsx` | Both amount fields made editable; `advanceTaxValue` and `furtherTax` added to `PRICING_FIELDS`; the back-solve branches; helper text on all four. |
+| `backend/server.js` | `furtherTaxRate` precision, as above. |
+| `backend/database/add_mrp_fields_to_invoice_items.sql` | `FurtherTaxRate` now `DECIMAL(18, 4)`. |
+| `backend/database/widen_further_tax_rate_to_4dp.sql` | **New.** |
+
+### Edge cases
+
+| Case | Behaviour |
+|---|---|
+| Type an amount with no quantity or price yet | Base is 0, so no percentage exists. The amount is kept, the percentage stays 0, and a warning says it will be recalculated as 0 once the line has a value. |
+| Clear an amount to 0 | Percentage goes to 0. |
+| Negative amount or percentage | Clamped to 0 at the input, as Advance Tax % already was. |
+| MRP mode | Advance Tax back-solves against the tax-**exclusive** total and Further Tax against the exclusive total, matching §6. Normal mode back-solves Advance Tax against the tax-**inclusive** total. |
+| Invoice already sent to FBR | All four `disabled`, as the rest of the panel is. Further Tax Value was `readOnly` without that guard before, so it is now *more* locked after submission, not less. |
+| Editing a line already added to the invoice | Pulled back into `currentItem`, so the same two-way logic applies. |
+
+### Not done
+
+- **Nothing exercised in a browser.** No database here. The arithmetic is tested;
+  the typing behaviour is not. Worth checking that a decimal can be typed into
+  the two amount fields — MUI number inputs bound through `parseFloat` can swallow
+  a trailing `.` — though the four existing percentage fields use the same
+  pattern and the loose comparison in React's number-input handling should let
+  `0.` through.
+- **The invoice-level Advance Tax %** shown in the totals block and saved to the
+  header still divides by the tax-inclusive total for every line (`SalesInvoice.tsx`
+  `saveInvoice`). For an MRP-mode invoice that understates it, the same way §9
+  describes for Template 2. Unchanged here, and out of scope for this request.
