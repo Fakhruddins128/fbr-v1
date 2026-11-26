@@ -5,6 +5,10 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const {
+  invoiceLineSql,
+  probeInvoiceItemColumns,
+} = require("./lib/invoiceLineSql");
 
 // Load environment variables
 dotenv.config();
@@ -4832,8 +4836,18 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
       rangeEnd.setDate(rangeEnd.getDate() + 1);
     }
 
-    if (isDbConnected) {
+    if (!isDbConnected) {
+      // No invented figures; see the dashboard endpoint.
+      return res.status(503).json({
+        success: false,
+        message: "Database not connected. Report figures are unavailable.",
+      });
+    }
+
+    {
       const pool = await sql.connect(dbConfig);
+      const itemColumns = await probeInvoiceItemColumns(pool);
+      const lineSql = invoiceLineSql(itemColumns);
 
       // The alias is supplied by this code, never by the request.
       const dateFilterFor = (alias) =>
@@ -4851,19 +4865,90 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
         return request;
       };
 
+      // Sales, orders and cost of goods sold per period, from the lines.
+      //
+      // Profit was SUM(TotalAmount * 0.1) -- a flat 10% of a column that is
+      // itself usually 0 (see invoiceLineSql). It is now sale value excluding
+      // tax less the cost of what was sold, where cost is the weighted-average
+      // purchase price recorded for that item across all received purchases.
+      //
+      // An item never purchased through the system has no recorded cost, so it
+      // contributes 0 to COGS and its full sale value to profit. That overstates
+      // profit, and is reported separately as uncostedSales so the figure can be
+      // read with the right amount of trust.
       const salesQuery = `
-        SELECT 
+        WITH ItemCost AS (
+          -- Weighted-average purchase price per item, keyed the way the rest of
+          -- the app keys items: HS code plus description. Grouped by that key
+          -- alone, so two Items rows sharing a key collapse into one cost
+          -- instead of fanning the join out and double-counting.
+          --
+          -- Deliberately not filtered to the report period: the cost of what
+          -- was sold this month is what it was bought for, whenever that was.
+          SELECT
+            it.HSCode,
+            CAST(it.Description AS NVARCHAR(255)) as Description,
+            CASE
+              WHEN SUM(pi.PurchaseQty) > 0
+                THEN SUM(pi.PurchasePrice * pi.PurchaseQty) / SUM(pi.PurchaseQty)
+              ELSE NULL
+            END as AvgCost
+          FROM Items it
+          JOIN PurchaseItems pi ON pi.ItemID = CAST(it.ItemID AS NVARCHAR(50))
+          JOIN Purchases p ON pi.PurchaseID = p.PurchaseID
+          WHERE it.CompanyID = @companyId
+            AND p.CompanyID = @companyId
+            AND p.IsActive = 1
+            AND p.Status IN ('received', 'completed')
+          GROUP BY it.HSCode, CAST(it.Description AS NVARCHAR(255))
+        )
+        SELECT
           FORMAT(i.InvoiceDate, 'yyyy-MM') as period,
-          SUM(i.TotalAmount) as sales,
-          COUNT(*) as orders,
-          SUM(i.TotalAmount * 0.1) as profit
-        FROM Invoices i
+          SUM(${lineSql.net}) as sales,
+          COUNT(DISTINCT i.InvoiceID) as orders,
+          SUM(${lineSql.exclusive}) as salesExclTax,
+          SUM(ISNULL(c.AvgCost, 0) * ISNULL(ii.Quantity, 0)) as cogs,
+          SUM(CASE WHEN c.AvgCost IS NULL THEN ${lineSql.exclusive} ELSE 0 END) as uncostedSales
+        FROM InvoiceItems ii
+        JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+        LEFT JOIN ItemCost c
+          ON c.HSCode = ii.HSCode
+         AND c.Description = ii.ProductDescription
         WHERE i.CompanyID = @companyId${dateFilterFor("i")}
         GROUP BY FORMAT(i.InvoiceDate, 'yyyy-MM')
         ORDER BY period DESC
       `;
 
       const salesResult = await reportRequest().query(salesQuery);
+
+      // Real purchases for the same periods. Matches the Purchases page, which
+      // lists every IsActive row; Date is nullable, so fall back to PODate then
+      // CreatedAt, as the dashboard chart does.
+      const purchasesByPeriodQuery = `
+        SELECT
+          FORMAT(COALESCE(p.Date, p.PODate, p.CreatedAt), 'yyyy-MM') as period,
+          SUM(p.TotalAmount) as purchases
+        FROM Purchases p
+        WHERE p.CompanyID = @companyId
+          AND p.IsActive = 1
+          ${
+            rangeStart
+              ? "AND COALESCE(p.Date, p.PODate, p.CreatedAt) >= @startDate AND COALESCE(p.Date, p.PODate, p.CreatedAt) < @endDate"
+              : "AND COALESCE(p.Date, p.PODate, p.CreatedAt) >= DATEADD(month, -12, GETDATE())"
+          }
+        GROUP BY FORMAT(COALESCE(p.Date, p.PODate, p.CreatedAt), 'yyyy-MM')
+      `;
+
+      const purchasesByPeriodResult = await reportRequest().query(
+        purchasesByPeriodQuery
+      );
+
+      const purchasesByPeriod = new Map(
+        purchasesByPeriodResult.recordset.map((row) => [
+          row.period,
+          parseFloat(row.purchases) || 0,
+        ])
+      );
 
       // Get top products. InvoiceItems stores the line description in
       // ProductDescription and the line total in TotalValues; the percentage
@@ -4872,9 +4957,9 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
         SELECT TOP 5
           ii.ProductDescription as name,
           SUM(ii.Quantity) as quantity,
-          SUM(ii.TotalValues) as sales,
-          CAST(SUM(ii.TotalValues) * 100.0 / NULLIF((
-            SELECT SUM(ii2.TotalValues)
+          SUM(${lineSql.net}) as sales,
+          CAST(SUM(${lineSql.net}) * 100.0 / NULLIF((
+            SELECT SUM(${invoiceLineSql(itemColumns, "ii2").net})
             FROM InvoiceItems ii2
             INNER JOIN Invoices i2 ON ii2.InvoiceID = i2.InvoiceID
             WHERE i2.CompanyID = @companyId${dateFilterFor("i2")}
@@ -4893,14 +4978,16 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
       const topCustomersQuery = `
         SELECT TOP 5
           i.BuyerBusinessName as name,
-          SUM(i.TotalAmount) as amount,
-          COUNT(*) as orders,
-          CAST(SUM(i.TotalAmount) * 100.0 / NULLIF((
-            SELECT SUM(i2.TotalAmount)
-            FROM Invoices i2
+          SUM(${lineSql.net}) as amount,
+          COUNT(DISTINCT i.InvoiceID) as orders,
+          CAST(SUM(${lineSql.net}) * 100.0 / NULLIF((
+            SELECT SUM(${invoiceLineSql(itemColumns, "ii2").net})
+            FROM InvoiceItems ii2
+            INNER JOIN Invoices i2 ON ii2.InvoiceID = i2.InvoiceID
             WHERE i2.CompanyID = @companyId${dateFilterFor("i2")}
           ), 0) AS DECIMAL(5,2)) as percentage
-        FROM Invoices i
+        FROM InvoiceItems ii
+        INNER JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
         WHERE i.CompanyID = @companyId${dateFilterFor("i")}
         GROUP BY i.BuyerBusinessName
         ORDER BY amount DESC
@@ -4916,13 +5003,26 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
       res.json({
         success: true,
         data: {
-          salesData: salesResult.recordset.map((row) => ({
-            period: row.period,
-            sales: parseFloat(row.sales) || 0,
-            purchases: parseFloat(row.sales) * 0.7 || 0, // Mock purchases as 70% of sales
-            profit: parseFloat(row.profit) || 0,
-            orders: row.orders || 0,
-          })),
+          salesData: salesResult.recordset.map((row) => {
+            const salesExclTax = num(row.salesExclTax);
+            const cogs = num(row.cogs);
+
+            return {
+              period: row.period,
+              sales: num(row.sales),
+              purchases: purchasesByPeriod.get(row.period) || 0,
+              // Gross profit: sale value excluding tax, less the cost of what
+              // was sold at weighted-average purchase price.
+              profit: Math.round((salesExclTax - cogs) * 100) / 100,
+              salesExclTax,
+              cogs,
+              // Sale value of lines with no recorded purchase cost. Profit for
+              // those lines is their full sale value, so a large figure here
+              // means the profit column is optimistic.
+              uncostedSales: num(row.uncostedSales),
+              orders: row.orders || 0,
+            };
+          }),
           topProducts: topProductsResult.recordset.map((row) => ({
             name: row.name || "",
             quantity: num(row.quantity),
@@ -4935,92 +5035,6 @@ app.get("/api/reports/sales", authenticateToken, async (req, res) => {
             orders: row.orders || 0,
             percentage: num(row.percentage),
           })),
-        },
-      });
-    } else {
-      // Mock data when database is not connected
-      const mockSalesData = [
-        {
-          period: "2024-01",
-          sales: 125000,
-          purchases: 87500,
-          profit: 12500,
-          orders: 45,
-        },
-        {
-          period: "2024-02",
-          sales: 135000,
-          purchases: 94500,
-          profit: 13500,
-          orders: 52,
-        },
-        {
-          period: "2024-03",
-          sales: 142000,
-          purchases: 99400,
-          profit: 14200,
-          orders: 48,
-        },
-        {
-          period: "2024-04",
-          sales: 158000,
-          purchases: 110600,
-          profit: 15800,
-          orders: 61,
-        },
-        {
-          period: "2024-05",
-          sales: 167000,
-          purchases: 116900,
-          profit: 16700,
-          orders: 55,
-        },
-        {
-          period: "2024-06",
-          sales: 175000,
-          purchases: 122500,
-          profit: 17500,
-          orders: 63,
-        },
-      ];
-
-      const mockTopProducts = [
-        { name: "Product A", quantity: 150, sales: 45000, percentage: 25.5 },
-        { name: "Product B", quantity: 120, sales: 36000, percentage: 20.4 },
-        { name: "Product C", quantity: 95, sales: 28500, percentage: 16.2 },
-        { name: "Product D", quantity: 80, sales: 24000, percentage: 13.6 },
-        { name: "Product E", quantity: 65, sales: 19500, percentage: 11.1 },
-      ];
-
-      const mockTopCustomers = [
-        {
-          name: "ABC Corporation",
-          amount: 85000,
-          orders: 12,
-          percentage: 28.3,
-        },
-        { name: "XYZ Industries", amount: 67000, orders: 9, percentage: 22.3 },
-        {
-          name: "Tech Solutions Ltd",
-          amount: 52000,
-          orders: 8,
-          percentage: 17.3,
-        },
-        { name: "Global Traders", amount: 43000, orders: 6, percentage: 14.3 },
-        {
-          name: "Prime Enterprises",
-          amount: 38000,
-          orders: 7,
-          percentage: 12.7,
-        },
-      ];
-
-      res.json({
-        success: true,
-        data: {
-          salesData: mockSalesData,
-          topProducts: mockTopProducts,
-          topCustomers: mockTopCustomers,
         },
       });
     }
@@ -5619,18 +5633,49 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
       companyId = req.headers["x-company-id"];
     }
 
-    if (isDbConnected) {
+    if (!isDbConnected) {
+      // No invented figures. A dashboard that shows plausible numbers while the
+      // database is unreachable is worse than one that says it cannot reach it,
+      // because nothing on screen reveals which it is.
+      return res.status(503).json({
+        success: false,
+        message: "Database not connected. Dashboard figures are unavailable.",
+      });
+    }
+
+    {
       const pool = await sql.connect(dbConfig);
+      const itemColumns = await probeInvoiceItemColumns(pool);
+      const lineSql = invoiceLineSql(itemColumns);
 
       // Stock lives in Items, not in the legacy Inventory table: the Items
       // page, Sales Invoice and Purchases all read it through /api/items, and
       // nothing in the UI writes to Inventory. Current stock is derived with
       // the same formula /api/items uses, so the two cannot disagree.
+      //
+      // Sales figures come from InvoiceItems, not Invoices.TotalAmount. See
+      // invoiceLineSql for why that column cannot be trusted.
       const statsQuery = `
         SELECT 
           (SELECT COUNT(*) FROM Invoices WHERE CompanyID = @companyId) as totalInvoices,
-          (SELECT ISNULL(SUM(TotalAmount), 0) FROM Invoices WHERE CompanyID = @companyId) as totalAmount,
-          (SELECT ISNULL(SUM(TotalSalesTax), 0) FROM Invoices WHERE CompanyID = @companyId) as totalTax,
+          (
+            SELECT ISNULL(SUM(${lineSql.net}), 0)
+            FROM InvoiceItems ii
+            JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+            WHERE i.CompanyID = @companyId
+          ) as totalAmount,
+          (
+            SELECT ISNULL(SUM(${lineSql.salesTax}), 0)
+            FROM InvoiceItems ii
+            JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+            WHERE i.CompanyID = @companyId
+          ) as totalTax,
+          (
+            SELECT ISNULL(SUM(${lineSql.exclusive}), 0)
+            FROM InvoiceItems ii
+            JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+            WHERE i.CompanyID = @companyId
+          ) as totalExclusive,
           (SELECT COUNT(*) FROM Items WHERE CompanyID = @companyId) as totalInventory,
           (SELECT COUNT(*) FROM Customers WHERE CompanyID = @companyId) as totalCustomers
       `;
@@ -5646,7 +5691,11 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
         SELECT TOP 10 
           i.InvoiceID,
           i.InvoiceNumber,
-          i.TotalAmount,
+          (
+            SELECT ISNULL(SUM(${lineSql.net}), 0)
+            FROM InvoiceItems ii
+            WHERE ii.InvoiceID = i.InvoiceID
+          ) as TotalAmount,
           i.InvoiceDate,
           i.BuyerBusinessName as CustomerName,
           'sale' as type
@@ -5700,12 +5749,13 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
       // Get sales data for chart (last 12 months)
       const salesChartQuery = `
         SELECT 
-          FORMAT(InvoiceDate, 'yyyy-MM') as month,
-          SUM(TotalAmount) as amount
-        FROM Invoices 
-        WHERE CompanyID = @companyId 
-          AND InvoiceDate >= DATEADD(month, -12, GETDATE())
-        GROUP BY FORMAT(InvoiceDate, 'yyyy-MM')
+          FORMAT(i.InvoiceDate, 'yyyy-MM') as month,
+          SUM(${lineSql.net}) as amount
+        FROM InvoiceItems ii
+        JOIN Invoices i ON ii.InvoiceID = i.InvoiceID
+        WHERE i.CompanyID = @companyId 
+          AND i.InvoiceDate >= DATEADD(month, -12, GETDATE())
+        GROUP BY FORMAT(i.InvoiceDate, 'yyyy-MM')
         ORDER BY month
       `;
 
@@ -5758,11 +5808,14 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
         data: {
           stats: {
             totalInvoices: stats.totalInvoices || 0,
-            totalAmount: stats.totalAmount || 0,
-            totalTax: stats.totalTax || 0,
+            totalAmount: num(stats.totalAmount),
+            totalTax: num(stats.totalTax),
             totalInventory: stats.totalInventory || 0,
             totalCustomers: stats.totalCustomers || 0,
-            profit: (stats.totalAmount || 0) - (stats.totalTax || 0), // Displayed as "Sale Excl. Tax"
+            // Displayed as "Sale Excl. Tax". Summed from the lines directly
+            // rather than as total-minus-sales-tax, which ignored further,
+            // extra and advance tax and so overstated the figure.
+            profit: num(stats.totalExclusive),
           },
           recentActivities: activities,
           inventoryStatus: {
@@ -5778,58 +5831,6 @@ app.get("/api/dashboard/stats", authenticateToken, async (req, res) => {
             month: item.month,
             amount: num(item.amount),
           })),
-        },
-      });
-    } else {
-      // Mock data when database is not connected
-      res.json({
-        success: true,
-        data: {
-          stats: {
-            totalInvoices: 150,
-            totalAmount: 750000,
-            totalTax: 127500,
-            totalInventory: 45,
-            totalCustomers: 28,
-            profit: 622500,
-          },
-          recentActivities: [
-            {
-              id: 1,
-              description: "Invoice INV-001 - ABC Company",
-              date: new Date().toLocaleDateString(),
-              amount: 15000,
-              type: "sale",
-            },
-            {
-              id: 2,
-              description: "Invoice INV-002 - XYZ Corp",
-              date: new Date(Date.now() - 86400000).toLocaleDateString(),
-              amount: 25000,
-              type: "sale",
-            },
-          ],
-          inventoryStatus: {
-            inStock: 35,
-            lowStock: 8,
-            outOfStock: 2,
-          },
-          salesChart: [
-            { month: "2024-01", amount: 45000 },
-            { month: "2024-02", amount: 52000 },
-            { month: "2024-03", amount: 48000 },
-            { month: "2024-04", amount: 61000 },
-            { month: "2024-05", amount: 58000 },
-            { month: "2024-06", amount: 67000 },
-          ],
-          purchasesChart: [
-            { month: "2024-01", amount: 31000 },
-            { month: "2024-02", amount: 36000 },
-            { month: "2024-03", amount: 34000 },
-            { month: "2024-04", amount: 42000 },
-            { month: "2024-05", amount: 40000 },
-            { month: "2024-06", amount: 47000 },
-          ],
         },
       });
     }
@@ -6206,16 +6207,17 @@ app.post("/api/migrate/vendor-contactpersonname", async (req, res) => {
 // Start server
 connectToDatabase()
   .then((connected) => {
-    // Even if database connection fails, we'll start the server with mock data
+    // The server still starts without a database so the UI can be loaded, but
+    // dashboards and reports now refuse rather than invent figures.
     app.listen(PORT, () => {
       if (connected) {
         console.log(`Server running on port ${PORT} with database connection`);
       } else {
         console.log(
-          `Server running on port ${PORT} with mock data (no database connection)`
+          `Server running on port ${PORT} WITHOUT a database connection`
         );
         console.log(
-          "Note: All data is mocked for demo purposes. No actual database operations will be performed."
+          "Note: dashboards and reports will return 503. Some other endpoints still serve demo data."
         );
       }
     });

@@ -365,6 +365,13 @@ const Reports: React.FC = () => {
   const totalPurchases = salesData.reduce((sum, data) => sum + data.purchases, 0);
   const totalProfit = salesData.reduce((sum, data) => sum + data.profit, 0);
   const totalOrders = salesData.reduce((sum, data) => sum + data.orders, 0);
+  // Sale value of lines whose item was never purchased through the system, so
+  // has no recorded cost. Those lines contribute their full sale value to gross
+  // profit; say so rather than letting an optimistic figure stand unqualified.
+  const uncostedSales = salesData.reduce(
+    (sum, data) => sum + (data.uncostedSales || 0),
+    0
+  );
 
   return (
     <Box sx={{ p: 3 }}>
@@ -518,10 +525,15 @@ const Reports: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
-                    Total Profit
+                    Gross Profit
                   </Typography>
                   <Typography variant="h5">
                     {formatCurrency(totalProfit)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {uncostedSales > 0
+                      ? `Excl. tax, less cost of sales. ${formatCurrency(uncostedSales)} of sales have no recorded cost.`
+                      : 'Excl. tax, less cost of sales'}
                   </Typography>
                 </Box>
                 <PieChartIcon color="success" sx={{ fontSize: 40 }} />
@@ -579,7 +591,7 @@ const Reports: React.FC = () => {
                     <TableCell>Period</TableCell>
                     <TableCell align="right">Sales</TableCell>
                     <TableCell align="right">Purchases</TableCell>
-                    <TableCell align="right">Profit</TableCell>
+                    <TableCell align="right">Gross Profit</TableCell>
                     <TableCell align="right">Orders</TableCell>
                   </TableRow>
                 </TableHead>

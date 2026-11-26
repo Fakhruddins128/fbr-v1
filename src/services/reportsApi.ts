@@ -2,10 +2,23 @@ import { API_BASE_URL } from './api';
 
 export interface ReportData {
   period: string;
+  /** Full amount payable across the period's invoices, taxes included. */
   sales: number;
+  /** Real purchases recorded for the period, not a fraction of sales. */
   purchases: number;
+  /** Gross profit: sale value excluding tax, less cost of goods sold. */
   profit: number;
   orders: number;
+  /** Sale value excluding every tax. */
+  salesExclTax?: number;
+  /** Cost of goods sold, at weighted-average purchase price. */
+  cogs?: number;
+  /**
+   * Sale value of lines whose item has no recorded purchase cost. Those lines
+   * contribute their whole sale value to profit, so a large figure here means
+   * the profit column is optimistic.
+   */
+  uncostedSales?: number;
 }
 
 export interface TopProduct {
@@ -222,7 +235,14 @@ class ReportsApiService {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // The server explains why -- "Database not connected", for instance.
+        // Surfacing the status code alone tells the user nothing actionable.
+        const detail = await response
+          .json()
+          .then((body) => body?.message)
+          .catch(() => null);
+
+        throw new Error(detail || `Request failed with status ${response.status}`);
       }
       
       const data = await response.json();

@@ -659,28 +659,41 @@ const Invoices: React.FC = () => {
   };
 
   // Statistics calculations
+  //
+  // Invoices.TotalAmount is written as the sum of the line field "Total Value of
+  // Sales (in case of FPAD only)", which is typed by hand and left at 0 on any
+  // invoice that is not FPAD, so it is rebuilt from the lines whenever it reads
+  // as 0. The server's dashboard and report queries do the same rebuild in SQL
+  // (backend/lib/invoiceLineSql.js), so the figures here and there agree.
   const calculateInvoiceTotal = (invoice: Invoice) => {
-    const totalAmount = Number(invoice.totalAmount);
-    if (!isNaN(totalAmount) && totalAmount > 0) return totalAmount;
-    
+    // The lines are the source of truth. TotalAmount is only used when an
+    // invoice arrives with no lines to rebuild from, because preferring it
+    // whenever it happened to be non-zero made this disagree with the server on
+    // FPAD invoices, where the column is populated but excludes the taxes.
+    if (!invoice.items || invoice.items.length === 0) {
+      const totalAmount = Number(invoice.totalAmount);
+      return !isNaN(totalAmount) ? totalAmount : 0;
+    }
+
     return invoice.items.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const rate = Number(item.rate) || 0;
       const totalValues = Number(item.totalValues) || 0;
       const valueSalesExcludingST = Number(item.valueSalesExcludingST) || 0;
       const fixedValue = Number(item.fixedNotifiedValueOrRetailPrice) || 0;
-      
+
       const salesTax = Number(item.salesTaxApplicable) || 0;
       const furtherTax = Number(item.furtherTax) || 0;
       const extraTax = Number(item.extraTax) || 0;
-      const discount = Number(item.discount) || 0;
+      const advanceTax =
+        Number(item.advanceTaxValue ?? item.AdvanceTaxValue) || 0;
+      // An MRP line's discount is already inside valueSalesExcludingST, so
+      // deducting it again would take it off twice.
+      const discount = item.isMrpMode ? 0 : Number(item.discount) || 0;
 
       let itemValue = totalValues;
       if (itemValue <= 0) itemValue = valueSalesExcludingST;
       if (itemValue <= 0) itemValue = fixedValue;
-      if (itemValue <= 0) itemValue = quantity * rate;
 
-      const itemTotal = itemValue + salesTax + furtherTax + extraTax;
+      const itemTotal = itemValue + salesTax + furtherTax + extraTax + advanceTax;
       return sum + itemTotal - discount;
     }, 0);
   };

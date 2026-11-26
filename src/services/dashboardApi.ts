@@ -2,10 +2,15 @@ import { API_BASE_URL } from './api';
 
 export interface DashboardStats {
   totalInvoices: number;
+  /** Full amount payable across all invoices, taxes included. */
   totalAmount: number;
   totalTax: number;
   totalInventory: number;
   totalCustomers: number;
+  /**
+   * Sale value excluding every tax. Displayed as "Sale Excl. Tax" -- the field
+   * name is historical and this has never been a profit figure.
+   */
   profit: number;
 }
 
@@ -66,7 +71,14 @@ class DashboardApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // The server explains why -- "Database not connected", for instance.
+        // Surfacing the status code alone tells the user nothing actionable.
+        const detail = await response
+          .json()
+          .then((body) => body?.message)
+          .catch(() => null);
+
+        throw new Error(detail || `Request failed with status ${response.status}`);
       }
 
       const result: DashboardApiResponse = await response.json();
